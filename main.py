@@ -1,17 +1,20 @@
 import os, requests, random, time, json
 from datetime import datetime, timedelta
 import threading
+from flask import Flask
+
+app = Flask(__name__)
+@app.route('/')
+def home(): return "GHOST MATRIX BOT LIVE 24/7"
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = "8879968219"
-
 MARKETS = ["USDCAD","USDCHF","NZDUSD","EURJPY","GBPJPY","CADJPY","CADCHF","EURGBP","AUDJPY","EURAUD","GBPAUD","XAUUSD","XAGUSD","WTI","Brent","NATGAS","Copper","Platinum","Palladium"]
 
 def send(text, buttons=None):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     data = {"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML"}
-    if buttons:
-        data["reply_markup"] = json.dumps({"inline_keyboard": buttons})
+    if buttons: data["reply_markup"] = json.dumps({"inline_keyboard": buttons})
     try: requests.post(url, data=data, timeout=10)
     except: pass
 
@@ -54,8 +57,12 @@ def poller():
         except: time.sleep(3)
 
 threading.Thread(target=poller, daemon=True).start()
-time.sleep(2)
-menu()
-while True:
-    time.sleep(300)
-    send(future_msg())
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=port), daemon=True).start()
+    time.sleep(2)
+    menu()
+    while True:
+        time.sleep(300)
+        send(future_msg())
