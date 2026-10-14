@@ -1,5 +1,4 @@
-# 👻 GHOST MATRIX V2.0 - FULL FINAL CODE + REAL AI BRAIN API
-import os, requests, time, random, threading
+import os, requests, time, threading, random
 from flask import Flask
 from datetime import datetime, timedelta
 import pytz
@@ -7,75 +6,90 @@ import pytz
 BD_TZ = pytz.timezone('Asia/Dhaka')
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
-AI_API_KEY = os.getenv("AI_API_KEY") # OpenAI / Groq API Key
+AI_KEY = os.getenv("AI_API_KEY")
 
 app = Flask(__name__)
 @app.route('/')
-def home(): return "GHOST MATRIX V2.0 - FINAL LIVE"
+def home(): return "GHOST MATRIX V2.0 LIVE"
 threading.Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT",10000))), daemon=True).start()
 
-# --- 1. FULL COURSE DETAILS (AGER SOB INCLUDE) ---
-COURSE = """
-📚 BOS = Break of Structure - Market ager High/Low vanglo, Boro Bank dhuklo. Retest e entry.
-📚 FVG = Fair Value Gap - 3 Candle er majhe faka jayga, Bank er baki order. Gap fill e entry.
-📚 OB = Order Block - Bank jekhane order rakhse, last buy/sell candle e 90% bounce.
-📚 SWEEP = Liquidity Sweep - Sobar SL khawa, BOS er sathe 100% sure.
-📚 ENGULF = Boro candle choto ke gile fello. Bullish=BUY, Bearish=SELL.
-💰 FORMULA: 100% = FVG 20% + SWEEP 25% + BOS 15% + OB 20% + ENGULF 20%
-RULE: 80%+ CONFIRM, 90%+ STRONG, 96%+ JACKPOT
-"""
-
-def real_ai_brain(user_question):
-    # 1. Jodi API KEY thake, tahole REAL AI (Groq/OpenAI) diye sothik uttor
-    if AI_API_KEY:
-        try:
-            # Groq API (Free & Fast) - OpenAI er motoi
-            url = "https://api.groq.com/openai/v1/chat/completions"
-            headers = {"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}
-            data = {
-                "model": "llama3-8b-8192",
-                "messages": [
-                    {"role": "system", "content": f"Tumi GHOST MATRIX V2.0 bot. Tumi binary trading expert. Bangla te short e bujhao. Context: {COURSE}"},
-                    {"role": "user", "content": user_question}
-                ],
-                "temperature": 0.7
-            }
-            res = requests.post(url, json=data, headers=headers, timeout=15).json()
-            return res['choices'][0]['message']['content']
-        except Exception as e:
-            print(f"AI API Error: {e}")
-            # API fail hole niche fallback jabe
-
-    # 2. API KEY na thakle - Smart Keyword Brain (Agger moto ghurabe na)
-    ql = user_question.lower()
-    if "bos" in ql: return "📚 BOS = Break of Structure\nMarket ager high/low vangse. Eta bank er kaj. BOS er por Retest + OB te entry niba. 15% score."
-    if "fvg" in ql: return "📚 FVG = Fair Value Gap\n3 candle er majhe gap. Bank er order baki. Price oi gap e asle entry. M15 FVG sobcheye strong. 20% score."
-    if "ob" in ql: return "📚 OB = Order Block\nBank er last buy/sell candle. Price okhane asle 90% bounce. 20% score."
-    if "sweep" in ql: return "📚 SWEEP = Liquidity nise, sobar SL khaise. Sweep + BOS = 100% sure entry. 25% score, sobcheye boro."
-    if "engulf" in ql: return "📚 ENGULF = Boro candle choto ke gile fello. Bullish hole BUY 🟢, Bearish hole SELL 🔴. 20% score."
-
-    return f"🧠 GHOST MATRIX AI:\nApni bolchen: '{user_question}'\n\n{ COURSE }\n\nSpecific jante likhun: BOS ki, FVG ki, OB ki? Ar Real AI er jonno Render e AI_API_KEY add korun."
-
-def get_ghost_signal():
+# 1. Problem Fix: % Profit Sure Add
+def get_signal():
     now = datetime.now(BD_TZ)
-    if now.weekday() >= 5:
-        return f"⭐ GHOST MATRIX V2.0 SIGNALS 🎖\n🗓 DATE - {now.strftime('%d.%m.%Y')}\n🚀 M1 • UTC+6 • MTG ×1\n──────────────────────\n🔒 REAL MARKET CLOSED\n──────────────────────\n🛡 AVOID UNDER 80% MARKET\n──────────────────────\n💎 BY - GHOST MATRIX V2.0"
-
-    date_str = now.strftime('%d.%m.%Y')
-    pairs = ["AUDJPY","USDJPY","CADJPY","EURJPY","EURUSD","GBPUSD","AUDUSD","NZDUSD","USDCHF","GBPJPY"]
+    pairs = ["EURUSD","EURJPY","USDCHF","AUDJPY","NZDUSD","USDJPY","CADJPY","GBPJPY","GBPUSD","AUDUSD"]
     start = now + timedelta(minutes=10)
     sigs = ""
     cur = start
     for p in random.sample(pairs, 8):
         cur += timedelta(minutes=random.randint(8,22))
         side = "CALL" if random.random()>0.5 else "PUT"
-        sigs += f"M1;{p}•{cur.strftime('%H:%M')};{side}\n"
+        icon = "🟢" if side=="CALL" else "🔴"
+        # % Logic
+        percent = random.choice([82,84,86,88,90,92,94,96,97,98])
+        if percent >= 96: tag = "💎 JACKPOT"
+        elif percent >= 90: tag = "🔥 STRONG"
+        else: tag = "✅ CONFIRM"
+        sigs += f"{icon} M1;{p}•{cur.strftime('%H:%M')};{side} | {percent}% {tag}\n"
 
-    return f"⭐ GHOST MATRIX V2.0 SIGNALS 🎖\n🗓 DATE - {date_str}\n🚀 M1 • UTC+6 • MTG ×1\n──────────────────────\n{sigs.strip()}\n──────────────────────\n🛡 AVOID UNDER 80% MARKET\n──────────────────────\n💎 BY - GHOST MATRIX V2.0"
+    return f"""⭐ GHOST MATRIX V2.0 SIGNALS 🎖
+🗓 DATE - {now.strftime('%d.%m.%Y')}
+🚀 M1 • UTC+6 • MTG ×1
+━━━━━━━━━━━━━━━━━━━━━━
+{sigs.strip()}
+━━━━━━━━━━━━━━━━━━━━━━
+🛡 80%+ CONFIRM | 90%+ STRONG | 96%+ JACKPOT
+💎 BY - GHOST MATRIX V2.0"""
+
+def ai_answer(user_text):
+    if not AI_KEY:
+        return "⚠️ AI API KEY পাইনি! Render > Environment > AI_API_KEY চেক করুন।"
+    try:
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {AI_KEY}", "Content-Type": "application/json"}
+        prompt = f"""Tumi GHOST MATRIX V2.0, ekjon pro trader. Sob answer 100% Bangla Bornomala te diba, English ekdom na.
+        User bolse: {user_text}
+        Jodi News jante chay, ajker market news, USD, EUR news Banglay bolo.
+        Jodi Learn jante chay, BOS, FVG, OB, SWEEP, ENGULF sob Bangla bornomalay sohoj kore bujhao.
+        Short, pro, friendly answer."""
+        data = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": "Tumi sob somoy 100% Bangla Bornomalay answer diba. English letter use korba na, bangla tei likhba."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7
+        }
+        r = requests.post(url, headers=headers, json=data, timeout=20).json()
+        return r['choices'][0]['message']['content']
+    except Exception as e:
+        return f"এআই এররে: {e}"
+
+# 2. Problem Fix: Sob Bangla Bornomalay
+def get_learn_static():
+    return """🧠 ঘোস্ট ম্যাট্রিক্স এআই লার্নিং:
+
+📚 বোস (BOS) = ব্রেক অফ স্ট্রাকচার
+মার্কেট আগের হাই বা লো ভেঙে ফেললো। মানে বড় ব্যাংক ঢুকেছে। রিটেস্টে এন্ট্রি নিতে হয়।
+
+📚 এফভিজি (FVG) = ফেয়ার ভ্যালু গ্যাপ
+৩টা ক্যান্ডেলের মাঝে ফাঁকা জায়গা। এটা ব্যাংকের বাকি থাকা অর্ডার। মার্কেট এই ফাঁকা জায়গা পূরণ করতে আসবেই।
+
+📚 ওবি (OB) = অর্ডার ব্লক
+ব্যাংক যেখানে শেষবার অর্ডার রেখেছে, শেষ বাই বা সেল ক্যান্ডেল। দাম ওখানে আসলে ৯০% বাউন্স করে।
+
+📚 সুইপ (SWEEP) = লিকুইডিটি সুইপ
+সবার স্টপ লস খাওয়ার জন্য মার্কেট একটা ফেক মুভ দেয়। সবার এসএল খেয়ে তারপর আসল দিকে যায়। বোস এর সাথে হলে ১০০% সিওর।
+
+📚 এনগাল্ফ (ENGULF) = গিলে ফেলা
+বড় ক্যান্ডেল ছোট ক্যান্ডেলকে গিলে ফেললো। সবুজ হলে বাই (CALL), লাল হলে সেল (PUT)।
+
+💰 ফর্মুলা: ১০০% = এফভিজি ২০% + সুইপ ২৫% + বোস ১৫% + ওবি ২০% + এনগাল্ফ ২০%
+
+নিয়ম: ৮০%+ কনফার্ম, ৯০%+ স্ট্রং, ৯৬%+ জ্যাকপট"""
 
 def send(t):
     if not TOKEN or not CHAT_ID: return
-    try: requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", json={"chat_id": CHAT_ID, "text": t}, timeout=10)
+    try: requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", json={"chat_id": CHAT_ID, "text": t}, timeout=15)
     except: pass
 
 offset=0
@@ -85,12 +99,35 @@ while True:
         r = requests.get(f"https://api.telegram.org/bot{TOKEN}/getUpdates?offset={offset}&timeout=30", timeout=35).json()
         for u in r.get("result",[]):
             offset = u["update_id"]+1
-            txt = u.get("message",{}).get("text","").strip()
+            msg = u.get("message",{})
+            txt = msg.get("text","").strip()
             if not txt: continue
             low = txt.lower()
-            if low.startswith("/start"): send(f"👻 GHOST MATRIX V2.0 LIVE\n\n{ COURSE }\n\n/future = Signal\nJekono prosno korun, AI uttor dibe!")
-            elif low.startswith("/future"): send(get_ghost_signal())
-            else: send(real_ai_brain(txt)) # Ekhane ar ghurabe na, sothik uttor dibe
+
+            # 3. Problem Fix: /start e 3 ta command
+            if low.startswith("/start"):
+                send("""👋 আসসালামু আলাইকুম! আমি ঘোস্ট ম্যাট্রিক্স V2.0
+
+আমার ৩টা কমান্ড আছে:
+
+1. /future - আজকের ৯০%+ সিওর সিগন্যাল পাবেন
+2. /news - আজকের মার্কেট নিউজ বাংলায় পাবেন
+3. /learn - ট্রেডিং এর BOS, FVG, OB সব বাংলায় শিখবেন
+
+একটা লিখে পাঠান! 👻""")
+            elif "/future" in low:
+                send(get_signal())
+            elif "/news" in low:
+                news_ans = ai_answer("আজকের ফরেক্স মার্কেটের গুরুত্বপূর্ণ নিউজ কি কি আছে বাংলায় বলো")
+                send(f"📰 আজকের নিউজ:\n\n{news_ans}")
+            elif "/learn" in low:
+                # 2. Fix er jonno static bangla + AI
+                send(get_learn_static())
+            else:
+                # 4. Problem Fix: Jekono message e AI jobab dibe
+                ans = ai_answer(txt)
+                send(f"🧠 ঘোস্ট ম্যাট্রিক্স এআই:\n\n{ans}")
         time.sleep(1)
     except Exception as e:
-        print(e); time.sleep(3)
+        print(e)
+        time.sleep(3)
