@@ -1,53 +1,83 @@
-import os, requests, time, threading, random
+import os, requests, time, threading
 from flask import Flask
 from datetime import datetime, timedelta
 import pytz
 import base64
+import yfinance as yf  # রিয়েল মার্কেট ডেটার জন্য
 
 BD_TZ = pytz.timezone('Asia/Dhaka')
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 AI_KEY = os.getenv("AI_API_KEY")
 
+# আপনার Quotex Affiliate Link এখানে বসাবেন
+QUOTEX_AFFILIATE_LINK = "https://broker-qx.pro/sign-up/?lid=2384783"
+
 app = Flask(__name__)
 @app.route('/')
-def home(): return "GHOST MATRIX V2.0 (PRICE ACTION PRO) LIVE"
+def home(): return "GHOST MATRIX V2.0 (QUOTEX AFFILIATE PRO) LIVE"
 
 threading.Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000))), daemon=True).start()
 
-def get_signal():
-    now = datetime.now(BD_TZ)
-    pairs = ["EURUSD", "EURJPY", "USDCHF", "AUDJPY", "NZDUSD", "USDJPY", "CADJPY", "GBPJPY", "GBPUSD", "AUDUSD"]
-    start = now + timedelta(minutes=5)
-    sigs = ""
-    cur = start
-    for p in random.sample(pairs, 8):
-        cur += timedelta(minutes=random.randint(5, 15))
-        side = "CALL" if random.random() > 0.5 else "PUT"
-        icon = "🟢" if side == "CALL" else "🔴"
+# Yahoo Finance থেকে রিয়েল ডেটা এনে এআই এর মাধ্যমে সিগন্যাল জেনারেট করার ফাংশন
+def get_real_market_signals():
+    if not AI_KEY:
+        return "⚠️ AI API KEY পাওয়া যায়নি!"
+    try:
+        tickers = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X", "USDCAD=X"]
+        market_summary = ""
         
-        percent = random.choice([85, 88, 90, 92, 94, 96, 98])
-        if percent >= 96: 
-            tag = "💎 JACKPOT (PRICE ACTION)"
-        elif percent >= 90: 
-            tag = "🔥 STRONG SETUP"
-        else: 
-            tag = "✅ CONFIRM"
-            
-        sigs += f"{icon} M1;{p}•{cur.strftime('%H:%M')};{side} | {percent}% {tag}\n"
+        for ticker in tickers:
+            data = yf.download(ticker, period="5d", interval="1h", progress=False)
+            if not data.empty:
+                last_row = data.iloc[-1]
+                close_price = float(last_row['Close'].iloc[0]) if hasattr(last_row['Close'], 'iloc') else float(last_row['Close'])
+                market_summary += f"Pair: {ticker.replace('=X','')}, Latest Close Price: {close_price:.4f}\n"
 
-    return f"""⭐ GHOST MATRIX V2.0 (PRICE ACTION SIGNALS) 🎖
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {AI_KEY}", "Content-Type": "application/json"}
+        prompt = f"""Tumi ekjon expert Binary Options (Quotex) Signal Generator. Niche forex market er recent real data dewa holo:
+        {market_summary}
+        
+        Ei data gulo analyze kore 4-5 ti active currency pair er binary options signal (CALL ba PUT) toiri koro. 
+        Format kivabe hobe niche dewa holo:
+        🟢 M1;EURUSD•11:30;CALL | 92% 💎 STRONG
+        🔴 M1;GBPUSD•11:45;PUT | 95% 🔥 JACKPOT
+        
+        Sob somoy 100% Bangla Bornomala use korba, English letter diye kono boro description likhba na, sudhu signal list ti sundor kore sajie diba."""
+
+        data_payload = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": "Tumi ekjon professional trading bot. Sudhu requested format e 100% accurate real signal ba data diba."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.4
+        }
+        
+        response = requests.post(url, headers=headers, json=data_payload, timeout=25)
+        res_json = response.json()
+        
+        if "choices" in res_json:
+            ai_output = res_json["choices"][0]["message"]["content"]
+            now = datetime.now(BD_TZ)
+            return f"""⭐ GHOST MATRIX V2.0 (REAL MARKET SIGNALS) 🎖
 🗓 DATE - {now.strftime('%d.%m.%Y')}
 🚀 M1 • UTC+6 • Quotex MTG ×1
 ━━━━━━━━━━━━━━━━━━━━━━
-{sigs.strip()}
+{ai_output}
 ━━━━━━━━━━━━━━━━━━━━━━
-🛡 প্রাইস অ্যাকশন ও এসএমসি বেসড সিগন্যাল
+🛡 রিয়েল ডেটা ও প্রাইস অ্যাকশন বেসড
+👉 একাউন্ট খুলুন ও ট্রেড করুন: {QUOTEX_AFFILIATE_LINK}
 💎 BY - GHOST MATRIX V2.0"""
+        else:
+            return "⚠️ রিয়েল ডেটা প্রসেস করতে সমস্যা হয়েছে। দয়া করে আবার চেষ্টা করুন।"
+    except Exception as e:
+        return f"সিগন্যাল জেনারেট এরর: {e}"
 
 def ai_answer(user_text):
     if not AI_KEY:
-        return "⚠️ AI API KEY পাওয়া যায়নি! Render > Environment > AI_API_KEY চেক করুন।"
+        return "⚠️ AI API KEY পাওয়া যায়নি!"
     try:
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {"Authorization": f"Bearer {AI_KEY}", "Content-Type": "application/json"}
@@ -70,7 +100,7 @@ def ai_answer(user_text):
         if "choices" in res_json:
             return res_json["choices"][0]["message"]["content"]
         else:
-            return "📰 আজকের নিউজ: মার্কেটে প্রাইস অ্যাকশন রুল মেনে ট্রেড করুন। সাপোর্ট ও রেজিস্ট্যান্স জোন ফলো করুন!"
+            return "📰 আজকের নিউজ: মার্কেটে প্রাইস অ্যাকশন রুল মেনে ট্রেড করুন।"
     except Exception as e:
         return f"এআই এররে: {e}"
 
@@ -120,7 +150,7 @@ def get_learn_static():
     return """🧠 প্রাইস অ্যাকশন ও লার্নিং গাইডলাইন:
 
 📚 ১. সাপোর্ট ও রেজিস্ট্যান্স:
-যেখান থেকে মার্কেট বারবার ধাক্কা খেয়ে ফিরে আসে (Floor & Ceiling)। এখানে পিন বার বা রিজেকশন দেখলে এন্ট্রি নিতে হয়।
+যেখান থেকে মার্কেট বারবার ধাক্কা খেয়ে ফিরে আসে। এখানে পিন বার বা রিজেকশন দেখলে এন্ট্রি নিতে হয়।
 
 📚 ২. বোস (BOS - Break of Structure):
 মার্কেট যখন তার আগের হাই বা লো ভেঙে সামনের দিকে এগিয়ে যায়। এটি শক্তিশালী ট্রেন্ডের লক্ষণ।
@@ -172,17 +202,19 @@ while True:
             low = txt.lower()
 
             if low.startswith("/start"):
-                send("""👋 আসসালামু আলাইকুম! GHOST MATRIX V2.0 (PRICE ACTION PRO)
+                send("""👋 আসসালামু আলাইকুম! GHOST MATRIX V2.0 (QUOTEX AFFILIATE PRO)
 
 COMMANDS:
-1. /future - প্রাইস অ্যাকশন বেসড সিগন্যাল
+1. /future - রিয়েল মার্কেট ডেটা বেসড সিগন্যাল
 2. /news - মার্কেট নিউজ আপডেট
 3. /learn - প্রাইস অ্যাকশন ও এসএমসি শিখুন
 4. 📸 **চার্ট স্ক্রিনশট পাঠান** - প্রাইস অ্যাকশন এনালাইসিস করে সিগন্যাল দিবে!
 
-আপনার কমান্ড দিন অথবা স্ক্রিনশট পাঠান! 👻""")
+👉 ট্রেড শুরু করতে ভিজিট করুন: """ + QUOTEX_AFFILIATE_LINK)
             elif "/future" in low:
-                send(get_signal())
+                send("⏳ রিয়েল মার্কেট ডেটা ফেচ ও অ্যানালিসিস করা হচ্ছে, একটু অপেক্ষা করুন...")
+                signal_text = get_real_market_signals()
+                send(signal_text)
             elif "/news" in low:
                 news_ans = ai_answer("আজকের ফরেক্স মার্কেটের গুরুত্বপূর্ণ নিউজ কি কি আছে বাংলায় বলো")
                 send(f"📰 আজকের নিউজ ও মার্কেট আপডেট:\n\n{news_ans}")
@@ -195,4 +227,3 @@ COMMANDS:
     except Exception as e:
         print(e)
         time.sleep(3)
-
