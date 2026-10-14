@@ -275,7 +275,7 @@ Apnar personal trading assistant prostut!""")
                 send(get_learn_static())
             elif "/risk" in low:
                 send("""💰 1-Minute Money Management & Risk Rules:
-1. Capital er matro 1%-3% diye proti trade shuru korun.
+1. Capital er matro 2%-3% diye proti trade shuru korun.
 2. Martingale (MTG) sorbobhoccho 1 bar use korun.
 3. Tana 3 ti trade loss gele sedin market theke biroti nin.""")
             elif "/stats" in low:
