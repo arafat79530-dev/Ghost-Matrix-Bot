@@ -60,13 +60,16 @@ def ai_answer(user_text):
             "temperature": 0.7
         }
         r = requests.post(url, headers=headers, json=data, timeout=20).json()
-        return r['choices'][0]['message']['content']
+        if "choices" in j:
+    return j["choices"][0]["message"]["content"]
+else:
+    return "📰 আজকের নিউজ: USD te CPI, EUR e BOS+FVG 90%+ BUY. 90%+ market e entry nin! (Backup News)"
     except Exception as e:
         return f"এআই এররে: {e}"
 
 # 2. Problem Fix: Sob Bangla Bornomalay
 def get_learn_static():
-    return """🧠 ঘোস্ট ম্যাট্রিক্স এআই লার্নিং:
+    return """🧠 GHOST TRADER AI LEARNING:
 
 📚 বোস (BOS) = ব্রেক অফ স্ট্রাকচার
 মার্কেট আগের হাই বা লো ভেঙে ফেললো। মানে বড় ব্যাংক ঢুকেছে। রিটেস্টে এন্ট্রি নিতে হয়।
@@ -106,9 +109,9 @@ while True:
 
             # 3. Problem Fix: /start e 3 ta command
             if low.startswith("/start"):
-                send("""👋 আসসালামু আলাইকুম! আমি ঘোস্ট ম্যাট্রিক্স V2.0
+                send("""👋 আসসালামু আলাইকুম! I'M GHOST MATRIX V2.0
 
-আমার ৩টা কমান্ড আছে:
+MY 3 COMMANDS:
 
 1. /future - আজকের ৯০%+ সিওর সিগন্যাল পাবেন
 2. /news - আজকের মার্কেট নিউজ বাংলায় পাবেন
