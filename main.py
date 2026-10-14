@@ -20,7 +20,7 @@ threading.Thread(target=lambda: app.run(host='0.0.0.0', port=int(os.environ.get(
 
 def get_1m_market_signals():
     if not AI_KEY:
-        return "⚠️ AI API KEY পাওয়া যায়নি!"
+        return "⚠️ AI API KEY paoya jayni!"
     try:
         market_summary = ""
         tickers = ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X"]
@@ -40,7 +40,7 @@ def get_1m_market_signals():
         prompt = f"""Tumi ekjon expert 1-Minute Binary Options (Quotex) Signal Generator. Niche market er real-time 1m data dewa holo:
         {market_summary if market_summary else "Market is active with fast 1m volatility."}
         
-        Ei data er opor ভিত্তি করে 1-minute (M1) timeframe er 4-5 ti high accuracy signal (CALL ba PUT) toiri koro. 
+        Ei data er opor vitt kore 1-minute (M1) timeframe er 4-5 ti high accuracy signal (CALL ba PUT) toiri koro. 
         Format strictly ai rokom hobe:
         🟢 M1;EURUSD•11:30;CALL | 94% 💎 JACKPOT
         🔴 M1;GBPUSD•11:45;PUT | 92% 🔥 STRONG
@@ -71,7 +71,7 @@ def get_1m_market_signals():
 🛡 80%+ CONFIRM | 90%+ STRONG | 96%+ JACKPOT
 💎 BY - GHOST MATRIX V2.0"""
         else:
-            return "⚠️ সিগন্যাল জেনারেট করতে সমস্যা হয়েছে।"
+            return "⚠️ Signal generate korte shomossha hoyeche."
     except Exception as e:
         now = datetime.now(BD_TZ)
         return f"""⭐ GHOST MATRIX V2.0 SIGNALS 🎖
@@ -86,11 +86,11 @@ def get_1m_market_signals():
 
 def get_market_news_with_prediction():
     if not AI_KEY:
-        return "⚠️ AI API KEY পাওয়া যায়নি!"
+        return "⚠️ AI API KEY paoya jayni!"
     try:
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {"Authorization": f"Bearer {AI_KEY}", "Content-Type": "application/json"}
-        prompt = """Tumi ekjon expert Forex & Binary Options Fundamental Analyst. Ajker market er major news (jemon USD, EUR, GBP) gulo niye ekta high-probability analysis তৈরি করো।
+        prompt = """Tumi ekjon expert Forex & Binary Options Fundamental Analyst. Ajker market er major news (jemon USD, EUR, GBP) gulo niye ekta high-probability analysis toiri koro.
         Niche dewa format a response dao:
         ১. নিউজের নাম ও সম্ভাব্য সময়:
         ২. প্রিভিয়াস ও ফোরকাস্ট ডেটার তুলনামূলক অবস্থা:
@@ -112,19 +112,19 @@ def get_market_news_with_prediction():
         if "choices" in res_json:
             ans = res_json["choices"][0]["message"]["content"]
             now = datetime.now(BD_TZ)
-            return f"""📰 হাই-প্রোবাবিলিটি নিউজ প্রেডিকশন ও এনালাইসিস ({now.strftime('%d.%m.%Y')}):
+            return f"""📰 High-Probability News Prediction & Analysis ({now.strftime('%d.%m.%Y')}):
 ━━━━━━━━━━━━━━━━━━━━━━
 {ans}
 ━━━━━━━━━━━━━━━━━━━━━━
-💡 হাই উইনিং টিপস: নিউজ প্রকাশের ঠিক ১ মিনিট আগে ও পরে ট্রেড থেকে দূরে থাকুন, ক্যান্ডেল স্ট্যাবল হলে তারপর এন্ট্রি নিন!"""
+💡 High Winning Tips: News prokash howar thik 1 minute age o pore trade theke dure thakun!"""
         else:
-            return "📰 আজকের মার্কেটে বড় কোনো ইমপ্যাক্ট নিউজ নেই, পিওর প্রাইস অ্যাকশন ফলো করুন।"
+            return "📰 Ajker market e boro kono impact news nei, pure price action follow korun."
     except Exception as e:
-        return f"নিউজ প্রেডিকশন এরর: {e}"
+        return f"News prediction error: {e}"
 
 def ai_answer(user_text):
     if not AI_KEY:
-        return "⚠️ AI API KEY পাওয়া যায়নি!"
+        return "⚠️ AI API KEY paoya jayni!"
     try:
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {"Authorization": f"Bearer {AI_KEY}", "Content-Type": "application/json"}
@@ -144,13 +144,13 @@ def ai_answer(user_text):
         if "choices" in res_json:
             return res_json["choices"][0]["message"]["content"]
         else:
-            return "প্রাইস অ্যাকশন রুল মেনে ট্রেড করুন।"
+            return "Price action rule mene trade korun."
     except Exception as e:
-        return f"এআই এররে: {e}"
+        return f"AI error: {e}"
 
 def analyze_chart_image(image_bytes):
     if not AI_KEY:
-        return "⚠️ AI API KEY পাওয়া যায়নি!"
+        return "⚠️ AI API KEY paoya jayni!"
     try:
         base64_image = base64.b64encode(image_bytes).decode('utf-8')
         url = "https://api.groq.com/openai/v1/chat/completions"
@@ -163,7 +163,7 @@ def analyze_chart_image(image_bytes):
                     "content": [
                         {
                             "type": "text", 
-                            "text": "তুমি একজন ১-মিনিট প্রাইস অ্যাকশন মাস্টার ট্রেডার। এই ১ মিনিটের চার্ট স্ক্রিনশটটি খুব ভালোভাবে এনালাইসিস করে নিচে পয়েন্ট আকারে বাংলায় উত্তর দাও:\n১. ১ মিনিটের ক্যান্ডেল অনুযায়ী বর্তমান ট্রেন্ড কি?\n২. কোনো ফেক আউট বা পিন বার আছে কি না?\n৩. ব্রেক অফ স্ট্রাকচার বা এফভিজি দেখা যাচ্ছে কি না?\n৪. পরবর্তী ১ মিনিটের ক্যান্ডেলের জন্য কি CALL নাকি PUT এন্ট্রি নেওয়া উচিত এবং কেন?"
+                            "text": "Tumi ekjon 1-minute price action master trader. Ei 1 minute chart screenshot ti bhabe analysis kore niche point akare বাংলায় uttor dao:\n1. 1 minute candle onujayi bortoman trend ki?\n2. Kono fake out ba pin bar ache ki na?\n3. Break of structure ba FVG dekha jacche ki na?\n4. Poroborti 1 minute candle er jonno CALL naki PUT entry neoa uchit ebong keno?"
                         },
                         {
                             "type": "image_url",
@@ -180,21 +180,29 @@ def analyze_chart_image(image_bytes):
         if "choices" in res_json:
             return res_json["choices"][0]["message"]["content"]
         else:
-            return "⚠️ চার্ট অ্যানালিসিস করতে সমস্যা হয়েছে।"
+            return "⚠️ Chart analysis korte shomossha hoyeche."
     except Exception as e:
-        return f"ভিশন এআই এরর: {e}"
+        return f"Vision AI error: {e}"
 
 def get_learn_static():
-    return """🧠 ১-মিনিট প্রাইস অ্যাকশন লার্নিং গাইডলাইন:
+    return """🧠 Advanced Price Action & SMC Guideline:
 
-📚 ১. ১-মিনিট ক্যান্ডেল সাইকোলজি:
-১ মিনিটে মার্কেটের মুভমেন্ট খুব দ্রুত হয়। বড় ক্যান্ডেলের পর ছোট উইক দেখলে রিভার্সালের জন্য প্রস্তুত থাকতে হবে।
+📚 ১. Market Structure & BOS:
+Market jokhon urdhhomukhi thake tokhon higher high o higher low toiri kore. Dam ager prodhan high bhenge opore gele take BOS bole.
 
-📚 ২. ফেক ব্রেকআউট:
-১ মিনিটে প্রায়ই সাপোর্ট বা রেজিস্ট্যান্স ফেক ব্রেক করে। তাই একটু ধৈর্য ধরে ক্যান্ডেল ক্লোজ হওয়ার অপেক্ষা করতে হবে।
+📚 ২. Order Block (OB):
+Boro bank ba institution gulor boro order bosanor age market e je sesh opposite candle toiri hoy, setai Order Block.
 
-📚 ৩. মার্টিনগেল (MTG) ম্যানেজমেন্ট:
-১ মিনিটে ট্রেড করার সময় প্রথম ট্রেড লস গেলে এমটিজি ×১ ব্যবহার করুন, সর্বোচ্চ ৩ ধাপের বেশি যাবেন না।"""
+📚 ৩. Fair Value Gap (FVG):
+Market e druto impulsive movement er karone candle gular majkhane faka jayga toiri hoy, ja puron korte market pore fire ase.
+
+📚 ৪. Liquidity Sweep & Pin Bar:
+1 minute e support ba resistance er samne giye retail trader der stop loss hit kore market jokhon ghure jay, take liquidity sweep bole.
+
+🔧 সেরা প্র্যাকটিস টুলস (Practice Tools):
+1. TradingView (tradingview.com) - Real-time 1m chart o drawing practice er jonno.
+2. Investing.com / Forex Factory - Live economic calendar o news track korar jonno.
+3. Bot Vision AI - Je kono chart screenshot pathiye instantly BOS/FVG check korar jonno."""
 
 def send(t):
     if not TOKEN or not CHAT_ID: 
@@ -221,7 +229,7 @@ while True:
                 continue
             
             if "photo" in msg:
-                send("🔍 ১-মিনিট চার্ট স্ক্যান ও প্রাইস অ্যাকশন অ্যানালিসিস করা হচ্ছে...")
+                send("🔍 1-minute chart scan o price action analysis kora hocche...")
                 photo_file_id = msg["photo"][-1]["file_id"]
                 file_path_res = requests.get(f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={photo_file_id}", timeout=15).json()
                 if "result" in file_path_res:
@@ -230,7 +238,7 @@ while True:
                     img_data = requests.get(img_url, timeout=20).content
                     
                     analysis_result = analyze_chart_image(img_data)
-                    send(f"📊 ১-মিনিট চার্ট অ্যানালিসিস রেজাল্ট:\n\n{analysis_result}")
+                    send(f"📊 1-Minute Chart Analysis Result:\n\n{analysis_result}")
                 continue
 
             txt = msg.get("text", "").strip()
@@ -239,46 +247,47 @@ while True:
             low = txt.lower()
 
             if low.startswith("/start"):
-                send("""👋 আসসালামু আলাইকুম! GHOST MATRIX V2.0 (1M PRO TRADER)
+                send("""👋 Assalamu Alaikum! GHOST MATRIX V2.0 (1M PRO TRADER)
 
 COMMANDS:
-1. /future - ১-মিনিট প্রফেশনাল সিগন্যাল লিস্ট
-2. /news - নিউজ প্রেডিকশন ও মার্কেট এনালাইসিস
-3. /learn - ১-মিনিট প্রাইস অ্যাকশন ও গাইডলাইন
-4. /stats - আজকের উইন/লস জার্নাল দেখুন
-5. /risk - মানি ম্যানেজমেন্ট রুলস
-6. 📸 **চার্ট স্ক্রিনশট পাঠান** - ১-মিনিট চার্ট এনালাইসিস করে দিবে!
+1. /future - 1-Minute Professional Signal List
+2. /news - News Prediction & Market Analysis
+3. /learn - Advanced Price Action, SMC & Practice Tools
+4. /stats - Today's Win/Loss Journal
+5. /risk - Money Management Rules
+6. 📸 **Chart Screenshot Pathan** - 1-Minute Chart Analysis kore dibe!
 
-আপনার পার্সোনাল ট্রেডিং অ্যাসিস্ট্যান্ট প্রস্তুত!""")
+Apnar personal trading assistant prostut!""")
             elif "/future" in low:
-                send("⏳ ১-মিনিটের প্রফেশনাল সিগন্যাল তৈরি করা হচ্ছে...")
+                send("⏳ 1-Minute er professional signal toiri kora hocche...")
                 signal_text = get_1m_market_signals()
                 send(signal_text)
             elif "/news" in low:
-                send("⏳ ফোরকাস্ট ও অ্যাকচুয়াল ডেটা বিশ্লেষণ করে নিউজ প্রেডিকশন তৈরি করা হচ্ছে...")
+                send("⏳ Forecast o actual data analisi kore news prediction toiri kora hocche...")
                 news_ans = get_market_news_with_prediction()
                 send(news_ans)
             elif "/learn" in low:
                 send(get_learn_static())
             elif "/risk" in low:
-                send("""💰 ১-মিনিট মানি ম্যানেজমেন্ট ও রিস্ক রুলস:
-1. ক্যাপিটালের মাত্র ২%-৩% দিয়ে প্রতি ট্রেড শুরু করুন।
-2. মার্টিনগেল (MTG) সর্বোচ্চ ১ বার ব্যবহার করুন।
-3. টানা ৩টি ট্রেড লস গেলে সেদিন মার্কেট থেকে বিরতি নিন।""")
+                send("""💰 1-Minute Money Management & Risk Rules:
+1. Capital er matro 2%-3% diye proti trade shuru korun.
+2. Martingale (MTG) sorbobhoccho 1 bar use korun.
+3. Tana 3 ti trade loss gele sedin market theke biroti nin.""")
             elif "/stats" in low:
                 total = user_stats["wins"] + user_stats["losses"]
                 win_rate = (user_stats["wins"] / total * 100) if total > 0 else 0
-                send(f"📊 আপনার পার্সোনাল ট্রেডিং স্ট্যাটস:\n✅ জয়: {user_stats['wins']}\n❌ লস: {user_stats['losses']}\n📈 উইন রেট: {win_rate:.1f}%")
+                send(f"📊 Apnar Personal Trading Stats:\n✅ Win: {user_stats['wins']}\n❌ Loss: {user_stats['losses']}\n📈 Win Rate: {win_rate:.1f}%")
             elif low.startswith("/win"):
                 user_stats["wins"] += 1
-                send("✅ একটি উইন রেকর্ড করা হয়েছে! /stats লিখে স্ট্যাটস দেখুন।")
+                send("✅ Ekta win record kora hoyeche! /stats likhe stats dekhun.")
             elif low.startswith("/loss"):
                 user_stats["losses"] += 1
-                send("❌ একটি লস রেকর্ড করা হয়েছে! /stats লিখে স্ট্যাটস দেখুন।")
+                send("❌ Ekta loss record kora hoyeche! /stats likhe stats dekhun.")
             else:
                 ans = ai_answer(txt)
-                send(f"🧠 ঘোস্ট ম্যাট্রিক্স এআই:\n\n{ans}")
+                send(f"🧠 Ghost Matrix AI:\n\n{ans}")
         time.sleep(1)
     except Exception as e:
         print(e)
         time.sleep(3)
+
