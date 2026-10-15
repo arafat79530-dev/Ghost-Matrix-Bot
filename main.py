@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 import requests
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
 
 try:
@@ -1563,6 +1563,7 @@ def health():
         "bot_token_configured": bool(BOT_TOKEN),
         "chat_id_configured": bool(CHAT_ID),
         "twelve_data_key_configured": bool(TWELVE_DATA_API_KEY),
+        "ai_api_key_configured": bool(AI_API_KEY),
         "database_url_configured": bool(DATABASE_URL),
         "catalog_count": state["catalog_count"],
         "last_scan_utc": state["last_scan_utc"],
@@ -1585,6 +1586,207 @@ def status_route():
         "quotex_verified": False,
     }), 200
 
+
+
+@app.get("/api/dashboard")
+def api_dashboard():
+    """Read-only dashboard summary; never returns secrets."""
+    try:
+        db_ok, db_msg = init_database()
+    except Exception as exc:
+        db_ok, db_msg = False, str(exc)
+    wins, losses, total = get_stats()
+    return jsonify({
+        "app": "GHOST MATRIX", "status": "running",
+        "data_source": "Twelve Data external feed", "quotex_verified": False,
+        "twelve_data_key_configured": bool(TWELVE_DATA_API_KEY),
+        "bot_token_configured": bool(BOT_TOKEN), "chat_id_configured": bool(CHAT_ID),
+        "database_ok": bool(db_ok), "database_message": str(db_msg),
+        "catalog_count": len(get_catalog()), "last_scan_utc": state.get("last_scan_utc"),
+        "last_error": state.get("last_error"), "api_calls_today": db_api_calls_today(),
+        "daily_budget": DAILY_CREDIT_BUDGET, "signals": fetch_recent_signals(50),
+        "stats": {"wins": wins, "losses": losses, "total": total}
+    }), 200
+
+@app.get("/api/signals")
+def api_signals():
+    try:
+        limit = max(1, min(100, int(request.args.get("limit", "20"))))
+    except (TypeError, ValueError):
+        limit = 20
+    return jsonify({"signals": fetch_recent_signals(limit), "source": "Twelve Data external feed", "quotex_verified": False}), 200
+
+@app.get("/api/stats")
+def api_stats():
+    wins, losses, total = get_stats()
+    return jsonify({"wins": wins, "losses": losses, "total": total, "quotex_verified": False,
+                    "note": "Only manually recorded outcomes are counted; this is not a guaranteed win rate."}), 200
+
+# ----------------------- Mini App API endpoints -----------------------
+# Lightweight in-process rate limits protect paid/external API usage. For a
+# public deployment, enable Telegram initData validation or an app access token.
+_api_buckets: dict[str, list[float]] = {}
+_api_buckets_lock = threading.Lock()
+_last_app_scan = 0.0
+
+def _api_allowed(bucket: str, limit: int, window: int = 60) -> bool:
+    now = time.monotonic()
+    key = f"{request.remote_addr or 'unknown'}:{bucket}"
+    with _api_buckets_lock:
+        recent = [stamp for stamp in _api_buckets.get(key, []) if now - stamp < window]
+        if len(recent) >= limit:
+            _api_buckets[key] = recent
+            return False
+        recent.append(now)
+        _api_buckets[key] = recent
+        return True
+
+@app.get("/api/markets")
+def api_markets():
+    return jsonify({"markets": get_catalog(), "source": "configured allowlist", "quotex_verified": False})
+
+@app.post("/api/scan")
+def api_scan_one():
+    global _last_app_scan
+    if not _api_allowed("scan", 4, 60):
+        return jsonify({"error": "Scan limit reached. এক মিনিট পরে আবার চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
+    symbol = str(body.get("symbol", "")).strip().upper()
+    allowed = {str(item.get("symbol", "")).upper() for item in get_catalog()}
+    if not symbol or symbol not in allowed:
+        return jsonify({"error": "তালিকা থেকে একটি valid market নির্বাচন করো।"}), 400
+    with _api_buckets_lock:
+        now = time.monotonic()
+        if now - _last_app_scan < 8:
+            return jsonify({"error": "API limit বজায় রাখতে ৮ সেকেন্ড অপেক্ষা করো।"}), 429
+        _last_app_scan = now
+    if not TWELVE_DATA_API_KEY:
+        return jsonify({"error": "TWELVE_DATA_API_KEY Render Environment-এ সেট নেই।"}), 503
+    if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+        return jsonify({"error": "দৈনিক API safety budget শেষ হয়েছে।"}), 429
+    try:
+        result = scan_one_symbol(symbol)
+        candle = result.get("candle") or {}
+        return jsonify({
+            "result": {k: v for k, v in result.items() if k not in ("candle", "backtest")},
+            "candle_time": bd_time(candle.get("time")),
+            "backtest": result.get("backtest", {}),
+            "source": "Twelve Data external feed", "quotex_verified": False
+        })
+    except Exception as exc:
+        log.warning("Mini App scan failed for %s: %s", symbol, exc)
+        state["last_error"] = str(exc)[:240]
+        return jsonify({"error": f"Market data পাওয়া যায়নি: {str(exc)[:180]}"}), 502
+
+@app.post("/api/ask")
+def api_ask():
+    if not _api_allowed("ask", 8, 60):
+        return jsonify({"error": "অনেক request হয়েছে। এক মিনিট পরে চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
+    question = str(body.get("question", "")).strip()
+    if not question:
+        return jsonify({"error": "প্রশ্ন লিখো।"}), 400
+    if len(question) > 3000:
+        return jsonify({"error": "প্রশ্ন ৩০০০ অক্ষরের মধ্যে রাখো।"}), 400
+    return jsonify({"answer": ai_answer(question), "provider": "configured AI service" if AI_API_KEY else "AI not configured"})
+
+@app.post("/api/analyze-image")
+def api_analyze_image():
+    if not _api_allowed("vision", 4, 60):
+        return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৪টি screenshot analysis। পরে আবার চেষ্টা করো।"}), 429
+    upload = request.files.get("image")
+    if upload is None or not upload.filename:
+        return jsonify({"error": "একটি chart screenshot upload করো।"}), 400
+    if not AI_API_KEY:
+        return jsonify({"error": "AI_API_KEY Render Environment-এ সেট নেই; screenshot analysis চালু নয়।"}), 503
+    raw = upload.read(12 * 1024 * 1024 + 1)
+    if not raw or len(raw) > 12 * 1024 * 1024:
+        return jsonify({"error": "ছবি খালি অথবা ১২ MB-এর বেশি। ছোট screenshot upload করো।"}), 413
+    try:
+        im = Image.open(io.BytesIO(raw))
+        im.verify()
+        mime = upload.mimetype if upload.mimetype in ("image/jpeg", "image/png", "image/webp") else "image/jpeg"
+        encoded = base64.b64encode(raw).decode("ascii")
+        payload = {
+            "model": GROQ_VISION_MODEL,
+            "messages": [
+                {"role": "system", "content": "You are a cautious chart-reading tutor. Answer in Bengali. Analyze only visible screenshot evidence: asset/timeframe if visible, trend, candle structure, support/resistance, uncertainty and missing context. Do not invent prices, claim broker verification, give guaranteed CALL/PUT or promise profit. If unclear say NO TRADE / insufficient evidence."},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "এই screenshot-এর বিস্তারিত বাংলা analysis দাও: দৃশ্যমান trend, swing structure, support/resistance, candle patterns, কী confirm করতে হবে, এবং কোন তথ্য দেখা যাচ্ছে না। নিশ্চিত prediction দেবে না।"},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
+                ]}
+            ], "temperature": 0.1, "max_completion_tokens": 900
+        }
+        response = session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=50)
+        response.raise_for_status()
+        answer = response.json()["choices"][0]["message"]["content"].strip()
+        return jsonify({"analysis": answer, "warning": "Screenshot-based educational analysis only; not a Quotex-verified signal."})
+    except Exception as exc:
+        log.warning("Mini App screenshot analysis failed: %s", exc)
+        return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। image format, AI_API_KEY, vision model ও provider limit পরীক্ষা করো।"}), 502
+
+@app.get("/api/news")
+def api_news():
+    if not _api_allowed("news", 10, 60):
+        return jsonify({"error": "একটু পরে আবার চেষ্টা করো।"}), 429
+    try:
+        days = max(1, min(14, int(request.args.get("days", "7"))))
+        events = get_economic_calendar(days)
+        clean = []
+        for e in events[:50]:
+            dt = e.get("datetime")
+            clean.append({"datetime": dt.isoformat() if isinstance(dt, datetime) else None,
+                          "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if isinstance(dt, datetime) else "সময় যাচাই করা যায়নি",
+                          "name": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"),
+                          "forecast": e.get("forecast"), "previous": e.get("previous"), "actual": e.get("actual"), "url": e.get("url")})
+        return jsonify({"events": clean, "days": days, "source": NEWS_SOURCE_URL, "timezone": "Asia/Dhaka"})
+    except Exception as exc:
+        log.warning("Mini App news request failed: %s", exc)
+        return jsonify({"error": "লাইভ economic calendar এখন পাওয়া যায়নি। পরে আবার চেষ্টা করো।", "source": NEWS_SOURCE_URL}), 502
+
+@app.get("/api/lessons")
+def api_lessons():
+    lessons = [{"key": x["key"], "title": x["title"], "caption": x["caption"], "image": f"/api/lessons/{x['key']}/image"} for x in PA_LESSONS]
+    return jsonify({"lessons": lessons, "total": len(lessons), "note": "Illustrative examples, not live market data."})
+
+@app.get("/api/lessons/<lesson_key>/image")
+def api_lesson_image(lesson_key: str):
+    lesson = next((x for x in PA_LESSONS if x["key"] == lesson_key), None)
+    if lesson is None:
+        return jsonify({"error": "Lesson not found"}), 404
+    return app.response_class(make_price_action_chart(lesson), mimetype="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+@app.post("/api/result")
+def api_result():
+    if not _api_allowed("result", 12, 60):
+        return jsonify({"error": "একটু পরে আবার চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
+    try:
+        signal_id = int(body.get("id"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Signal ID সঠিক নয়।"}), 400
+    outcome = str(body.get("result", "")).upper()
+    if outcome not in ("WIN", "LOSS"):
+        return jsonify({"error": "Result WIN বা LOSS হতে হবে।"}), 400
+    updated, signal = update_signal_result(outcome, signal_id)
+    if not updated:
+        return jsonify({"error": "এই ID-এর pending signal পাওয়া যায়নি।"}), 404
+    return jsonify({"ok": True, "signal": signal, "note": "ম্যানুয়ালি দেওয়া ফল; Quotex থেকে স্বয়ংক্রিয়ভাবে যাচাই করা হয়নি।"})
+
+@app.post("/api/news/analyze")
+def api_news_analyze():
+    if not _api_allowed("news_analyze", 8, 60):
+        return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৮টি news analysis; পরে আবার চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
+    currency = str(body.get("currency", "")).strip().upper()
+    event = str(body.get("event", "")).strip()
+    actual = str(body.get("actual", "")).strip()
+    forecast = str(body.get("forecast", "")).strip()
+    previous = str(body.get("previous", "")).strip()
+    if not currency or not event or not actual or not forecast:
+        return jsonify({"error": "Currency, event, actual ও forecast পূরণ করো।"}), 400
+    prompt = (f"Economic news explanation in Bengali. Currency: {currency}; event: {event}; actual: {actual}; forecast: {forecast}; previous: {previous or 'not supplied'}. Explain actual-vs-forecast carefully, likely first-order currency interpretation, what could reverse the reaction, and uncertainty. Do not claim current market reaction without live price data.")
+    return jsonify({"analysis": ai_answer(prompt), "note": "Economic interpretation only; current price reaction is not verified."})
 
 def start_background_threads() -> None:
     # Avoid duplicate start in environments that import the module more than once.
