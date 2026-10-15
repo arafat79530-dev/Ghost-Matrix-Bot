@@ -311,19 +311,34 @@ def telegram_call(method: str, payload: Optional[dict] = None, timeout: int = 20
     return data.get("result")
 
 
-def send_message(text: str, chat_id: Optional[str] = None) -> None:
+def send_message(
+    text: str,
+    chat_id: Optional[str] = None,
+    parse_mode: Optional[str] = None,
+) -> None:
+    """Send a Telegram text message; HTML formatting is optional per message."""
     target = str(chat_id or CHAT_ID).strip()
     if not target or not BOT_TOKEN:
         log.info("Telegram message skipped: BOT_TOKEN/CHAT_ID missing")
         return
-    # Telegram message limit is 4096 characters; leave margin.
-    for start in range(0, len(text), 3900):
+
+    # Keep messages under Telegram's 4096-character limit. HTML-formatted
+    # news cards are short enough to send in one piece without splitting tags.
+    if len(text) > 3900 and parse_mode:
+        log.error("Refusing to split a formatted Telegram message; message too long")
+        return
+
+    chunks = [text] if parse_mode else [text[i:i + 3900] for i in range(0, len(text), 3900)]
+    for chunk in chunks:
+        payload = {
+            "chat_id": target,
+            "text": chunk,
+            "disable_web_page_preview": True,
+        }
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
         try:
-            telegram_call("sendMessage", {
-                "chat_id": target,
-                "text": text[start:start + 3900],
-                "disable_web_page_preview": True,
-            }, timeout=20)
+            telegram_call("sendMessage", payload, timeout=20)
         except Exception as exc:
             log.error("Telegram send failed: %s", exc)
             break
@@ -1102,23 +1117,39 @@ def analyze_manual_news(data: dict) -> tuple[str, str, str]:
 
 
 def format_news_analysis(data: dict) -> str:
+    """Format news analysis as copyable Telegram HTML text, never as a photo."""
+    import html
+
     direction, explanation, note = analyze_manual_news(data)
-    badge = "🔵  PAID"
-    result_icon = "🟢" if direction.startswith("UP") else "🔴" if direction.startswith("DOWN") else "🟡"
+    result_icon = (
+        "🟢" if direction.startswith("UP")
+        else "🔴" if direction.startswith("DOWN")
+        else "🟡"
+    )
+    currency = html.escape(str(data.get("currency", "—")))
+    event = html.escape(str(data.get("event", "Economic event")))
+    actual = html.escape(str(data.get("actual_text", "N/A")))
+    forecast = html.escape(str(data.get("forecast_text", "N/A")))
+    previous = html.escape(str(data.get("previous_text", "N/A")))
+    reason = html.escape(explanation)
+    safe_note = html.escape(note)
+
     return (
-        "👻 GHOST MATRIX\n"
+        "👻 <b>GHOST MATRIX</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"📰 NEWS ANALYZER                 {badge}\n"
+        "📰 <b>NEWS ANALYZER</b>      🔵 <b>PAID</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"🌐 {data['currency']}  •  {data['event']}\n\n"
-        "┌ ACTUAL ─── FORECAST ─── PREVIOUS ┐\n"
-        f"   {data['actual_text']}       {data['forecast_text']}       {data['previous_text']}\n"
-        "└──────────────────────────────┘\n\n"
-        f"{result_icon} RESULT: {direction}\n"
-        f"🧠 ANALYSIS: {explanation}\n\n"
-        f"⚠️ {note}\n"
+        f"🌐 <b>{currency} • {event}</b>\n\n"
+        "┌─────────────────────┐\n"
+        f"│ <b>ACTUAL:</b> {actual}\n"
+        f"│ <b>FORECAST:</b> {forecast}\n"
+        f"│ <b>PREVIOUS:</b> {previous}\n"
+        "└─────────────────────┘\n\n"
+        f"{result_icon} <b>RESULT: {direction}</b>\n"
+        f"🧠 <b>ANALYSIS:</b>\n{reason}\n\n"
+        f"⚠️ <i>{safe_note}</i>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 OWNER: {NEWS_OWNER}"
+        f"👤 <b>OWNER: {html.escape(NEWS_OWNER)}</b>"
     )
 
 
@@ -1296,13 +1327,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
     manual_news = parse_manual_news_input(clean)
     if manual_news:
         full_analysis = format_news_analysis(manual_news)
-        try:
-            card = render_news_analysis_card(manual_news)
-            if not send_photo_bytes(card, full_analysis, chat_id):
-                send_message(full_analysis, chat_id)
-        except Exception as exc:
-            log.warning("News analyzer card render failed: %s", exc)
-            send_message(full_analysis, chat_id)
+        send_message(full_analysis, chat_id, parse_mode="HTML")
         return
 
     if command in ("/start", "/help"):
