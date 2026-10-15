@@ -13,6 +13,7 @@ import os
 import threading
 import time
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 import requests
@@ -36,13 +37,19 @@ GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b").strip()
 # Optional comma-separated Twelve Data symbols for non-FX Quotex assets.
 # Example format depends on Twelve Data's own symbol catalog; these are NOT
 # proof that the same instrument exists on Quotex.
-REAL_MARKET_SYMBOLS = os.getenv("REAL_MARKET_SYMBOLS", "").strip()
+DEFAULT_REAL_MARKETS = [
+    "AUD/USD", "AUD/CHF", "AUD/JPY", "AUD/CAD", "CAD/JPY", "CHF/JPY",
+    "EUR/AUD", "EUR/CHF", "EUR/JPY", "EUR/GBP", "EUR/CAD", "EUR/USD",
+    "GBP/AUD", "GBP/CAD", "GBP/CHF", "GBP/USD", "GBP/JPY", "USD/JPY",
+]
+REAL_MARKET_SYMBOLS = ",".join(DEFAULT_REAL_MARKETS)  # Fixed allowlist: exactly the 18 user-selected pairs
+BANGLADESH_TZ = ZoneInfo("Asia/Dhaka")
 
-# The Free plan has 800 daily credits and 8 credits/minute in the user's account.
-# Keep a safety margin and scan one symbol every 90 seconds to stay under the
-# daily quota. A large catalog will therefore rotate slowly.
+# The account's reported Twelve Data limit is 8 credits/minute and 800/day.
+# Automatic signal delivery is intentionally OFF. /future scans the allowlist
+# manually, pacing requests so it does not exceed 8 requests/minute.
 DAILY_CREDIT_BUDGET = max(100, min(int(os.getenv("DAILY_CREDIT_BUDGET", "700")), 780))
-SCAN_INTERVAL_SECONDS = max(60, int(os.getenv("SCAN_INTERVAL_SECONDS", "90")))
+SCAN_INTERVAL_SECONDS = max(60, int(os.getenv("SCAN_INTERVAL_SECONDS", "90")))  # legacy setting; scanner is disabled
 HISTORY_OUTPUTSIZE = 5000  # Twelve Data's documented per-request maximum is plan-dependent.
 MAX_SIGNAL_AGE_SECONDS = 180
 
@@ -68,6 +75,8 @@ state = {
     "memory_api_calls": {},
     "memory_results": {"win": 0, "loss": 0},
     "memory_signals": [],
+    "next_memory_signal_id": 1,
+    "auto_scanner_enabled": False,
 }
 
 # ------------------------------ Database -----------------------------
@@ -130,6 +139,7 @@ def init_database() -> tuple[bool, str]:
                         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     )
                 """)
+                cur.execute("ALTER TABLE gm_signals ADD COLUMN IF NOT EXISTS result_updated_at TIMESTAMPTZ")
                 cur.execute("CREATE INDEX IF NOT EXISTS gm_signals_created_idx ON gm_signals(created_at DESC)")
         return True, "Supabase/PostgreSQL connected"
     except Exception as exc:
@@ -165,24 +175,31 @@ def record_api_call() -> None:
         state["memory_api_calls"][key] = int(state["memory_api_calls"].get(key, 0)) + 1
 
 
-def save_signal(symbol: str, direction: str, candle_time: datetime, price: float, reason: str) -> None:
+def save_signal(symbol: str, direction: str, candle_time: datetime, price: float, reason: str) -> Optional[int]:
     try:
         with db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     INSERT INTO gm_signals
                     (symbol, direction, candle_time, entry_price, reason, source, verified_quotex)
-                    VALUES (%s, %s, %s, %s, %s, %s, FALSE)
+                    VALUES (%s, %s, %s, %s, %s, %s, FALSE) RETURNING id
                 """, (symbol, direction, candle_time, price, reason, "Twelve Data external feed"))
+                row = cur.fetchone()
+                return int(row[0]) if row else None
     except Exception as exc:
         log.warning("Could not save signal to database: %s", exc)
         with state_lock:
+            signal_id = state["next_memory_signal_id"]
+            state["next_memory_signal_id"] += 1
             state["memory_signals"].append({
-                "symbol": symbol, "direction": direction, "time": candle_time.isoformat(),
-                "price": price, "reason": reason, "source": "Twelve Data external feed",
-                "verified_quotex": False,
+                "id": signal_id, "symbol": symbol, "direction": direction,
+                "candle_time": candle_time, "created_at": datetime.now(timezone.utc),
+                "time": candle_time.isoformat(), "entry_price": price, "price": price,
+                "reason": reason, "source": "Twelve Data external feed",
+                "verified_quotex": False, "status": "PENDING",
             })
             state["memory_signals"] = state["memory_signals"][-100:]
+            return signal_id
 
 
 def fetch_recent_signals(limit: int = 10) -> list[dict[str, Any]]:
@@ -190,25 +207,47 @@ def fetch_recent_signals(limit: int = 10) -> list[dict[str, Any]]:
         with db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT symbol, direction, candle_time, created_at, entry_price, reason,
+                    SELECT id, symbol, direction, candle_time, created_at, entry_price, reason,
                            source, verified_quotex, status
                     FROM gm_signals ORDER BY created_at DESC LIMIT %s
                 """, (limit,))
-                rows = cur.fetchall()
-                return [dict(r) for r in rows]
+                return [dict(r) for r in cur.fetchall()]
     except Exception:
         with state_lock:
             return list(reversed(state["memory_signals"][-limit:]))
 
 
-def save_result(result: str) -> None:
+def update_signal_result(result: str, signal_id: Optional[int] = None) -> tuple[bool, Optional[dict[str, Any]]]:
+    """Attach a manually confirmed WIN/LOSS to a specific or latest pending signal."""
+    result = result.upper()
+    if result not in ("WIN", "LOSS"):
+        return False, None
     try:
         with db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("INSERT INTO gm_trade_results (result) VALUES (%s)", (result,))
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                if signal_id is not None:
+                    cur.execute("""
+                        UPDATE gm_signals SET status=%s, result_updated_at=NOW()
+                        WHERE id=%s AND status='PENDING'
+                        RETURNING id, symbol, direction, status
+                    """, (result, signal_id))
+                else:
+                    cur.execute("""
+                        UPDATE gm_signals SET status=%s, result_updated_at=NOW()
+                        WHERE id=(SELECT id FROM gm_signals WHERE status='PENDING' ORDER BY created_at DESC LIMIT 1)
+                        RETURNING id, symbol, direction, status
+                    """, (result,))
+                row = cur.fetchone()
+                return (True, dict(row)) if row else (False, None)
     except Exception as exc:
-        log.warning("Could not save result: %s", exc)
-        state["memory_results"][result.lower()] += 1
+        log.warning("Could not update signal result in database: %s", exc)
+        with state_lock:
+            pending = [x for x in state["memory_signals"] if x.get("status", "PENDING") == "PENDING"]
+            target = next((x for x in reversed(pending) if signal_id is None or x.get("id") == signal_id), None)
+            if not target:
+                return False, None
+            target["status"] = result
+            return True, {"id": target["id"], "symbol": target["symbol"], "direction": target["direction"], "status": result}
 
 
 def get_stats() -> tuple[int, int, int]:
@@ -216,16 +255,38 @@ def get_stats() -> tuple[int, int, int]:
         with db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT COUNT(*) FILTER (WHERE result='WIN'),
-                           COUNT(*) FILTER (WHERE result='LOSS'), COUNT(*)
-                    FROM gm_trade_results
+                    SELECT COUNT(*) FILTER (WHERE status='WIN'),
+                           COUNT(*) FILTER (WHERE status='LOSS'),
+                           COUNT(*) FILTER (WHERE status IN ('WIN','LOSS'))
+                    FROM gm_signals
                 """)
                 row = cur.fetchone()
                 return int(row[0] or 0), int(row[1] or 0), int(row[2] or 0)
     except Exception:
-        wins = int(state["memory_results"]["win"])
-        losses = int(state["memory_results"]["loss"])
-        return wins, losses, wins + losses
+        with state_lock:
+            wins = sum(1 for x in state["memory_signals"] if x.get("status") == "WIN")
+            losses = sum(1 for x in state["memory_signals"] if x.get("status") == "LOSS")
+            return wins, losses, wins + losses
+
+
+def get_symbol_stats(symbol: str) -> tuple[int, int, int]:
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT COUNT(*) FILTER (WHERE status='WIN'),
+                           COUNT(*) FILTER (WHERE status='LOSS'),
+                           COUNT(*) FILTER (WHERE status IN ('WIN','LOSS'))
+                    FROM gm_signals WHERE symbol=%s
+                """, (symbol,))
+                row = cur.fetchone()
+                return int(row[0] or 0), int(row[1] or 0), int(row[2] or 0)
+    except Exception:
+        with state_lock:
+            matching = [x for x in state["memory_signals"] if x.get("symbol") == symbol]
+            wins = sum(1 for x in matching if x.get("status") == "WIN")
+            losses = sum(1 for x in matching if x.get("status") == "LOSS")
+            return wins, losses, wins + losses
 
 # ---------------------------- Telegram API ---------------------------
 def telegram_call(method: str, payload: Optional[dict] = None, timeout: int = 20):
@@ -279,52 +340,18 @@ def twelve_get(endpoint: str, params: dict, count_credit: bool = True) -> dict:
 
 
 def get_catalog(force: bool = False) -> list[dict[str, str]]:
-    # Prefer stored catalog to avoid spending a credit on every restart.
-    if not force:
-        try:
-            with db_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT symbol, currency_group, updated_at FROM gm_market_catalog ORDER BY symbol")
-                    rows = cur.fetchall()
-                    if rows and all((datetime.now(timezone.utc) - (r[2].replace(tzinfo=timezone.utc) if r[2].tzinfo is None else r[2])).total_seconds() < 86400 for r in rows[:1]):
-                        catalog = [{"symbol": r[0], "group": r[1] or "Forex"} for r in rows]
-                        return merge_custom_symbols(catalog)
-        except Exception as exc:
-            log.info("Using remote catalog; stored catalog unavailable: %s", exc)
-
-    data = twelve_get("forex_pairs", {"format": "JSON"})
-    items = data.get("data", [])
-    catalog = []
-    seen = set()
-    for item in items:
-        symbol = str(item.get("symbol", "")).strip()
-        if symbol and symbol not in seen:
-            catalog.append({"symbol": symbol, "group": str(item.get("currency_group", "Forex"))})
-            seen.add(symbol)
-    catalog = merge_custom_symbols(catalog)
-    try:
-        with db_connection() as conn:
-            with conn.cursor() as cur:
-                for item in catalog:
-                    cur.execute("""
-                        INSERT INTO gm_market_catalog (symbol, currency_group, updated_at)
-                        VALUES (%s, %s, NOW())
-                        ON CONFLICT (symbol) DO UPDATE SET currency_group=EXCLUDED.currency_group,
-                        updated_at=NOW()
-                    """, (item["symbol"], item["group"]))
-    except Exception as exc:
-        log.info("Could not cache catalog: %s", exc)
+    """Return only the user's explicitly selected REAL-market candidates; never all 1399 symbols."""
+    symbols = [x.strip().upper() for x in REAL_MARKET_SYMBOLS.split(",") if x.strip()]
+    # Stable unique list while preserving user order.
+    symbols = list(dict.fromkeys(symbols))
+    catalog = [{"symbol": symbol, "group": "User-selected Quotex REAL-market candidate"} for symbol in symbols]
     state["catalog_count"] = len(catalog)
     return catalog
 
 
 def merge_custom_symbols(catalog: list[dict[str, str]]) -> list[dict[str, str]]:
-    seen = {item["symbol"].upper() for item in catalog}
-    for symbol in [x.strip() for x in REAL_MARKET_SYMBOLS.split(",") if x.strip()]:
-        if symbol.upper() not in seen:
-            catalog.append({"symbol": symbol, "group": "Custom real-market candidate"})
-            seen.add(symbol.upper())
-    return sorted(catalog, key=lambda x: x["symbol"])
+    # Kept for compatibility with older code paths; the allowlist is authoritative.
+    return get_catalog()
 
 
 def parse_candles(data: dict) -> list[dict[str, Any]]:
@@ -400,10 +427,10 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]]) -> dict[str, Any
     reason = "EMA/RSI/momentum একই দিকে নিশ্চিত নয়।"
     if fast[idx] > slow[idx] and 52 <= rsis[idx] <= 68 and latest["close"] > previous["close"] and latest["close"] > latest["open"]:
         direction = "CALL"
-        reason = f"EMA9 > EMA21, RSI={rsis[idx]:.1f}, শেষ candle bullish; শুধু সম্ভাব্য সেটআপ।"
+        reason = f"দাম EMA9 ও EMA21-এর ওপরে আছে; RSI {rsis[idx]:.1f}; শেষ ১ মিনিটের candle-এ বন্ধের দাম খোলার দামের চেয়ে বেশি—এই মিনিটে ক্রেতাদের চাপ দেখা গেছে। এটি শুধু সম্ভাব্য সেটআপ।"
     elif fast[idx] < slow[idx] and 32 <= rsis[idx] <= 48 and latest["close"] < previous["close"] and latest["close"] < latest["open"]:
         direction = "PUT"
-        reason = f"EMA9 < EMA21, RSI={rsis[idx]:.1f}, শেষ candle bearish; শুধু সম্ভাব্য সেটআপ।"
+        reason = f"দাম EMA9 ও EMA21-এর নিচে আছে; RSI {rsis[idx]:.1f}; শেষ ১ মিনিটের candle-এ বন্ধের দাম খোলার দামের চেয়ে কম—এই মিনিটে বিক্রেতাদের চাপ দেখা গেছে। এটি শুধু সম্ভাব্য সেটআপ।"
     return {
         "symbol": symbol,
         "direction": direction,
@@ -445,80 +472,91 @@ def backtest_ema(candles: list[dict[str, Any]]) -> dict[str, Any]:
             "note": "Historical candle simulation only; not Quotex-verified and not a guarantee."}
 
 # --------------------------- Scanner logic ---------------------------
+def bd_time(value: Any) -> str:
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(BANGLADESH_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    return str(value or "সময় পাওয়া যায়নি")
+
+
 def scan_one_symbol(symbol: str) -> dict[str, Any]:
-    # 5000 M1 candles is the provider output-size ceiling for many plans; it may
-    # cover less than 7-10 calendar days. Actual candle timestamps are reported.
     payload = twelve_get("time_series", {
-        "symbol": symbol,
-        "interval": "1min",
-        "outputsize": HISTORY_OUTPUTSIZE,
-        "order": "desc",
-        "format": "JSON",
-        "timezone": "UTC",
+        "symbol": symbol, "interval": "1min", "outputsize": HISTORY_OUTPUTSIZE,
+        "order": "desc", "format": "JSON", "timezone": "UTC",
     })
     candles = parse_candles(payload)
     result = analyze_candles(symbol, candles)
     result["backtest"] = backtest_ema(candles)
     result["source"] = "Twelve Data external feed"
     result["verified_quotex"] = False
-    if result.get("direction") in ("CALL", "PUT"):
-        save_signal(symbol, result["direction"], result["candle"]["time"], result["price"], result["reason"])
-        send_message(format_signal(result))
+    if result.get("direction") in ("CALL", "PUT") and result.get("candle"):
+        result["signal_id"] = save_signal(symbol, result["direction"], result["candle"]["time"], result["price"], result["reason"])
     return result
 
 
 def format_signal(result: dict[str, Any]) -> str:
     candle = result.get("candle") or {}
-    when = candle.get("time")
-    if isinstance(when, datetime):
-        when_text = when.strftime("%Y-%m-%d %H:%M:%S UTC")
-    else:
-        when_text = str(when or "unknown")
+    candle_time = bd_time(candle.get("time"))
+    generated = bd_time(datetime.now(timezone.utc))
+    direction = result.get("direction", "NO TRADE")
+    icon = "🟢" if direction == "CALL" else "🔴"
+    meaning = "CALL মানে সম্ভাব্য ঊর্ধ্বমুখী দিক" if direction == "CALL" else "PUT মানে সম্ভাব্য নিম্নমুখী দিক"
     return (
-        "👻 GHOST MATRIX V2.0 — M1 SETUP\n\n"
-        f"Asset: {result.get('symbol', 'Unknown')}\n"
-        f"Signal: {result.get('direction', 'NO TRADE')}\n"
-        f"External price: {result.get('price', 'N/A')}\n"
-        f"Candle time: {when_text}\n"
-        f"Reason: {result.get('reason', '')}\n\n"
-        "⚠️ Source: Twelve Data (external feed). NOT Quotex-verified.\n"
-        "No guaranteed win rate. Confirm the same asset and candle on Quotex before any decision."
+        "👻 GHOST MATRIX V2.0\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"{icon} সম্ভাব্য সিগনাল: {direction}\n"
+        f"💱 মার্কেট: {result.get('symbol', 'Unknown')}\n"
+        f"💵 বাইরের ফিডের দাম: {result.get('price', 'N/A')}\n"
+        f"🕯️ Candle time (বাংলাদেশ): {candle_time} UTC+6\n"
+        f"📨 সিগনাল তৈরি: {generated} UTC+6\n"
+        f"🧾 Signal ID: {result.get('signal_id', 'N/A')}\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"📘 সহজ ব্যাখ্যা: {result.get('reason', '')}\n"
+        f"➡️ এর মানে: {meaning}; নিশ্চিত ফল নয়।\n\n"
+        "⚠️ ডেটা: Twelve Data (external), Quotex-verified নয়।\n"
+        f"ফল জানাতে: /win {result.get('signal_id', '')} অথবা /loss {result.get('signal_id', '')}"
     )
 
 
+def format_future_batch(results: list[dict[str, Any]], scanned: int) -> str:
+    signals = [r for r in results if r.get("direction") in ("CALL", "PUT")]
+    now_text = bd_time(datetime.now(timezone.utc))
+    lines = [
+        "👻 GHOST MATRIX V2.0 — MANUAL SCAN",
+        f"🕒 বাংলাদেশ সময়: {now_text} UTC+6",
+        f"🔎 স্ক্যান: {scanned}টি নির্বাচিত pair",
+        "━━━━━━━━━━━━━━━━━━",
+    ]
+    if not signals:
+        lines.append("📭 এই স্ক্যানে কোনো সেটআপের শর্ত মেলেনি — NO TRADE।")
+        lines.append("জোর করে CALL/PUT তৈরি করা হয়নি। পরে আবার /future দিতে পারো।")
+    else:
+        lines.append(f"📋 সম্ভাব্য সেটআপ: {len(signals)}টি\n")
+        for n, r in enumerate(signals, 1):
+            direction = r.get("direction")
+            icon = "🟢 CALL" if direction == "CALL" else "🔴 PUT"
+            candle = (r.get("candle") or {}).get("time")
+            lines.append(
+                f"{n}. {r.get('symbol')} — {icon}\n"
+                f"   💵 বাইরের দাম: {r.get('price', 'N/A')}\n"
+                f"   🕯️ Candle (BD): {bd_time(candle)} UTC+6\n"
+                f"   🧾 ID: {r.get('signal_id', 'N/A')}\n"
+                f"   📘 কেন: {r.get('reason', '')}\n"
+                f"   ফল দিতে: /win {r.get('signal_id', '')} বা /loss {r.get('signal_id', '')}"
+            )
+    lines += [
+        "━━━━━━━━━━━━━━━━━━",
+        "⚠️ Twelve Data external feed; Quotex-verified নয়। Quotex-এর একই pair ও candle মিলিয়ে দেখো।",
+        "📌 /signals = আগের সেটআপ | /stats = তোমার দেওয়া WIN/LOSS হিসাব | /learn = শেখার গাইড",
+    ]
+    return "\n".join(lines)
+
+
 def scanner_loop() -> None:
-    catalog: list[dict[str, str]] = []
-    last_catalog_refresh = 0.0
+    """Disabled by design: signals are generated only when the user sends /future."""
     while True:
-        try:
-            if not TWELVE_DATA_API_KEY:
-                raise RuntimeError("TWELVE_DATA_API_KEY is not configured")
-            now = time.time()
-            if not catalog or now - last_catalog_refresh > 86400:
-                catalog = get_catalog(force=bool(catalog))
-                last_catalog_refresh = now
-                state["catalog_count"] = len(catalog)
-                log.info("Market catalog loaded: %s symbols (Twelve Data forex catalog + optional custom symbols)", len(catalog))
-            if not catalog:
-                raise RuntimeError("No symbols available from Twelve Data catalog")
-            used = db_api_calls_today()
-            if used >= DAILY_CREDIT_BUDGET:
-                log.warning("Daily API safety budget reached (%s/%s). Sleeping until next UTC day.", used, DAILY_CREDIT_BUDGET)
-                time.sleep(600)
-                continue
-            with state_lock:
-                idx = state["next_symbol_index"] % len(catalog)
-                state["next_symbol_index"] += 1
-            symbol = catalog[idx]["symbol"]
-            result = scan_one_symbol(symbol)
-            state["last_scan_utc"] = datetime.now(timezone.utc).isoformat()
-            state["last_error"] = None
-            log.info("Scanned %s: %s", symbol, result.get("direction", "NO TRADE"))
-        except Exception as exc:
-            state["last_error"] = str(exc)
-            log.exception("Scanner error: %s", exc)
-            # Send configuration/rate errors to logs, not every loop to Telegram.
-        time.sleep(SCAN_INTERVAL_SECONDS)
+        time.sleep(3600)
 
 # ----------------------------- AI helpers ----------------------------
 def ai_answer(prompt: str) -> str:
@@ -607,15 +645,15 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             "/status — bot/API/database status\n"
             "/markets — cached market catalog count\n"
             "/signals — recent logged setups\n"
-            "/future — scan next available asset (uses API credit)\n"
+            "/future — manually scan all 18 selected pairs; sends one combined list\n"
             "/stats — manually logged WIN/LOSS only\n"
-            "/win — log a WIN result\n"
-            "/loss — log a LOSS result\n"
+            "/win [ID] — mark a signal WIN\n"
+            "/loss [ID] — mark a signal LOSS\n"
             "/risk — risk reminder\n"
             "/learn — basic M1 learning guide\n"
             "/news — explains news feed status\n"
             "/ask your question — optional AI answer\n\n"
-            "OTC signal generation is disabled. External data is not Quotex-verified.", chat_id)
+            "Automatic signal messages are OFF. Use /future to scan manually. External data is not Quotex-verified.", chat_id)
     elif command == "/status":
         db_ok, db_msg = init_database()
         msg = (
@@ -627,55 +665,64 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             f"API credits used today (tracked): {db_api_calls_today()}/{DAILY_CREDIT_BUDGET}\n"
             f"Catalog symbols: {state['catalog_count']}\n"
             f"Last scan UTC: {state['last_scan_utc'] or 'not yet'}\n"
+            f"Last scan Bangladesh time: {bd_time(datetime.fromisoformat(state['last_scan_utc'])) + ' UTC+6' if state['last_scan_utc'] else 'not yet'}\n"
+            "Automatic signals: OFF (manual /future only)\n"
             f"Last scanner error: {state['last_error'] or 'none'}\n"
             "Data source is external; Quotex verification: NO"
         )
         send_message(msg, chat_id)
     elif command == "/markets":
+        catalog = get_catalog()
         send_message(
-            f"Catalog count: {state['catalog_count']}\n"
-            "Automatic catalog = Twelve Data Forex pairs. Optional REAL_MARKET_SYMBOLS can add other Twelve Data symbols.\n"
-            "This is not an official Quotex asset list; match each asset manually before trading.", chat_id)
+            f"🎯 GHOST MATRIX — SELECTED MARKETS ({len(catalog)})\n" +
+            "\n".join(f"{i}. {x['symbol']}" for i, x in enumerate(catalog, 1)) +
+            "\n\nএই তালিকা তোমার নির্বাচিত pair; Quotex-এ REAL tab-এ availability নিজে মিলিয়ে দেখো.", chat_id)
     elif command == "/signals":
         signals = fetch_recent_signals(10)
         if not signals:
-            send_message("এখনো কোনো সিগন্যাল লগ নেই। ডেটা/স্ক্যান চালু হলে এখানে দেখা যাবে।", chat_id)
+            send_message("📋 এখনো কোনো সিগনাল লগ নেই। /future দিয়ে ম্যানুয়াল স্ক্যান করো।", chat_id)
         else:
-            lines = ["📋 RECENT SETUPS (external feed; not Quotex-verified)"]
-            for s in signals:
-                sym = s.get("symbol", "?")
-                direc = s.get("direction", "?")
-                price = s.get("entry_price", s.get("price", "N/A"))
-                created = s.get("created_at", s.get("time", ""))
-                if isinstance(created, datetime):
-                    created = created.strftime("%m-%d %H:%M UTC")
-                lines.append(f"{sym} | {direc} | {price} | {created}")
-            send_message("\n".join(lines), chat_id)
+            lines = ["📋 GHOST MATRIX — RECENT SIGNALS", "ফল জানাতে /win ID বা /loss ID ব্যবহার করো।", ""]
+            for sig in signals:
+                sid = sig.get("id", "?")
+                sym = sig.get("symbol", "?")
+                direc = sig.get("direction", "?")
+                price = sig.get("entry_price", "N/A")
+                ctime = bd_time(sig.get("candle_time"))
+                status = sig.get("status", "PENDING")
+                lines.append(f"ID {sid} | {sym} | {direc} | {status}\nদাম: {price} | Candle BD: {ctime} UTC+6\n/win {sid} অথবা /loss {sid}")
+            send_message("\n\n".join(lines), chat_id)
     elif command == "/future":
         try:
             catalog = get_catalog()
             if not catalog:
-                raise RuntimeError("No catalog symbols")
-            with state_lock:
-                idx = state["next_symbol_index"] % len(catalog)
-                state["next_symbol_index"] += 1
-            result = scan_one_symbol(catalog[idx]["symbol"])
-            if result.get("direction") in ("CALL", "PUT"):
-                send_message("Manual scan completed; setup message sent if applicable.\n\n" + format_signal(result), chat_id)
-            else:
-                candle = result.get("candle", {})
-                count = result.get("candle_count", 0)
-                first = result.get("first_candle")
-                last = result.get("last_candle")
-                backtest = result.get("backtest", {})
-                send_message(
-                    f"🔎 {result.get('symbol')} M1 scan\nResult: NO TRADE\nReason: {result.get('reason')}\n"
-                    f"Candles received: {count}\nHistory from: {first}\nHistory to: {last}\n"
-                    f"Historical EMA crossover sample: {backtest.get('trades', 0)} trades; "
-                    f"{backtest.get('win_rate_pct', 'N/A')}% simulated result (not guaranteed).\n"
-                    "Source: Twelve Data; not Quotex-verified.", chat_id)
+                raise RuntimeError("REAL_MARKET_SYMBOLS list is empty")
+            send_message(
+                f"🔎 Manual scan শুরু হলো: {len(catalog)}টি pair.\n"
+                "API limit বজায় রাখতে অনুরোধগুলো ধীরে করা হবে; শেষ হলে সব সম্ভাব্য setup একসাথে পাঠাব।\n"
+                "Automatic signals OFF — এই স্ক্যানটি শুধু তোমার /future command-এর জন্য।", chat_id)
+            results = []
+            last_request_at = 0.0
+            for index, item in enumerate(catalog):
+                # 8 requests/minute maximum: keep at least 8 seconds between requests.
+                if last_request_at:
+                    wait = 8.0 - (time.monotonic() - last_request_at)
+                    if wait > 0:
+                        time.sleep(wait)
+                if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+                    results.append({"symbol": item["symbol"], "direction": "NO TRADE", "reason": "দৈনিক API safety budget শেষ; এই pair স্ক্যান হয়নি।"})
+                    continue
+                try:
+                    last_request_at = time.monotonic()
+                    results.append(scan_one_symbol(item["symbol"]))
+                except Exception as scan_exc:
+                    log.warning("Manual scan failed for %s: %s", item["symbol"], scan_exc)
+                    results.append({"symbol": item["symbol"], "direction": "NO TRADE", "reason": f"ডেটা পাওয়া যায়নি: {str(scan_exc)[:120]}"})
+            state["last_scan_utc"] = datetime.now(timezone.utc).isoformat()
+            state["last_error"] = None
+            send_message(format_future_batch(results, len(catalog)), chat_id)
         except Exception as exc:
-            send_message(f"Scan failed: {exc}", chat_id)
+            send_message(f"❌ Manual scan failed: {exc}", chat_id)
     elif command == "/stats":
         wins, losses, total = get_stats()
         rate = round(wins * 100 / total, 1) if total else None
@@ -683,12 +730,32 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             f"📊 MANUALLY LOGGED RESULTS\nWIN: {wins}\nLOSS: {losses}\nTotal: {total}\n"
             f"Win rate: {str(rate) + '%' if rate is not None else 'N/A (no results)'}\n"
             "This is only based on /win and /loss entries, not an automatic broker result.", chat_id)
-    elif command == "/win":
-        save_result("WIN")
-        send_message("WIN result logged. This does not verify a broker trade automatically.", chat_id)
-    elif command == "/loss":
-        save_result("LOSS")
-        send_message("LOSS result logged. This does not verify a broker trade automatically.", chat_id)
+    elif command in ("/win", "/loss"):
+        signal_id = None
+        if args:
+            try:
+                signal_id = int(args.strip().split()[0])
+            except ValueError:
+                send_message(f"ব্যবহার: {command} অথবা {command} SIGNAL_ID (যেমন {command} 12)", chat_id)
+                return
+        outcome = "WIN" if command == "/win" else "LOSS"
+        updated, signal = update_signal_result(outcome, signal_id)
+        if not updated or not signal:
+            send_message("কোনো PENDING signal পাওয়া যায়নি। /signals দেখে সঠিক ID ব্যবহার করো।", chat_id)
+            return
+        wins, losses, total = get_stats()
+        rate = round(wins * 100 / total, 1) if total else 0.0
+        sw, sl, st = get_symbol_stats(str(signal.get("symbol", "")))
+        sr = round(sw * 100 / st, 1) if st else 0.0
+        send_message(
+            f"{'🟢' if outcome == 'WIN' else '🔴'} RESULT SAVED\n"
+            f"Signal ID: {signal.get('id')}\nAsset: {signal.get('symbol')} | Signal: {signal.get('direction')}\n"
+            f"Result: {outcome}\n\n"
+            f"📊 এই pair-এর হিসাব ({signal.get('symbol')}): {st}টি ফল\nWIN: {sw} | LOSS: {sl}\n"
+            f"Pair win rate: {sr}% | pair loss rate: {round(sl * 100 / st, 1) if st else 0.0}%\n\n"
+            f"🌐 সব pair মিলিয়ে: {total}টি ফল\nWIN: {wins} | LOSS: {losses}\n"
+            f"Overall win rate: {rate}% | overall loss rate: {round(losses * 100 / total, 1) if total else 0.0}%\n"
+            "এটি তোমার হাতে দেওয়া ফলাফলের হিসাব; Quotex থেকে auto-result যাচাই নয়।", chat_id)
     elif command == "/risk":
         send_message(
             "⚠️ Risk reminder\n"
@@ -697,12 +764,18 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             "• Quotex-এর candle/asset নিজে মিলিয়ে দেখো; বাইরের feed আলাদা হতে পারে.", chat_id)
     elif command == "/learn":
         send_message(
-            "📘 M1 BASIC GUIDE\n"
-            "1) M1 মানে প্রতিটি candle এক মিনিটের।\n"
-            "2) EMA9/EMA21 trend filter; RSI momentum filter।\n"
-            "3) একই দিকে trend, RSI ও candle confirmation না থাকলে NO TRADE।\n"
-            "4) Backtest ফল ভবিষ্যৎ ফলের নিশ্চয়তা নয়।\n"
-            "5) Candle close হওয়ার আগে সিদ্ধান্ত নিও না; broker price manually confirm করো.", chat_id)
+            "📘 GHOST MATRIX — সহজ Learning Guide\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "🕯️ Candle কী? এক মিনিটের দামের ওঠানামা দেখানো একটি বার।\n"
+            "🟢 Bullish candle: candle যে দামে শুরু হয়েছে, তার চেয়ে বেশি দামে শেষ হয়েছে—ওই মিনিটে ক্রেতাদের চাপ ছিল।\n"
+            "🔴 Bearish candle: candle যে দামে শুরু হয়েছে, তার চেয়ে কম দামে শেষ হয়েছে—ওই মিনিটে বিক্রেতাদের চাপ ছিল।\n"
+            "📈 EMA9/EMA21: সাম্প্রতিক দামের গড় দিয়ে trend-এর দিক বোঝার চেষ্টা করে; এটি একা সিগনাল নয়।\n"
+            "📊 RSI: দামের momentum 0–100 স্কেলে মাপে; এটিও একা buy/sell নির্দেশ নয়।\n"
+            "🟢 CALL: দাম বাড়ার সম্ভাবনা ধরে বিশ্লেষণ; 🔴 PUT: দাম কমার সম্ভাবনা ধরে বিশ্লেষণ। কোনোটি নিশ্চিত নয়।\n"
+            "🕒 সময়: সব signal/candle সময় বাংলাদেশ সময় (Asia/Dhaka, UTC+6), ২৪ ঘণ্টার ফরম্যাটে। 13:00=দুপুর ১টা, 14:00=দুপুর ২টা, 15:00=বিকেল ৩টা।\n"
+            "🎯 /future = তুমি চাইলে একবারে ১৮টি pair স্ক্যান; অটো সিগনাল পাঠানো বন্ধ।\n"
+            "📋 /signals = সাম্প্রতিক signal | /win ID বা /loss ID = ফল যোগ | /stats = logged win/loss rate।\n"
+            "⚠️ Twelve Data external feed; Quotex-এর chart/time/price নিজে মিলিয়ে দেখো।", chat_id)
     elif command == "/news":
         send_message(
             "📰 Real news feed এখন সংযুক্ত নেই। তাই bot live news/prediction বানিয়ে বলবে না।\n"
@@ -790,8 +863,9 @@ def start_background_threads() -> None:
     # Avoid duplicate start in environments that import the module more than once.
     if not state.get("threads_started"):
         state["threads_started"] = True
+        state["catalog_count"] = len(get_catalog())
         threading.Thread(target=telegram_poll_loop, daemon=True, name="telegram-poll").start()
-        threading.Thread(target=scanner_loop, daemon=True, name="market-scanner").start()
+        # Deliberately do not start scanner_loop: automatic signals are disabled.
 
 # Initialize DB and background workers when the Render process starts.
 _db_ok, _db_msg = init_database()
