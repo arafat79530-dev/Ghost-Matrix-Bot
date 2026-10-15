@@ -79,6 +79,8 @@ state = {
     "memory_signals": [],
     "next_memory_signal_id": 1,
     "auto_scanner_enabled": False,
+    # Fallback learning progress when PostgreSQL/Supabase is unavailable.
+    "learn_progress": {},
 }
 
 # ------------------------------ Database -----------------------------
@@ -138,6 +140,13 @@ def init_database() -> tuple[bool, str]:
                         id BIGSERIAL PRIMARY KEY,
                         symbol TEXT NOT NULL UNIQUE,
                         currency_group TEXT,
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_learning_progress (
+                        chat_id TEXT PRIMARY KEY,
+                        next_lesson INTEGER NOT NULL DEFAULT 0 CHECK (next_lesson >= 0),
                         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     )
                 """)
@@ -885,28 +894,109 @@ def send_photo_bytes(photo_bytes: bytes, caption: str, chat_id: Optional[str] = 
         return True
     except Exception as exc:
         log.error("Telegram educational photo send failed: %s", exc)
-        send_message("⚠️ চার্টের ছবি পাঠানো যায়নি। Render Logs দেখো।", target)
         return False
 
 
-def send_price_action_course(chat_id: str) -> None:
-    intro = (
-        "📘 GHOST MATRIX — FULL PRICE ACTION LEARNING\n\n"
-        "প্রতিটি ছবিই schematic example, live Quotex chart নয়। "
-        "ছবি দেখে pattern চিনতে শেখো; শুধু pattern দেখে trade নিও না।\n\n"
-        "নিচে ৭টি lesson একে একে পাঠানো হচ্ছে।"
-    )
-    send_message(intro, chat_id)
-    for lesson in PA_LESSONS:
-        photo = make_price_action_chart(lesson)
-        send_photo_bytes(photo, lesson["caption"], chat_id)
-        time.sleep(0.35)
+def get_learning_progress(chat_id: str) -> int:
+    """Return the zero-based index of the next lesson for this Telegram chat."""
+    chat_key = str(chat_id).strip()
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT next_lesson FROM gm_learning_progress WHERE chat_id=%s",
+                    (chat_key,),
+                )
+                row = cur.fetchone()
+                if row:
+                    return max(0, min(int(row[0]), len(PA_LESSONS)))
+                return 0
+    except Exception:
+        with state_lock:
+            return max(0, min(int(state["learn_progress"].get(chat_key, 0)), len(PA_LESSONS)))
+
+
+def save_learning_progress(chat_id: str, next_lesson: int) -> bool:
+    """Persist learning progress; use in-memory fallback if DB is unavailable."""
+    chat_key = str(chat_id).strip()
+    progress = max(0, min(int(next_lesson), len(PA_LESSONS)))
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO gm_learning_progress (chat_id, next_lesson, updated_at)
+                       VALUES (%s, %s, NOW())
+                       ON CONFLICT (chat_id) DO UPDATE
+                       SET next_lesson=EXCLUDED.next_lesson, updated_at=NOW()""",
+                    (chat_key, progress),
+                )
+        with state_lock:
+            state["learn_progress"].pop(chat_key, None)
+        return True
+    except Exception as exc:
+        log.info("Learning progress using memory fallback: %s", exc)
+        with state_lock:
+            state["learn_progress"][chat_key] = progress
+        return False
+
+
+def send_price_action_course(chat_id: str, reset: bool = False) -> None:
+    """Send exactly one illustrated lesson per /learn command."""
+    chat_key = str(chat_id).strip()
+    if reset:
+        save_learning_progress(chat_key, 0)
+        lesson_index = 0
+    else:
+        lesson_index = get_learning_progress(chat_key)
+
+    if lesson_index >= len(PA_LESSONS):
+        send_message(
+            "✅ তুমি Price Action-এর ৭টি Lesson শেষ করেছ!\n\n"
+            "আবার Lesson 1 থেকে শুরু করতে: /learn reset\n"
+            "নিরাপদ অনুশীলন: Demo account-এ chart দেখে নিজের নোট রাখো।\n\n"
+            "⚠️ Lesson শেষ করা লাভের নিশ্চয়তা নয়। Twelve Data-এর price Quotex-verified নয়।",
+            chat_key,
+        )
+        return
+
+    lesson = PA_LESSONS[lesson_index]
+    number = lesson_index + 1
     send_message(
-        "✅ সব lesson শেষ। মনে রাখো: কোনো pattern নিশ্চিত ফল দেয় না। "
-        "আগে demo-তে practice, screenshot journal, এবং Quotex-এ REAL pair/timeframe নিজে verify করো। "
-        "Twelve Data-এর external price-কে Quotex-verified বলা যাবে না।",
-        chat_id,
+        "👻 GHOST MATRIX — PRICE ACTION LEARNING\n"
+        f"📘 Lesson {number}/{len(PA_LESSONS)}\n\n"
+        "এই /learn কমান্ডে শুধু একটি Lesson পাঠানো হবে।\n"
+        "পরের Lesson পেতে আবার /learn লিখো।\n"
+        "সব ছবি শিক্ষামূলক schematic chart—live Quotex chart নয়।",
+        chat_key,
     )
+
+    try:
+        photo = make_price_action_chart(lesson)
+    except Exception as exc:
+        log.exception("Could not generate learning chart for lesson %s", number)
+        send_message(
+            f"❌ Lesson {number}-এর chart তৈরি হয়নি। Logs পরীক্ষা করে একই /learn আবার দাও।",
+            chat_key,
+        )
+        return
+
+    # Advance only when Telegram confirms the image was sent, so a failed upload
+    # does not silently skip the lesson.
+    if send_photo_bytes(photo, lesson["caption"], chat_key):
+        save_learning_progress(chat_key, number)
+        if number == len(PA_LESSONS):
+            send_message(
+                "🎉 ৭/৭ Lesson পাঠানো হয়েছে!\n"
+                "পরের /learn কমান্ডে course completion দেখাবে।\n"
+                "আবার শুরু করতে /learn reset লিখো।\n\n"
+                "⚠️ কোনো pattern নিশ্চিত ফল দেয় না; আগে Demo-তে পরীক্ষা করো।",
+                chat_key,
+            )
+    else:
+        send_message(
+            f"⚠️ Lesson {number} skip করা হয়নি। ছবি পাঠানো যায়নি; সমস্যা ঠিক করে আবার /learn দাও।",
+            chat_key,
+        )
 
 
 # ------------------------------ Commands -----------------------------
@@ -931,7 +1021,8 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             "/win [ID] — mark a signal WIN\n"
             "/loss [ID] — mark a signal LOSS\n"
             "/risk — risk reminder\n"
-            "/learn — ছবি-সহ বিস্তারিত Price Action course (৭টি lesson)\n"
+            "/learn — পরের Price Action Lesson ও ছবি (একবারে ১টি)\n"
+            "/learn reset — Lesson 1 থেকে আবার শুরু\n"
             "/news — explains news feed status\n"
             "/ask your question — optional AI answer\n\n"
             "Automatic signal messages are OFF. Use /future to scan manually. External data is not Quotex-verified.", chat_id)
@@ -1044,7 +1135,17 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             "• Demo/backtest আগে ব্যবহার করো।\n• এক ট্রেডে সামর্থ্যের বাইরে ঝুঁকি নিও না।\n"
             "• Quotex-এর candle/asset নিজে মিলিয়ে দেখো; বাইরের feed আলাদা হতে পারে.", chat_id)
     elif command == "/learn":
-        send_price_action_course(chat_id)
+        if args.strip().lower() == "reset":
+            send_price_action_course(chat_id, reset=True)
+        elif not args.strip():
+            send_price_action_course(chat_id)
+        else:
+            send_message(
+                "ব্যবহার:\n"
+                "/learn — পরের Lesson ও ছবি\n"
+                "/learn reset — Lesson 1 থেকে আবার শুরু",
+                chat_id,
+            )
     elif command == "/news":
         send_message(
             "📰 Real news feed এখন সংযুক্ত নেই। তাই bot live news/prediction বানিয়ে বলবে না।\n"
