@@ -999,6 +999,290 @@ def send_price_action_course(chat_id: str, reset: bool = False) -> None:
         )
 
 
+# ------------------------ Economic News Analyzer ---------------------
+FINANCE_CALENDAR_BASE = "https://www.financecalendar.com/wp-json/fc/v1"
+NEWS_OWNER = "@ghostsupportbd"
+NEWS_SOURCE_URL = "https://www.financecalendar.com/api/"
+
+
+def _extract_number(value: Any) -> Optional[float]:
+    """Parse common economic values such as 4.7%, 220K, or -0.2."""
+    if value is None:
+        return None
+    raw = str(value).strip().replace("−", "-")
+    if not raw or raw.lower() in {"n/a", "na", "none", "null", "—", "-"}:
+        return None
+    import re
+    match = re.search(r"[-+]?\d+(?:[.,]\d+)?\s*[KMBkmb]?", raw)
+    if not match:
+        return None
+    token = match.group(0).replace(" ", "")
+    # A single comma with three trailing digits is treated as a thousands separator.
+    if "," in token and "." not in token:
+        left, right = token.split(",", 1)
+        token = left + right if len(right.rstrip("KMBkmb")) == 3 else left + "." + right
+    suffix = token[-1:].upper() if token[-1:].upper() in {"K", "M", "B"} else ""
+    number_text = token[:-1] if suffix else token
+    try:
+        number = float(number_text)
+    except ValueError:
+        return None
+    return number * {"": 1.0, "K": 1_000.0, "M": 1_000_000.0, "B": 1_000_000_000.0}[suffix]
+
+
+def parse_manual_news_input(text: str) -> Optional[dict]:
+    """Accept a currency/event line followed by Actual, Forecast and Previous."""
+    import re
+    clean = (text or "").strip()
+    if not clean or clean.startswith("/"):
+        return None
+    patterns = {
+        "actual": r"(?im)^\s*(?:act|actual)\s*[-:=]\s*([^\n]+)",
+        "forecast": r"(?im)^\s*(?:for|forecast|fcst)\s*[-:=]\s*([^\n]+)",
+        "previous": r"(?im)^\s*(?:pre|previous|prev)\s*[-:=]\s*([^\n]+)",
+    }
+    values = {}
+    for key, pattern in patterns.items():
+        match = re.search(pattern, clean)
+        if not match:
+            return None
+        values[key] = match.group(1).strip()
+    first_line = clean.splitlines()[0].strip()
+    currency_match = re.match(r"^([A-Za-z]{3})\b(?:\s*[-:|—]?\s*(.*))?$", first_line)
+    if not currency_match:
+        return None
+    currency = currency_match.group(1).upper()
+    event = (currency_match.group(2) or "").strip(" -:|—")
+    return {
+        "currency": currency,
+        "event": event or "Economic event not specified",
+        "actual_text": values["actual"],
+        "forecast_text": values["forecast"],
+        "previous_text": values["previous"],
+        "actual": _extract_number(values["actual"]),
+        "forecast": _extract_number(values["forecast"]),
+        "previous": _extract_number(values["previous"]),
+    }
+
+
+def analyze_manual_news(data: dict) -> tuple[str, str, str]:
+    """Return direction, explanation and confidence note; heuristic, not a trade guarantee."""
+    actual, forecast, previous = data.get("actual"), data.get("forecast"), data.get("previous")
+    if actual is None or forecast is None:
+        return "UNCLEAR", "Actual বা Forecast-এর মান বুঝতে পারিনি—সংখ্যা ও unit আবার দাও।", "ডেটা অসম্পূর্ণ"
+    event = str(data.get("event", "")).lower()
+    # For some indicators, a lower number is usually better for the currency.
+    lower_is_better_terms = (
+        "unemployment rate", "jobless claims", "initial claims", "continuing claims",
+        "claims", "unemployment", "job losses", "layoffs", "bad loans",
+    )
+    lower_is_better = any(term in event for term in lower_is_better_terms)
+    if actual == forecast:
+        if previous is not None and actual != previous:
+            explanation = "Actual Forecast-এর সমান; তাই surprise নেই। Previous-এর তুলনায় পরিবর্তন একা নির্ভরযোগ্য দিক নির্ধারণ করে না।"
+        else:
+            explanation = "Actual ও Forecast সমান—স্পষ্ট surprise নেই।"
+        return "UNCLEAR", explanation, "দিক অনিশ্চিত"
+    if lower_is_better:
+        up = actual < forecast
+        reason = "এই indicator-এ সাধারণত কম মান মুদ্রার জন্য ভালো।" if up else "এই indicator-এ সাধারণত বেশি মান মুদ্রার জন্য নেতিবাচক।"
+    else:
+        up = actual > forecast
+        reason = "Actual, Forecast-এর চেয়ে বেশি।" if up else "Actual, Forecast-এর চেয়ে কম।"
+        if data.get("event") == "Economic event not specified":
+            reason += " নিউজের নাম দেওয়া হয়নি, তাই সাধারণ surprise rule ব্যবহার করা হয়েছে।"
+    direction = "UP ⬆️" if up else "DOWN ⬇️"
+    delta = actual - forecast
+    diff = f"Forecast থেকে পার্থক্য: {delta:+g} (একই unit ধরে)।"
+    if previous is not None:
+        prev_note = "Actual Previous-এর চেয়ে বেশি।" if actual > previous else "Actual Previous-এর চেয়ে কম।" if actual < previous else "Actual Previous-এর সমান।"
+    else:
+        prev_note = "Previous-এর মান তুলনা করা যায়নি।"
+    return direction, f"{reason}\n{diff}\n{prev_note}", "সম্ভাব্য প্রভাব; নিশ্চিত Quotex M1 signal নয়"
+
+
+def format_news_analysis(data: dict) -> str:
+    direction, explanation, note = analyze_manual_news(data)
+    badge = "🔵  PAID"
+    result_icon = "🟢" if direction.startswith("UP") else "🔴" if direction.startswith("DOWN") else "🟡"
+    return (
+        "👻 GHOST MATRIX\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"📰 NEWS ANALYZER                 {badge}\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"🌐 {data['currency']}  •  {data['event']}\n\n"
+        "┌ ACTUAL ─── FORECAST ─── PREVIOUS ┐\n"
+        f"   {data['actual_text']}       {data['forecast_text']}       {data['previous_text']}\n"
+        "└──────────────────────────────┘\n\n"
+        f"{result_icon} RESULT: {direction}\n"
+        f"🧠 ANALYSIS: {explanation}\n\n"
+        f"⚠️ {note}\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 OWNER: {NEWS_OWNER}"
+    )
+
+
+def render_news_analysis_card(data: dict) -> bytes:
+    """Render the approved GHOST MATRIX news card as a Telegram-ready PNG."""
+    direction, explanation, note = analyze_manual_news(data)
+    width, height = 1080, 760
+    bg = "#080D1A"
+    img = Image.new("RGB", (width, height), bg)
+    draw = ImageDraw.Draw(img)
+    font = _chart_font
+    # Header panel
+    draw.rounded_rectangle((28, 24, width - 28, 142), radius=28, fill="#101D35", outline="#254B83", width=2)
+    draw.ellipse((52, 50, 116, 114), fill="#173B78", outline="#62B8FF", width=2)
+    draw.text((67, 62), "G", font=font(38), fill="#8AD0FF")
+    draw.text((140, 43), "GHOST MATRIX", font=font(38), fill="#F1F6FF")
+    draw.text((142, 91), "NEWS ANALYZER", font=font(21), fill="#8CA6C8")
+    draw.rounded_rectangle((855, 53, 1020, 108), radius=16, fill="#173B78", outline="#2876C9", width=2)
+    draw.text((890, 67), "PAID", font=font(28), fill="#69BDFF")
+
+    event_label = f"{data['currency']}  •  {data['event']}"
+    draw.text((48, 174), event_label[:52], font=font(28), fill="#B9D7FF")
+    labels = [("ACTUAL", data["actual_text"]), ("FORECAST", data["forecast_text"]), ("PREVIOUS", data["previous_text"])]
+    x_positions = [38, 373, 708]
+    for x, (label, value) in zip(x_positions, labels):
+        draw.rounded_rectangle((x, 226, x + 320, 344), radius=20, fill="#111D30", outline="#263B56", width=2)
+        draw.text((x + 22, 246), label, font=font(20), fill="#90A7C5")
+        draw.text((x + 22, 282), str(value)[:18], font=font(34), fill="#FFFFFF")
+
+    if direction.startswith("UP"):
+        panel, accent, arrow = "#103D30", "#5AE2AF", "UP  ↑"
+    elif direction.startswith("DOWN"):
+        panel, accent, arrow = "#421D2A", "#FF7D8B", "DOWN  ↓"
+    else:
+        panel, accent, arrow = "#3B3217", "#F3D477", "UNCLEAR"
+    draw.rounded_rectangle((38, 372, width - 38, 512), radius=22, fill=panel, outline=accent, width=2)
+    draw.text((72, 392), arrow, font=font(46), fill=accent)
+    # Use English on the PNG because the runtime may not have a Bengali-capable font.
+    event_lower = str(data.get("event", "")).lower()
+    lower_is_better = any(term in event_lower for term in (
+        "unemployment rate", "jobless claims", "initial claims", "continuing claims",
+        "claims", "unemployment", "job losses", "layoffs", "bad loans",
+    ))
+    if direction.startswith("UP"):
+        short_reason = "Lower than forecast may support currency." if lower_is_better else "Actual is above forecast."
+    elif direction.startswith("DOWN"):
+        short_reason = "Actual is below forecast." if not lower_is_better else "Higher than forecast may weigh on currency."
+    else:
+        short_reason = "No clear surprise versus forecast."
+    draw.text((74, 458), short_reason, font=font(20), fill="#E6F0FA")
+
+    draw.line((44, 550, width - 44, 550), fill="#20324C", width=2)
+    draw.text((48, 574), "NEWS-BASED ANALYSIS", font=font(19), fill="#91A5C0")
+    draw.text((48, 606), "Not a confirmed Quotex M1 signal", font=font(22), fill="#D5DFEC")
+    draw.text((48, 674), f"OWNER: {NEWS_OWNER}", font=font(23), fill="#B9D7FF")
+    draw.text((width - 350, 681), "GHOST MATRIX  •  NEWS", font=font(15), fill="#7186A5")
+
+    output = io.BytesIO()
+    img.save(output, format="PNG", optimize=True)
+    return output.getvalue()
+
+
+def _event_datetime(event: dict) -> Optional[datetime]:
+    for key in ("time_utc", "datetime", "date_time", "release_time"):
+        raw = event.get(key)
+        if not raw:
+            continue
+        try:
+            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(BANGLADESH_TZ)
+        except (TypeError, ValueError):
+            continue
+    raw_date = event.get("date")
+    if raw_date:
+        try:
+            dt = datetime.fromisoformat(str(raw_date))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(BANGLADESH_TZ)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def get_economic_calendar(days: int = 7) -> list[dict]:
+    """Fetch high-impact calendar events from the no-key Finance Calendar API."""
+    today = datetime.now(BANGLADESH_TZ).date()
+    end = today + timedelta(days=max(1, min(int(days), 14)))
+    response = session.get(
+        f"{FINANCE_CALENDAR_BASE}/calendar",
+        params={"from": today.isoformat(), "to": end.isoformat(), "impact": "high", "limit": 100},
+        timeout=20,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    events = payload.get("events", []) if isinstance(payload, dict) else payload
+    if not isinstance(events, list):
+        raise RuntimeError("Calendar API returned an unexpected response format")
+    result = []
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        impact = str(event.get("impact", "")).lower()
+        if impact and impact not in {"high", "3", "high impact"}:
+            continue
+        dt = _event_datetime(event)
+        name = str(event.get("title") or event.get("name") or event.get("event") or "Economic event")
+        currency = str(event.get("currency") or event.get("country_code") or event.get("country") or "—")
+        # Prefer explicitly supplied currency; otherwise use country label as available.
+        currency_aliases = {
+            "us": "USD", "usa": "USD", "united states": "USD",
+            "gb": "GBP", "uk": "GBP", "united kingdom": "GBP",
+            "eu": "EUR", "euro area": "EUR", "eurozone": "EUR",
+            "au": "AUD", "australia": "AUD", "ca": "CAD", "canada": "CAD",
+            "jp": "JPY", "japan": "JPY", "ch": "CHF", "switzerland": "CHF",
+            "nz": "NZD", "new zealand": "NZD", "cn": "CNY", "china": "CNY",
+        }
+        if currency.lower() in currency_aliases:
+            currency = currency_aliases[currency.lower()]
+        result.append({
+            "datetime": dt,
+            "name": name,
+            "currency": currency,
+            "impact": impact or "high",
+            "forecast": event.get("consensus", event.get("forecast")),
+            "previous": event.get("prior", event.get("previous")),
+            "actual": event.get("actual"),
+            "url": event.get("url"),
+        })
+    result.sort(key=lambda item: item["datetime"] or datetime.max.replace(tzinfo=BANGLADESH_TZ))
+    return result
+
+
+def format_economic_calendar(events: list[dict], days: int = 7) -> str:
+    lines = [
+        "👻 GHOST MATRIX",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "📰 ECONOMIC NEWS CALENDAR        🔵 PAID",
+        f"📅 High-impact events • Next {days} days • Bangladesh time",
+        "━━━━━━━━━━━━━━━━━━━━",
+    ]
+    if not events:
+        lines.append("এই সময়সীমায় কোনো high-impact event পাওয়া যায়নি।")
+    else:
+        for event in events[:12]:
+            dt = event.get("datetime")
+            date_time = dt.strftime("%d %b • %I:%M %p") if dt else "সময় যাচাই করা যায়নি"
+            lines.append(
+                f"\n🔴 {event['currency']} • {event['name']}\n"
+                f"🕒 {date_time} (UTC+6)\n"
+                f"⚠️ Impact: HIGH"
+            )
+            if event.get("url"):
+                lines.append(f"🔗 {event['url']}")
+    lines.extend([
+        "\nℹ️ Actual release-এর পরে পাওয়া গেলে আবার Actual/Forecast/Previous পাঠিয়ে Analyzer চালাও।",
+        f"Source: {NEWS_SOURCE_URL}",
+        f"👤 OWNER: {NEWS_OWNER}",
+    ])
+    return "\n".join(lines)
+
+
 # ------------------------------ Commands -----------------------------
 def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None) -> None:
     clean = (text or "").strip()
@@ -1007,6 +1291,18 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
 
     if photo_file_id:
         send_message("📷 Chart screenshot analysis\n\n" + analyze_chart_image(photo_file_id), chat_id)
+        return
+
+    manual_news = parse_manual_news_input(clean)
+    if manual_news:
+        full_analysis = format_news_analysis(manual_news)
+        try:
+            card = render_news_analysis_card(manual_news)
+            if not send_photo_bytes(card, full_analysis, chat_id):
+                send_message(full_analysis, chat_id)
+        except Exception as exc:
+            log.warning("News analyzer card render failed: %s", exc)
+            send_message(full_analysis, chat_id)
         return
 
     if command in ("/start", "/help"):
@@ -1023,7 +1319,8 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             "/risk — risk reminder\n"
             "/learn — পরের Price Action Lesson ও ছবি (একবারে ১টি)\n"
             "/learn reset — Lesson 1 থেকে আবার শুরু\n"
-            "/news — explains news feed status\n"
+            "/news — আগামী ৭ দিনের high-impact economic news\n"
+            "News input: AUD CPI\nAct-4.7%\nFor-4.6%\nPre-4.7% — auto analyzer\n"
             "/ask your question — optional AI answer\n\n"
             "Automatic signal messages are OFF. Use /future to scan manually. External data is not Quotex-verified.", chat_id)
     elif command == "/status":
@@ -1147,9 +1444,22 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
                 chat_id,
             )
     elif command == "/news":
-        send_message(
-            "📰 Real news feed এখন সংযুক্ত নেই। তাই bot live news/prediction বানিয়ে বলবে না।\n"
-            "News-based signals পেতে আলাদা যাচাইকৃত news/calendar API যুক্ত করতে হবে.", chat_id)
+        days = 7
+        if args.strip().lower() == "today":
+            days = 1
+        elif args.strip().lower() == "week":
+            days = 7
+        try:
+            events = get_economic_calendar(days)
+            send_message(format_economic_calendar(events, days), chat_id)
+        except Exception as exc:
+            log.warning("Economic calendar request failed: %s", exc)
+            send_message(
+                "👻 GHOST MATRIX — NEWS CALENDAR\n"
+                "🔵 PAID\n\n"
+                "লাইভ economic calendar এখন পাওয়া যায়নি। কিছুক্ষণ পরে /news আবার চেষ্টা করো।\n"
+                f"Source: {NEWS_SOURCE_URL}\n"
+                f"👤 OWNER: {NEWS_OWNER}", chat_id)
     elif command.startswith("/ask"):
         if not args:
             send_message("ব্যবহার: /ask তোমার প্রশ্ন লিখো", chat_id)
@@ -1158,7 +1468,11 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
     elif clean.startswith("/"):
         send_message("Command বুঝতে পারিনি। /help লিখে available commands দেখো.", chat_id)
     elif clean:
-        send_message("সাধারণ প্রশ্নের জন্য /ask তোমার প্রশ্ন লিখো ব্যবহার করো.", chat_id)
+        send_message(
+            "সাধারণ প্রশ্নের জন্য /ask তোমার প্রশ্ন লিখো ব্যবহার করো।\n\n"
+            "📰 News Analyzer format:\n"
+            "AUD CPI\nAct-4.7%\nFor-4.6%\nPre-4.7%\n\n"
+            "Actual, Forecast, Previous তিনটি মান দিলেই auto-analysis হবে।", chat_id)
 
 
 def telegram_poll_loop() -> None:
