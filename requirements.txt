@@ -5,3 +5,4 @@ yfinance
 Flask>=3.0,<4.0
 requests>=2.31,<3.0
 psycopg2-binary>=2.9,<3.0
+gunicorn=>22.0<24.0
