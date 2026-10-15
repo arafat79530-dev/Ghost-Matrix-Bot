@@ -1548,6 +1548,14 @@ def telegram_poll_loop() -> None:
 @app.get("/")
 def home():
     return "GHOST MATRIX V2.0 is running. Data source: external Twelve Data; Quotex verification: disabled.", 200
+    
+@app.get("/app")
+@app.get("/app/")
+def mini_app():
+    return send_from_directory(
+        os.path.dirname(os.path.abspath(__file__)),
+        "index.html"
+    )
 
 @app.get("/app")
 @app.get("/app/")
