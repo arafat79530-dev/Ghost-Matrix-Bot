@@ -19,12 +19,6 @@ from typing import Any, Optional
 
 import requests
 from flask import Flask, jsonify, send_from_directory
-home()@app.get("/app")
-def mini_app():
-    return send_from_directory(
-        os.path.dirname(os.path.abspath(__file__)),
-        "index.html"
-    )
 from PIL import Image, ImageDraw, ImageFont
 
 try:
@@ -1085,7 +1079,6 @@ def parse_manual_news_input(text: str) -> Optional[dict]:
         "previous": _extract_number(values["previous"]),
     }
 
-
 def analyze_manual_news(data: dict) -> tuple[str, str, str]:
     """Return direction, explanation and confidence note; heuristic, not a trade guarantee."""
     actual, forecast, previous = data.get("actual"), data.get("forecast"), data.get("previous")
@@ -1532,6 +1525,18 @@ def telegram_poll_loop() -> None:
                 if not is_allowed_chat(chat_id):
                     continue
                 text_in = message.get("text") or message.get("caption") or ""
+                # Accept JSON commands from Telegram Web App keyboard buttons.
+                # Telegram Main Mini App launch mode may not support sendData().
+                web_app_data = message.get("web_app_data")
+                if web_app_data:
+                    try:
+                        web_payload = json.loads(web_app_data.get("data", "{}"))
+                        if isinstance(web_payload, dict):
+                            web_command = web_payload.get("command", "")
+                            if isinstance(web_command, str) and web_command.startswith("/"):
+                                text_in = web_command
+                    except (json.JSONDecodeError, TypeError, ValueError):
+                        log.warning("Ignoring invalid Telegram Mini App data")
                 photos = message.get("photo") or []
                 photo_id = photos[-1].get("file_id") if photos else None
                 handle_command(text_in, chat_id, photo_id)
@@ -1543,6 +1548,12 @@ def telegram_poll_loop() -> None:
 @app.get("/")
 def home():
     return "GHOST MATRIX V2.0 is running. Data source: external Twelve Data; Quotex verification: disabled.", 200
+
+@app.get("/app")
+@app.get("/app/")
+def mini_app():
+    # Keep index.html in the same repository folder as main.py.
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
 @app.get("/health")
 def health():
