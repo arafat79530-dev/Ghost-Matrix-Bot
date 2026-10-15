@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GHOST MATRIX</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      background: #10131c;
+      color: #ffffff;
+    }
+    .card {
+      padding: 20px;
+      border-radius: 16px;
+      background: #1c2230;
+      margin-top: 20px;
+    }
+    h1 { color: #62e6c5; }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 10px;
+      background: #62e6c5;
+      color: #10131c;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>GHOST MATRIX</h1>
+  <p>Price Action Learning & Market Analysis</p>
+
+  <div class="card">
+    <h3>Dashboard</h3>
+    <p id="status">Mini App connected.</p>
+    <button onclick="showLearning()">Learning Guide</button>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    function showLearning() {
+      document.getElementById("status").textContent =
+        "Learning Guide interface is ready for integration.";
+    }
+  </script>
+</body>
+</html>
