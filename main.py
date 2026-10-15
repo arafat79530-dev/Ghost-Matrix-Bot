@@ -1557,11 +1557,6 @@ def mini_app():
         "index.html"
     )
 
-@app.get("/app")
-@app.get("/app/")
-def mini_app():
-    # Keep index.html in the same repository folder as main.py.
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
 @app.get("/health")
 def health():
