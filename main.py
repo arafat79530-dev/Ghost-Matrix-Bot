@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import base64
 import json
+import io
 from contextlib import contextmanager
 import logging
 import os
@@ -18,6 +19,7 @@ from typing import Any, Optional
 
 import requests
 from flask import Flask, jsonify
+from PIL import Image, ImageDraw, ImageFont
 
 try:
     import psycopg2
@@ -628,6 +630,285 @@ def get_photo_file_url(file_id: str) -> Optional[str]:
         log.warning("Could not retrieve Telegram photo: %s", exc)
         return None
 
+
+# ---------------------- Price Action Learning Charts -------------------
+# These are schematic educational examples generated locally with Pillow.
+# They are NOT live Quotex charts and do not generate trade signals.
+PA_LESSONS = [
+    {
+        "key": "support_resistance",
+        "title": "1/7 — Support & Resistance",
+        "caption": (
+            "📘 SUPPORT ও RESISTANCE\n\n"
+            "Support = এমন price area যেখানে আগে কয়েকবার দাম নেমে এসে থেমেছে/উঠেছে; "
+            "এখানে buyers আগ্রহী হতে পারে। Resistance = এমন area যেখানে দাম উঠে এসে "
+            "বারবার থেমেছে/নেমেছে; sellers সক্রিয় হতে পারে। এগুলো একদম সরু line নয়—zone হিসেবে দেখো।\n\n"
+            "উদাহরণ: দাম 1.1000 এলাকার কাছে 3 বার নেমে bounce করলে ওই অঞ্চল support হতে পারে। "
+            "কিন্তু 4র্থ বারেও bounce হবেই—এমন নিশ্চয়তা নেই।\n\n"
+            "কী দেখবে: আগের swing highs/lows, একাধিক reaction, candle close, rejection এবং market trend। "
+            "শুধু level touch হলেই entry নয়; rejection/structure confirmation অপেক্ষা করো। "
+            "Level ভেঙে গেলে সেটি পরে role reversal করতে পারে।"
+        ),
+        "prices": [45,35,43,52,48,37,44,57,51,39,46,58,53,47,55,63],
+        "levels": [(39,"SUPPORT"),(57,"RESISTANCE")],
+        "notes": ["Repeated reaction zones"]
+    },
+    {
+        "key": "trend_structure",
+        "title": "2/7 — Trend & Market Structure",
+        "caption": (
+            "📘 TREND ও MARKET STRUCTURE\n\n"
+            "Uptrend: Higher High (HH) + Higher Low (HL) ধারাবাহিকভাবে তৈরি হয়। "
+            "Downtrend: Lower Low (LL) + Lower High (LH)। Sideways market-এ দাম একটি range-এর মধ্যে ঘোরে।\n\n"
+            "উদাহরণ: আগের high 1.1050, পরের high 1.1080 এবং pullback low আগের low-এর উপরে থাকলে "
+            "buyers শক্তিশালী হতে পারে। কিন্তু একটি wick level ভাঙলেই structure break নিশ্চিত নয়—candle close ও context দেখো।\n\n"
+            "কী দেখবে: অন্তত 2টি swing high ও 2টি swing low, candle close, pullback এবং বড় timeframe-এর দিক। "
+            "Trend-এর বিপরীতে শুধু একটি বড় candle দেখে entry নিও না। Structure অস্পষ্ট হলে NO TRADE।"
+        ),
+        "prices": [24,30,27,35,31,40,35,44,39,49,43,54,48,59,53,65],
+        "levels": [],
+        "notes": ["HH", "HL", "HH", "HL"]
+    },
+    {
+        "key": "breakout_retest",
+        "title": "3/7 — Breakout & Retest",
+        "caption": (
+            "📘 BREAKOUT ও RETEST\n\n"
+            "Breakout = price কোনো range/support/resistance zone-এর বাইরে শক্তভাবে close করে। "
+            "Retest = ভাঙা level-এ দাম ফিরে এসে সেটিকে নতুন support/resistance হিসেবে পরীক্ষা করে।\n\n"
+            "উদাহরণ: Resistance zone-এর উপরে candle close → দাম পুরোনো resistance-এ ফিরে আসে → "
+            "সেখানে bullish rejection/confirmation দেখা যায়। তখন সম্ভাব্য bullish setup তৈরি হতে পারে; নিশ্চিত নয়।\n\n"
+            "ভুল breakout এড়াতে: শুধু wick-এর বাইরে যাওয়া যথেষ্ট নয়। candle close, momentum, retest reaction "
+            "এবং বাজারের structure মিলিয়ে দেখো। Retest না হলে জোর করে entry নয়। M1-এ noise বেশি; "
+            "news spike ও spread-ও ফল বদলাতে পারে।"
+        ),
+        "prices": [35,39,34,38,36,40,37,39,42,48,55,62,57,51,54,59],
+        "levels": [(41,"OLD RESISTANCE")],
+        "notes": ["Breakout", "Retest", "Reaction"]
+    },
+    {
+        "key": "pin_bar",
+        "title": "4/7 — Pin Bar",
+        "caption": (
+            "📘 PIN BAR / REJECTION CANDLE\n\n"
+            "Pin bar-এ body তুলনামূলক ছোট এবং একটি wick লম্বা হয়। নিচের লম্বা wick support-এর কাছে হলে "
+            "দাম নিচে reject হয়েছে বোঝাতে পারে; উপরের লম্বা wick resistance-এর কাছে হলে উপরে reject হয়েছে বোঝাতে পারে।\n\n"
+            "উদাহরণ: support zone-এ long lower wick + candle close উপরের দিকে = সম্ভাব্য bullish rejection। "
+            "কিন্তু মাঝামাঝি random জায়গায় একই candle দুর্বল signal হতে পারে।\n\n"
+            "Confirmation: level/structure-এর সঙ্গে মিল, candle close, পরের candle-এর follow-through। "
+            "শুধু pin bar দেখেই CALL/PUT নয়। wick-এর দিক, body ও location—তিনটিই দেখো।"
+        ),
+        "prices": [53,48,44,41,39,46,49,47,52,55,51,57,60,58,62,65],
+        "levels": [(41,"SUPPORT ZONE")],
+        "notes": ["Long lower wick", "Bullish rejection"]
+    },
+    {
+        "key": "engulfing",
+        "title": "5/7 — Engulfing",
+        "caption": (
+            "📘 BULLISH ও BEARISH ENGULFING\n\n"
+            "Bullish engulfing: একটি bearish candle-এর পরে বড় bullish body আগের body-কে ঢেকে দেয়। "
+            "Bearish engulfing: bullish candle-এর পরে বড় bearish body আগের body-কে ঢেকে দেয়। "
+            "এটি momentum shift-এর ইঙ্গিত হতে পারে, নিশ্চয়তা নয়।\n\n"
+            "উদাহরণ: support/পরিষ্কার pullback-এর শেষে bearish candle, তারপর বড় bullish body—এটি bullish engulfing "
+            "হতে পারে। Resistance-এ উল্টো pattern bearish হতে পারে।\n\n"
+            "Confirmation: গুরুত্বপূর্ণ zone, trend/structure এবং candle close মিলিয়ে দেখো। "
+            "Body engulf করেছে কি না দেখো; শুধু wick বড় হলেই engulfing নয়। Range-এর মাঝখানে pattern-এর মান কম হতে পারে।"
+        ),
+        "prices": [60,56,51,47,50,46,43,52,57,54,59,63,60,66,70,68],
+        "levels": [(44,"SUPPORT ZONE")],
+        "notes": ["Bearish body", "Bullish engulfing"]
+    },
+    {
+        "key": "liquidity_sweep",
+        "title": "6/7 — Liquidity Sweep",
+        "caption": (
+            "📘 LIQUIDITY SWEEP\n\n"
+            "দাম আগের swing high/low-এর একটু বাইরে wick তৈরি করে আবার level-এর ভেতরে close করলে "
+            "সেটি সম্ভাব্য liquidity sweep হতে পারে। অনেক trader stop-loss ওই high/low-এর আশেপাশে রাখে—"
+            "তাই level-এর বাইরে দ্রুত move-এর পর reversal দেখা যেতে পারে।\n\n"
+            "উদাহরণ: আগের low ভেঙে wick নিচে যায়, কিন্তু candle আবার low-এর উপরে close করে এবং bullish structure তৈরি করে। "
+            "এটি possible bullish sweep; প্রতিবার reversal হবে না।\n\n"
+            "Confirmation: sweep-এর পর candle close back inside, rejection এবং structure shift দেখো। "
+            "শুধু wick দেখে entry নয়। Strong breakout যদি level-এর বাইরে close ও hold করে, সেটি sweep নাও হতে পারে।"
+        ),
+        "prices": [52,47,44,48,43,39,32,42,47,45,52,57,54,61,65,63],
+        "levels": [(39,"PRIOR SWING LOW")],
+        "notes": ["Sweep below low", "Close back above"]
+    },
+    {
+        "key": "entry_confirmation",
+        "title": "7/7 — Entry Confirmation Checklist",
+        "caption": (
+            "📘 ENTRY-এর আগে CONFIRMATION\n\n"
+            "১) Market trend/structure পরিষ্কার? ২) দাম গুরুত্বপূর্ণ support/resistance zone-এ? "
+            "৩) Pin bar/engulfing বা breakout-retest-এর মতো price-action evidence আছে? "
+            "৪) Candle close হয়েছে, নাকি শুধু চলমান candle? ৫) News/অস্বাভাবিক volatility আছে? "
+            "৬) Quotex-এ একই REAL pair, timeframe ও candle মিলছে?\n\n"
+            "উদাহরণ: uptrend + support retest + bullish rejection close = সম্ভাব্য bullish context। "
+            "কোনো একটি শর্ত অনুপস্থিত বা চার্ট অস্পষ্ট হলে trade বাদ দেওয়াও একটি সিদ্ধান্ত।\n\n"
+            "M1-এ false signal বেশি। Fixed expiry-তে candle close, payout, spread/price difference ও timing গুরুত্বপূর্ণ। "
+            "Martingale করে loss recover করার চেষ্টা কোরো না। Demo-তে নোট রেখে বহু উদাহরণ পরীক্ষা করো। "
+            "এটি শিক্ষা, লাভের নিশ্চয়তা নয়।"
+        ),
+        "prices": [28,35,31,40,36,45,40,49,44,53,47,56,52,61,57,66],
+        "levels": [(44,"KEY ZONE")],
+        "notes": ["Trend", "Zone", "Rejection close"]
+    },
+]
+
+
+def _chart_font(size: int):
+    try:
+        return ImageFont.truetype("DejaVuSans.ttf", size)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def make_price_action_chart(lesson: dict) -> bytes:
+    """Render an illustrative candlestick chart in memory; no external image assets."""
+    width, height = 1000, 560
+    img = Image.new("RGB", (width, height), "#101827")
+    draw = ImageDraw.Draw(img)
+    title_font = _chart_font(28)
+    label_font = _chart_font(18)
+    small_font = _chart_font(15)
+    draw.text((34, 22), lesson["title"], font=title_font, fill="#F4F7FB")
+    draw.text((36, 62), "ILLUSTRATIVE PRICE ACTION EXAMPLE — NOT LIVE MARKET DATA",
+              font=small_font, fill="#9CAEC4")
+
+    left, top, right, bottom = 70, 115, 950, 475
+    # Grid
+    for i in range(7):
+        y = top + i * (bottom-top) // 6
+        draw.line((left, y, right, y), fill="#26354A", width=1)
+    for i in range(13):
+        x = left + i * (right-left) // 12
+        draw.line((x, top, x, bottom), fill="#1C2A3D", width=1)
+
+    vals = lesson["prices"]
+    lo, hi = min(vals)-9, max(vals)+9
+    def py(v):
+        return int(bottom - (v-lo)/(hi-lo)*(bottom-top))
+    candle_w = 23
+    step = (right-left)//len(vals)
+    prev = vals[0]
+    ohlc = []
+    for idx, close in enumerate(vals):
+        open_v = prev + ((-1)**idx) * (2 + (idx % 3))
+        high_v = max(open_v, close) + (2 + idx % 4)
+        low_v = min(open_v, close) - (2 + (idx+1) % 4)
+        ohlc.append((open_v, high_v, low_v, close))
+        prev = close
+
+    # Special recognizable candles for Pin Bar, Engulfing and sweep examples.
+    if lesson["key"] == "pin_bar":
+        o,h,l,c = ohlc[5]
+        ohlc[5] = (o, max(o,c)+2, lo+2, c)
+    elif lesson["key"] == "engulfing":
+        ohlc[7] = (vals[7]+5, vals[7]+7, vals[7]-2, vals[7]-1)
+        ohlc[8] = (vals[8]-7, vals[8]+2, vals[8]-9, vals[8]+8)
+    elif lesson["key"] == "liquidity_sweep":
+        o,h,l,c = ohlc[6]
+        ohlc[6] = (o, h, lo+1, max(o,c)+1)
+
+    centers = []
+    for idx, (o,h,l,c) in enumerate(ohlc):
+        x = left + idx*step + step//2
+        centers.append((x, py(c)))
+        color = "#2ED6A1" if c >= o else "#FF647C"
+        draw.line((x, py(h), x, py(l)), fill=color, width=3)
+        y1, y2 = py(o), py(c)
+        if abs(y2-y1) < 5:
+            y2 = y1 + (5 if y2 >= y1 else -5)
+        draw.rectangle((x-candle_w//2, min(y1,y2), x+candle_w//2, max(y1,y2)),
+                       fill=color, outline=color)
+
+    # Key horizontal zones.
+    for level, label in lesson.get("levels", []):
+        y = py(level)
+        draw.line((left, y, right, y), fill="#F7C85B", width=3)
+        draw.rectangle((left+8, y-24, left+8+len(label)*10+18, y-2), fill="#F7C85B")
+        draw.text((left+16, y-22), label, font=small_font, fill="#172033")
+
+    key = lesson["key"]
+    if key == "trend_structure":
+        pts = [centers[i] for i in [1,3,5,7,9,11,13,15]]
+        draw.line(pts, fill="#66B7FF", width=3)
+        draw.text((760, 130), "HH / HL", font=label_font, fill="#66B7FF")
+    elif key == "breakout_retest":
+        draw.text((610, 125), "BREAKOUT", font=label_font, fill="#2ED6A1")
+        draw.text((720, 300), "RETEST", font=label_font, fill="#F7C85B")
+    elif key == "pin_bar":
+        x, y = centers[5]
+        draw.ellipse((x-11, y-11, x+11, y+11), outline="#F7C85B", width=3)
+        draw.text((x+18, py(lo+4)), "LONG LOWER WICK", font=small_font, fill="#F7C85B")
+    elif key == "engulfing":
+        x, y = centers[8]
+        draw.ellipse((x-18, y-26, x+18, y+26), outline="#F7C85B", width=3)
+        draw.text((x+22, y-32), "ENGULF", font=small_font, fill="#F7C85B")
+    elif key == "liquidity_sweep":
+        x, y = centers[6]
+        draw.ellipse((x-12, py(lo+1)-8, x+12, py(lo+1)+8), outline="#F7C85B", width=3)
+        draw.text((x+18, py(lo+7)), "SWEEP", font=small_font, fill="#F7C85B")
+    elif key == "entry_confirmation":
+        checklist = ["1. Trend / structure", "2. Key zone", "3. Candle close", "4. Confirmation"]
+        for j, item in enumerate(checklist):
+            draw.rounded_rectangle((730, 132+j*44, 930, 166+j*44), radius=7,
+                                   fill="#20334A", outline="#66B7FF", width=1)
+            draw.text((742, 140+j*44), item, font=small_font, fill="#F4F7FB")
+
+    draw.text((35, 510), "Green = bullish candle   |   Red = bearish candle   |   Yellow = key level",
+              font=small_font, fill="#B9C7D8")
+    output = io.BytesIO()
+    img.save(output, format="PNG", optimize=True)
+    return output.getvalue()
+
+
+def send_photo_bytes(photo_bytes: bytes, caption: str, chat_id: Optional[str] = None) -> bool:
+    """Upload a generated educational PNG to Telegram without storing it on disk."""
+    target = str(chat_id or CHAT_ID).strip()
+    if not target or not BOT_TOKEN:
+        log.info("Telegram photo skipped: BOT_TOKEN/CHAT_ID missing")
+        return False
+    try:
+        response = session.post(
+            f"{TELEGRAM_BASE}/sendPhoto",
+            data={"chat_id": target, "caption": caption[:1024]},
+            files={"photo": ("price_action_example.png", photo_bytes, "image/png")},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if not data.get("ok"):
+            raise RuntimeError(str(data))
+        return True
+    except Exception as exc:
+        log.error("Telegram educational photo send failed: %s", exc)
+        send_message("⚠️ চার্টের ছবি পাঠানো যায়নি। Render Logs দেখো।", target)
+        return False
+
+
+def send_price_action_course(chat_id: str) -> None:
+    intro = (
+        "📘 GHOST MATRIX — FULL PRICE ACTION LEARNING\n\n"
+        "প্রতিটি ছবিই schematic example, live Quotex chart নয়। "
+        "ছবি দেখে pattern চিনতে শেখো; শুধু pattern দেখে trade নিও না।\n\n"
+        "নিচে ৭টি lesson একে একে পাঠানো হচ্ছে।"
+    )
+    send_message(intro, chat_id)
+    for lesson in PA_LESSONS:
+        photo = make_price_action_chart(lesson)
+        send_photo_bytes(photo, lesson["caption"], chat_id)
+        time.sleep(0.35)
+    send_message(
+        "✅ সব lesson শেষ। মনে রাখো: কোনো pattern নিশ্চিত ফল দেয় না। "
+        "আগে demo-তে practice, screenshot journal, এবং Quotex-এ REAL pair/timeframe নিজে verify করো। "
+        "Twelve Data-এর external price-কে Quotex-verified বলা যাবে না।",
+        chat_id,
+    )
+
+
 # ------------------------------ Commands -----------------------------
 def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None) -> None:
     clean = (text or "").strip()
@@ -650,7 +931,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             "/win [ID] — mark a signal WIN\n"
             "/loss [ID] — mark a signal LOSS\n"
             "/risk — risk reminder\n"
-            "/learn — basic M1 learning guide\n"
+            "/learn — ছবি-সহ বিস্তারিত Price Action course (৭টি lesson)\n"
             "/news — explains news feed status\n"
             "/ask your question — optional AI answer\n\n"
             "Automatic signal messages are OFF. Use /future to scan manually. External data is not Quotex-verified.", chat_id)
@@ -763,19 +1044,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
             "• Demo/backtest আগে ব্যবহার করো।\n• এক ট্রেডে সামর্থ্যের বাইরে ঝুঁকি নিও না।\n"
             "• Quotex-এর candle/asset নিজে মিলিয়ে দেখো; বাইরের feed আলাদা হতে পারে.", chat_id)
     elif command == "/learn":
-        send_message(
-            "📘 GHOST MATRIX — সহজ Learning Guide\n"
-            "━━━━━━━━━━━━━━━━━━\n"
-            "🕯️ Candle কী? এক মিনিটের দামের ওঠানামা দেখানো একটি বার।\n"
-            "🟢 Bullish candle: candle যে দামে শুরু হয়েছে, তার চেয়ে বেশি দামে শেষ হয়েছে—ওই মিনিটে ক্রেতাদের চাপ ছিল।\n"
-            "🔴 Bearish candle: candle যে দামে শুরু হয়েছে, তার চেয়ে কম দামে শেষ হয়েছে—ওই মিনিটে বিক্রেতাদের চাপ ছিল।\n"
-            "📈 EMA9/EMA21: সাম্প্রতিক দামের গড় দিয়ে trend-এর দিক বোঝার চেষ্টা করে; এটি একা সিগনাল নয়।\n"
-            "📊 RSI: দামের momentum 0–100 স্কেলে মাপে; এটিও একা buy/sell নির্দেশ নয়।\n"
-            "🟢 CALL: দাম বাড়ার সম্ভাবনা ধরে বিশ্লেষণ; 🔴 PUT: দাম কমার সম্ভাবনা ধরে বিশ্লেষণ। কোনোটি নিশ্চিত নয়।\n"
-            "🕒 সময়: সব signal/candle সময় বাংলাদেশ সময় (Asia/Dhaka, UTC+6), ২৪ ঘণ্টার ফরম্যাটে। 13:00=দুপুর ১টা, 14:00=দুপুর ২টা, 15:00=বিকেল ৩টা।\n"
-            "🎯 /future = তুমি চাইলে একবারে ১৮টি pair স্ক্যান; অটো সিগনাল পাঠানো বন্ধ।\n"
-            "📋 /signals = সাম্প্রতিক signal | /win ID বা /loss ID = ফল যোগ | /stats = logged win/loss rate।\n"
-            "⚠️ Twelve Data external feed; Quotex-এর chart/time/price নিজে মিলিয়ে দেখো।", chat_id)
+        send_price_action_course(chat_id)
     elif command == "/news":
         send_message(
             "📰 Real news feed এখন সংযুক্ত নেই। তাই bot live news/prediction বানিয়ে বলবে না।\n"
