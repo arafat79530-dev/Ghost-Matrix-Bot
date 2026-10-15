@@ -1079,6 +1079,7 @@ def parse_manual_news_input(text: str) -> Optional[dict]:
         "previous": _extract_number(values["previous"]),
     }
 
+
 def analyze_manual_news(data: dict) -> tuple[str, str, str]:
     """Return direction, explanation and confidence note; heuristic, not a trade guarantee."""
     actual, forecast, previous = data.get("actual"), data.get("forecast"), data.get("previous")
@@ -1548,15 +1549,12 @@ def telegram_poll_loop() -> None:
 @app.get("/")
 def home():
     return "GHOST MATRIX V2.0 is running. Data source: external Twelve Data; Quotex verification: disabled.", 200
-    
+
 @app.get("/app")
 @app.get("/app/")
 def mini_app():
-    return send_from_directory(
-        os.path.dirname(os.path.abspath(__file__)),
-        "index.html"
-    )
-
+    # Keep index.html in the same repository folder as main.py.
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
 @app.get("/health")
 def health():
