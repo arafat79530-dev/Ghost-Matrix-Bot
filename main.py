@@ -18,7 +18,13 @@ from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 import requests
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
+home()@app.get("/app")
+def mini_app():
+    return send_from_directory(
+        os.path.dirname(os.path.abspath(__file__)),
+        "index.html"
+    )
 from PIL import Image, ImageDraw, ImageFont
 
 try:
