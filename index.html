@@ -1,56 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GHOST MATRIX</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080d17">
+  <title>GHOST MATRIX V2.0 — News Analyzer</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 24px;
-      font-family: Arial, sans-serif;
-      background: #10131c;
-      color: #ffffff;
-    }
-    .card {
-      padding: 20px;
-      border-radius: 16px;
-      background: #1c2230;
-      margin-top: 20px;
-    }
-    h1 { color: #62e6c5; }
-    button {
-      width: 100%;
-      padding: 14px;
-      border: 0;
-      border-radius: 10px;
-      background: #62e6c5;
-      color: #10131c;
-      font-weight: bold;
-      margin-top: 12px;
-    }
+    :root{color-scheme:dark;--bg:#080d17;--panel:#111a29;--panel2:#0d1522;--line:#263449;--text:#eef5ff;--muted:#94a5bd;--cyan:#62e6c5;--violet:#9aabff;--green:#53e0a2;--red:#ff718d;--amber:#f5c86c}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#152640 0,var(--bg) 52%);color:var(--text);font:15px/1.5 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}button,input{font:inherit}button{cursor:pointer}.wrap{max-width:1120px;margin:auto;padding:18px 14px 34px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:11px;min-width:0}.logo{width:46px;height:46px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#07121a;font-size:24px;font-weight:900;box-shadow:0 0 26px #62e6c522;flex-shrink:0}.brand h1{font-size:clamp(16px,3vw,22px);letter-spacing:.06em;margin:0}.sub{font-size:11px;color:var(--muted);letter-spacing:.08em;margin-top:3px}.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:30px;padding:7px 10px;color:var(--muted);font-size:11px;white-space:nowrap}.dot{height:7px;width:7px;border-radius:50%;background:var(--amber)}.hero{border:1px solid #62e6c533;border-radius:23px;padding:22px;background:linear-gradient(115deg,#62e6c511,#9aabff0a);margin-bottom:14px}.eyebrow{font-size:10px;letter-spacing:.16em;color:var(--cyan);font-weight:800}.hero h2{font-size:clamp(25px,5vw,37px);line-height:1.12;margin:9px 0}.hero p{color:var(--muted);margin:0;max-width:720px}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}.btn{border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:#1a2638;color:var(--text);font-weight:750}.btn.primary{background:linear-gradient(135deg,var(--cyan),#a2b0ff);color:#07121a;border:0}.btn:disabled{opacity:.6}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:13px}.card{min-width:0;border:1px solid var(--line);background:#111a29ed;border-radius:18px;padding:16px}.s12{grid-column:span 12}.s8{grid-column:span 8}.s6{grid-column:span 6}.s4{grid-column:span 4}.head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}.head h3{font-size:13px;margin:0;letter-spacing:.035em}.muted{color:var(--muted)}.small{font-size:11px}.badge{font-size:10px;font-weight:800;padding:4px 7px;border-radius:7px;background:#202d40;color:var(--muted);white-space:nowrap}.high{background:#4b3219;color:var(--amber)}.positive{background:#12392f;color:var(--green)}.negative{background:#431e2b;color:var(--red)}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.stat{padding:13px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}.statlabel{font-size:11px;color:var(--muted)}.statvalue{font-size:22px;font-weight:850;margin-top:5px;overflow-wrap:anywhere}.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pair{display:flex;align-items:center;justify-content:space-between;gap:7px;padding:10px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);font-size:12px}.pair strong{font-size:12px}.empty{padding:17px;border:1px dashed #35445a;border-radius:13px;color:var(--muted);text-align:center;font-size:12px}.newsnumbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.number{padding:11px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}.number span{display:block;color:var(--muted);font-size:10px}.number strong{display:block;font-size:20px;margin-top:3px}.copyrow{display:flex;gap:8px}.copyrow input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px;color:var(--text);outline:none}.lessonlist{display:grid;gap:8px}.lesson{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--panel2)}.num{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:#62e6c515;color:var(--cyan);font-weight:850;flex-shrink:0}.lesson b{display:block;font-size:12px}.lesson span{display:block;color:var(--muted);font-size:10px}.foot{text-align:center;color:#7f90a8;font-size:10px;margin-top:17px}.toast{display:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 24px);padding:11px 15px;background:#263449;border:1px solid #42526a;border-radius:12px;z-index:20;font-size:12px}.nav{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}.nav button{flex:1;min-width:85px;padding:9px;border-radius:11px;border:1px solid var(--line);background:#111a29;color:var(--muted);font-size:12px;font-weight:700}.nav button.active{color:var(--cyan);border-color:#62e6c555;background:#62e6c50b}.view[hidden]{display:none!important}
+    @media(max-width:720px){.s8,.s6,.s4{grid-column:span 12}.wrap{padding:13px 11px 26px}.hero{padding:18px}.stats{grid-template-columns:1fr}.stat{display:flex;justify-content:space-between;align-items:center;gap:10px}.statvalue{font-size:19px;margin:0}.top{align-items:flex-start}.pill{font-size:10px;padding:7px 8px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
-  <h1>GHOST MATRIX</h1>
-  <p>Price Action Learning & Market Analysis</p>
+<main class="wrap">
+  <header class="top">
+    <div class="brand"><div class="logo" aria-hidden="true">👻</div><div><h1>GHOST MATRIX <span style="color:var(--cyan)">V2.0</span></h1><div class="sub">AI NEWS ANALYZER · REAL-MARKET TOOLS</div></div></div>
+    <div class="pill"><i class="dot" id="statusDot"></i><span id="statusText">Checking server</span></div>
+  </header>
+  <section class="hero">
+    <div class="eyebrow">MARKET INTELLIGENCE · PRICE ACTION · RISK FIRST</div>
+    <h2>Understand the news.<br><span style="color:var(--cyan)">Confirm the market.</span></h2>
+    <p>A responsive dashboard for Android, iPhone and Windows. News interpretations and market bias must be backed by real data; no result is a guaranteed signal.</p>
+    <div class="actions"><button class="btn primary" id="refreshBtn">↻ Refresh status</button><button class="btn" id="botBtn">✈ Telegram bot help</button></div>
+  </section>
+  <nav class="nav" aria-label="Dashboard sections"><button class="active" data-view="dashboard">Dashboard</button><button data-view="news">News Analyzer</button><button data-view="learn">Learning</button><button data-view="system">System Status</button></nav>
 
-  <div class="card">
-    <h3>Dashboard</h3>
-    <p id="status">Mini App connected.</p>
-    <button onclick="showLearning()">Learning Guide</button>
-  </div>
+  <section class="view" id="view-dashboard">
+    <div class="grid">
+      <article class="card s12"><div class="head"><h3>⚡ SYSTEM OVERVIEW</h3><span class="small muted" id="updatedAt">Not refreshed yet</span></div><div class="stats"><div class="stat"><div><div class="statlabel">Backend</div><div class="small muted">Flask health endpoint</div></div><div class="statvalue" id="serverValue">—</div></div><div class="stat"><div><div class="statlabel">Configured FX pairs</div><div class="small muted">Watchlist</div></div><div class="statvalue" id="pairCount">18</div></div><div class="stat"><div><div class="statlabel">Quotex verification</div><div class="small muted">No direct connection</div></div><div class="statvalue" style="color:var(--amber)">NO</div></div></div></article>
+      <article class="card s8"><div class="head"><h3>📊 MARKET WATCHLIST</h3><span class="badge">FX PAIRS</span></div><p class="small muted">Configured pairs only. Quotes and signals are not shown unless connected to a real data endpoint.</p><div class="two" id="pairs"></div></article>
+      <article class="card s4"><div class="head"><h3>🎯 SIGNAL CENTER</h3><span class="badge">BACKEND REQUIRED</span></div><div class="empty"><div style="font-size:25px;margin-bottom:8px">🛡️</div>No verified signal endpoint is connected yet.<br><br>Use the Telegram bot's existing analysis commands until the backend is integrated.</div></article>
+    </div>
+  </section>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+  <section class="view" id="view-news" hidden>
+    <div class="grid">
+      <article class="card s8"><div class="head"><h3>📰 ECONOMIC NEWS ANALYZER</h3><span class="badge high">HIGH IMPACT EVENTS</span></div><p class="small muted">This form prepares an input for the existing Telegram bot. It does not invent current news values or run AI analysis in the browser.</p><label class="small muted" for="headline">News headline / event</label><div class="copyrow" style="margin:8px 0 13px"><input id="headline" maxlength="300" placeholder="e.g. US CPI actual vs forecast"><button class="btn primary" id="prepareNews">Prepare</button></div><div id="newsOutput" class="empty">Enter an event to prepare a /news command.</div></article>
+      <article class="card s4"><div class="head"><h3>🧠 ANALYSIS FRAMEWORK</h3></div><div class="lessonlist"><div class="lesson"><div class="num">1</div><div><b>Compare the release</b><span>Actual vs forecast vs previous</span></div></div><div class="lesson"><div class="num">2</div><div><b>Assess likely impact</b><span>Currency and event context</span></div></div><div class="lesson"><div class="num">3</div><div><b>Wait for confirmation</b><span>Price action and volatility</span></div></div><div class="lesson"><div class="num">4</div><div><b>Manage risk</b><span>No guaranteed direction</span></div></div></div></article>
+      <article class="card s12"><div class="head"><h3>📈 MARKET BIAS</h3><span class="badge">CONDITIONAL ONLY</span></div><div class="empty">No bias is displayed without an actual news dataset and a connected analysis backend. Once integrated, this section can show a source-backed interpretation and uncertainty notes.</div></article>
+    </div>
+  </section>
 
-    function showLearning() {
-      document.getElementById("status").textContent =
-        "Learning Guide interface is ready for integration.";
-    }
-  </script>
+  <section class="view" id="view-learn" hidden><div class="grid"><article class="card s8"><div class="head"><h3>🧠 PRICE ACTION LEARNING</h3><span class="badge">7 LESSONS</span></div><div class="lessonlist" id="lessons"></div></article><article class="card s4"><div class="head"><h3>🛡️ RISK REMINDER</h3></div><p class="muted small">Protect capital first. Set a maximum loss limit, avoid revenge trading, and do not treat a historical backtest as a guarantee of future results.</p></article></div></section>
+
+  <section class="view" id="view-system" hidden><div class="grid"><article class="card s12"><div class="head"><h3>🔧 BACKEND HEALTH</h3><span class="badge" id="healthBadge">Waiting</span></div><div id="healthDetails" class="empty">Trying to connect to /health…</div></article><article class="card s12"><div class="head"><h3>🔐 TRANSPARENCY</h3></div><p class="muted small">This interface does not place trades or connect directly to Quotex. API keys must remain on the server and must never be placed in this HTML file. A dashboard status check does not prove market-data freshness or signal accuracy.</p></article></div></section>
+  <footer class="foot">GHOST MATRIX V2.0 · Educational use only · No guaranteed signals</footer>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+  const $ = id => document.getElementById(id);
+  const pairs = ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY','EUR/CHF','AUD/JPY','CAD/JPY','CHF/JPY','GBP/CHF','EUR/AUD','AUD/CAD','NZD/JPY'];
+  const lessons = [['Market Structure','Trend, swing highs and swing lows'],['Support & Resistance','Reaction zones and context'],['Candlestick Basics','Bodies, wicks and candle closes'],['Trend & Pullback','Distinguish pullbacks from reversals'],['Breakout Confirmation','Close, retest and failed breakouts'],['Price Action Patterns','Patterns with location and context'],['Risk Management','Daily limits and disciplined stops']];
+  $('pairs').innerHTML = pairs.map(p=>`<div class="pair"><strong>${p}</strong><span class="badge">Awaiting data</span></div>`).join('');
+  $('lessons').innerHTML = lessons.map((l,i)=>`<div class="lesson"><div class="num">${String(i+1).padStart(2,'0')}</div><div><b>${l[0]}</b><span>${l[1]}</span></div></div>`).join('');
+  function toast(msg){const el=$('toast');el.textContent=msg;el.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.style.display='none',3000)}
+  document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!=='view-'+btn.dataset.view)}));
+  async function refresh(){const b=$('refreshBtn');b.disabled=true;b.textContent='↻ Checking…';try{const r=await fetch('/health',{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();const ok=d.status==='running';$('serverValue').textContent=ok?'RUNNING':'CHECK';$('serverValue').style.color=ok?'var(--green)':'var(--amber)';$('statusText').textContent=ok?'Server online':'Check server';$('statusDot').style.background=ok?'var(--green)':'var(--amber)';$('healthBadge').textContent=ok?'Connected':'Check';$('healthDetails').textContent=JSON.stringify(d,null,2);if(typeof d.catalog_count==='number')$('pairCount').textContent=d.catalog_count;$('updatedAt').textContent='Updated '+new Date().toLocaleTimeString()}catch(e){$('serverValue').textContent='UNKNOWN';$('serverValue').style.color='var(--amber)';$('statusText').textContent='Status unavailable';$('statusDot').style.background='var(--red)';$('healthBadge').textContent='Unavailable';$('healthDetails').textContent='Could not reach /health. This page must be served by the Flask app, and the /health route must exist.';$('updatedAt').textContent='Backend not connected'}finally{b.disabled=false;b.textContent='↻ Refresh status'}}
+  $('refreshBtn').addEventListener('click',refresh);
+  $('botBtn').addEventListener('click',()=>{if(tg&&tg.openTelegramLink)tg.openTelegramLink('https://t.me/');else toast('Open your Telegram bot from Telegram to use bot commands.')});
+  $('prepareNews').addEventListener('click',()=>{const headline=$('headline').value.trim();if(!headline){toast('Enter a news headline first.');return}const output=$('newsOutput');output.textContent='/news '+headline;output.style.color='var(--cyan)';const copy=document.createElement('button');copy.className='btn';copy.style.marginTop='10px';copy.textContent='Copy command';copy.onclick=async()=>{try{await navigator.clipboard.writeText('/news '+headline);toast('Command copied')}catch{toast('Select and copy the command manually')}};output.appendChild(document.createElement('br'));output.appendChild(copy)});
+  refresh();
+</script>
 </body>
 </html>
