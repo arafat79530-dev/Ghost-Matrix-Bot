@@ -1608,22 +1608,53 @@ def _send_verification_email(email: str, token: str) -> None:
         server.send_message(msg)
 
 
+
 def _bootstrap_admin() -> None:
     if not (ADMIN_EMAIL and ADMIN_PASSWORD):
-        log.warning("ADMIN_EMAIL/ADMIN_PASSWORD not configured; no initial admin account created")
+        log.warning(
+            "ADMIN_EMAIL/ADMIN_PASSWORD not configured; "
+            "no initial admin account created"
+        )
         return
+
     if len(ADMIN_PASSWORD) < 12:
-        log.error("ADMIN_PASSWORD must be at least 12 characters; initial admin not bootstrapped")
+        log.error(
+            "ADMIN_PASSWORD must be at least 12 characters; "
+            "initial admin not bootstrapped"
+        )
         return
+
     try:
         with db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("""INSERT INTO gm_users (email,password_hash,is_admin,email_verified,verified_at)
-                    VALUES (%s,%s,TRUE,TRUE,NOW()) ON CONFLICT (email) DO NOTHING""",
-                    (ADMIN_EMAIL, generate_password_hash(ADMIN_PASSWORD)))
-        log.info("Admin account bootstrap checked for configured ADMIN_EMAIL")
-    except Exception as exc:
-        log.warning("Admin bootstrap failed: %s", exc)
+                cur.execute(
+                    """
+                    INSERT INTO gm_users (
+                        email, password_hash, is_admin,
+                        email_verified, verified_at
+                    )
+                    VALUES (%s, %s, TRUE, TRUE, NOW())
+                    ON CONFLICT (email) DO UPDATE SET
+                        password_hash = EXCLUDED.password_hash,
+                        is_admin = TRUE,
+                        email_verified = TRUE,
+                        verified_at = COALESCE(
+                            gm_users.verified_at, NOW()
+                        )
+                    """,
+                    (
+                        ADMIN_EMAIL,
+                        generate_password_hash(ADMIN_PASSWORD),
+                    ),
+                )
+
+        log.info(
+            "Admin account bootstrap completed for configured ADMIN_EMAIL"
+        )
+
+    except Exception:
+        log.exception("Admin bootstrap failed")
+
 
 
 def login_required(fn):
