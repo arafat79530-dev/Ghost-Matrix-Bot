@@ -81,6 +81,13 @@ logging.basicConfig(
 )
 log = logging.getLogger("ghost-matrix")
 app = Flask(__name__)
+@app.route("/manifest.json")
+def serve_manifest():
+    return send_from_directory(
+        os.path.dirname(os.path.abspath(__file__)),
+        "manifest.json",
+        mimetype="application/manifest+json"
+    )
 app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
 _auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
