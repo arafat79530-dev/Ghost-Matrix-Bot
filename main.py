@@ -1750,7 +1750,6 @@ def auth_login():
 if not user:
     log.warning("Login debug: no account found for submitted email")
     return jsonify({"error": "Email or password is incorrect."}), 401
-
 if not check_password_hash(user["password_hash"], password):
     log.warning("Login debug: account found, password mismatch")
     return jsonify({"error": "Email or password is incorrect."}), 401
