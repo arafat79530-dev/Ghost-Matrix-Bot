@@ -85,8 +85,8 @@ app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
 _auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
 
-session = requests.Session()
-session.headers.update({"User-Agent": "GHOST-MATRIX-V2/2.0"})
+http_session = requests.Session()
+http_session.headers.update({"User-Agent": "GHOST-MATRIX-V2/2.0"})
 state_lock = threading.Lock()
 state = {
     "last_scan_utc": None,
@@ -113,21 +113,9 @@ def db_connect():
 
 @contextmanager
 def db_connection():
-    """Provide a PostgreSQL connection with explicit transaction handling.
-
-    psycopg2 does not auto-commit by default. Commit successful work so schema
-    creation and admin bootstrap persist; roll back failed work before closing.
-    """
     conn = db_connect()
     try:
         yield conn
-        conn.commit()
-    except Exception:
-        try:
-            conn.rollback()
-        except Exception:
-            pass
-        raise
     finally:
         conn.close()
 
@@ -346,7 +334,7 @@ def get_symbol_stats(symbol: str) -> tuple[int, int, int]:
 def telegram_call(method: str, payload: Optional[dict] = None, timeout: int = 20):
     if not TELEGRAM_BASE:
         raise RuntimeError("BOT_TOKEN is not configured")
-    response = session.post(f"{TELEGRAM_BASE}/{method}", json=payload or {}, timeout=timeout)
+    response = http_session.post(f"{TELEGRAM_BASE}/{method}", json=payload or {}, timeout=timeout)
     response.raise_for_status()
     data = response.json()
     if not data.get("ok"):
@@ -398,7 +386,7 @@ def twelve_get(endpoint: str, params: dict, count_credit: bool = True) -> dict:
         raise RuntimeError(f"Daily safety budget reached ({DAILY_CREDIT_BUDGET} API credits).")
     query = dict(params)
     query["apikey"] = TWELVE_DATA_API_KEY
-    response = session.get(f"{TWELVE_BASE}/{endpoint.lstrip('/')}", params=query, timeout=25)
+    response = http_session.get(f"{TWELVE_BASE}/{endpoint.lstrip('/')}", params=query, timeout=25)
     if count_credit:
         record_api_call()
     response.raise_for_status()
@@ -632,7 +620,7 @@ def ai_answer(prompt: str) -> str:
     if not AI_API_KEY:
         return "AI_API_KEY সেট করা নেই। সাধারণ bot command ব্যবহার করতে পারো; AI উত্তর বন্ধ আছে।"
     try:
-        response = session.post(GROQ_BASE,
+        response = http_session.post(GROQ_BASE,
             headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
             json={"model": GROQ_MODEL, "messages": [
                 {"role": "system", "content": "Answer clearly in Bengali when the user writes Bengali. Never invent current news, live prices, trade outcomes, or guaranteed trading advice."},
@@ -653,7 +641,7 @@ def analyze_chart_image(file_id: str) -> str:
         file_url = get_photo_file_url(file_id)
         if not file_url:
             return "Telegram থেকে ছবিটি আনতে পারিনি। আবার পাঠাও।"
-        photo = session.get(file_url, timeout=25)
+        photo = http_session.get(file_url, timeout=25)
         photo.raise_for_status()
         if len(photo.content) > 15 * 1024 * 1024:
             return "ছবিটি অনেক বড়। ছোট/কম রেজোলিউশনের screenshot পাঠাও।"
@@ -678,7 +666,7 @@ def analyze_chart_image(file_id: str) -> str:
             "temperature": 0.1,
             "max_completion_tokens": 700,
         }
-        response = session.post(GROQ_BASE,
+        response = http_session.post(GROQ_BASE,
             headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
             json=payload, timeout=45)
         response.raise_for_status()
@@ -939,7 +927,7 @@ def send_photo_bytes(photo_bytes: bytes, caption: str, chat_id: Optional[str] = 
         log.info("Telegram photo skipped: BOT_TOKEN/CHAT_ID missing")
         return False
     try:
-        response = session.post(
+        response = http_session.post(
             f"{TELEGRAM_BASE}/sendPhoto",
             data={"chat_id": target, "caption": caption[:1024]},
             files={"photo": ("price_action_example.png", photo_bytes, "image/png")},
@@ -1283,7 +1271,7 @@ def get_economic_calendar(days: int = 7) -> list[dict]:
     """Fetch high-impact calendar events from the no-key Finance Calendar API."""
     today = datetime.now(BANGLADESH_TZ).date()
     end = today + timedelta(days=max(1, min(int(days), 14)))
-    response = session.get(
+    response = http_session.get(
         f"{FINANCE_CALENDAR_BASE}/calendar",
         params={"from": today.isoformat(), "to": end.isoformat(), "impact": "high", "limit": 100},
         timeout=20,
@@ -1554,7 +1542,7 @@ def telegram_poll_loop() -> None:
             params = {"timeout": 25}
             if offset is not None:
                 params["offset"] = offset
-            response = session.get(f"{TELEGRAM_BASE}/getUpdates", params=params, timeout=35)
+            response = http_session.get(f"{TELEGRAM_BASE}/getUpdates", params=params, timeout=35)
             response.raise_for_status()
             payload = response.json()
             if not payload.get("ok"):
@@ -1952,7 +1940,7 @@ def api_analyze_image():
                 ]}
             ], "temperature": 0.1, "max_completion_tokens": 900
         }
-        response = session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=50)
+        response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=50)
         response.raise_for_status()
         answer = response.json()["choices"][0]["message"]["content"].strip()
         return jsonify({"analysis": answer, "warning": "Screenshot-based educational analysis only; not a Quotex-verified signal."})
