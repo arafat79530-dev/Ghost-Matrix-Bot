@@ -12,13 +12,20 @@ from contextlib import contextmanager
 import logging
 import os
 import threading
+import secrets
+import hashlib
+import smtplib
+from email.message import EmailMessage
+from functools import wraps
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from werkzeug.security import generate_password_hash, check_password_hash
 import time
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 import requests
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 from PIL import Image, ImageDraw, ImageFont
 
 try:
@@ -33,6 +40,15 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 CHAT_ID = os.getenv("CHAT_ID", "").strip()
 TWELVE_DATA_API_KEY = os.getenv("TWELVE_DATA_API_KEY", "").strip()
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "").strip()
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip().lower()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+APP_BASE_URL = os.getenv("APP_BASE_URL", "").strip().rstrip("/")
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
 AI_API_KEY = os.getenv("AI_API_KEY", "").strip()  # Optional Groq-compatible key
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
 GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b").strip()
@@ -65,6 +81,9 @@ logging.basicConfig(
 )
 log = logging.getLogger("ghost-matrix")
 app = Flask(__name__)
+app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
+_auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
 
 session = requests.Session()
 session.headers.update({"User-Agent": "GHOST-MATRIX-V2/2.0"})
@@ -152,6 +171,18 @@ def init_database() -> tuple[bool, str]:
                 """)
                 cur.execute("ALTER TABLE gm_signals ADD COLUMN IF NOT EXISTS result_updated_at TIMESTAMPTZ")
                 cur.execute("CREATE INDEX IF NOT EXISTS gm_signals_created_idx ON gm_signals(created_at DESC)")
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_users (
+                        id BIGSERIAL PRIMARY KEY,
+                        email TEXT NOT NULL UNIQUE,
+                        password_hash TEXT NOT NULL,
+                        is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+                        email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        verified_at TIMESTAMPTZ
+                    )
+                """)
+                cur.execute("CREATE INDEX IF NOT EXISTS gm_users_email_idx ON gm_users(LOWER(email))")
         return True, "Supabase/PostgreSQL connected"
     except Exception as exc:
         log.warning("Database init failed: %s", exc)
@@ -1545,6 +1576,88 @@ def telegram_poll_loop() -> None:
             log.warning("Telegram polling error: %s", exc)
             time.sleep(5)
 
+# ------------------------ Authentication -----------------------------
+def _auth_db_ready() -> bool:
+    return bool(DATABASE_URL and psycopg2 is not None)
+
+
+def _user_by_email(email: str):
+    if not _auth_db_ready():
+        raise RuntimeError("Authentication requires a working DATABASE_URL/PostgreSQL database.")
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id, email, password_hash, is_admin, email_verified FROM gm_users WHERE LOWER(email)=LOWER(%s)", (email,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def _send_verification_email(email: str, token: str) -> None:
+    if not all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, APP_BASE_URL]):
+        raise RuntimeError("Email verification is not configured. Check SMTP_* and APP_BASE_URL Render variables.")
+    link = f"{APP_BASE_URL}/api/auth/verify?token={token}"
+    msg = EmailMessage()
+    msg["Subject"] = "Verify your GHOST MATRIX account"
+    msg["From"] = SMTP_FROM
+    msg["To"] = email
+    msg.set_content(f"Welcome to GHOST MATRIX. Verify your email within 24 hours by opening this link:\n\n{link}\n\nIf you did not expect this account, ignore this email.")
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
+
+
+def _bootstrap_admin() -> None:
+    if not (ADMIN_EMAIL and ADMIN_PASSWORD):
+        log.warning("ADMIN_EMAIL/ADMIN_PASSWORD not configured; no initial admin account created")
+        return
+    if len(ADMIN_PASSWORD) < 12:
+        log.error("ADMIN_PASSWORD must be at least 12 characters; initial admin not bootstrapped")
+        return
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""INSERT INTO gm_users (email,password_hash,is_admin,email_verified,verified_at)
+                    VALUES (%s,%s,TRUE,TRUE,NOW()) ON CONFLICT (email) DO NOTHING""",
+                    (ADMIN_EMAIL, generate_password_hash(ADMIN_PASSWORD)))
+        log.info("Admin account bootstrap checked for configured ADMIN_EMAIL")
+    except Exception as exc:
+        log.warning("Admin bootstrap failed: %s", exc)
+
+
+def login_required(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        uid = session.get("user_id")
+        if not uid:
+            return jsonify({"error": "Login required", "auth_required": True}), 401
+        try:
+            with db_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT id,email,is_admin,email_verified FROM gm_users WHERE id=%s", (uid,))
+                    user = cur.fetchone()
+            if not user or not user["email_verified"]:
+                session.clear()
+                return jsonify({"error": "Please verify your email and log in again.", "auth_required": True}), 401
+            request.auth_user = dict(user)
+        except Exception as exc:
+            log.error("Auth session check failed: %s", exc)
+            return jsonify({"error": "Authentication database unavailable"}), 503
+        return fn(*args, **kwargs)
+    return wrapped
+
+
+def admin_required(fn):
+    @wraps(fn)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not request.auth_user.get("is_admin"):
+            return jsonify({"error": "Admin access required"}), 403
+        return fn(*args, **kwargs)
+    return wrapped
+
+
 # -------------------------------- Flask ------------------------------
 @app.get("/")
 def home():
@@ -1588,7 +1701,111 @@ def status_route():
 
 
 
+@app.post("/api/auth/login")
+def auth_login():
+    if not FLASK_SECRET_KEY:
+        return jsonify({"error": "FLASK_SECRET_KEY is not configured in Render."}), 503
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email", "")).strip().lower()
+    password = str(body.get("password", ""))
+    if not email or not password or len(email) > 254 or len(password) > 1024:
+        return jsonify({"error": "Email and password are required."}), 400
+    try:
+        user = _user_by_email(email)
+    except Exception as exc:
+        log.error("Login database error: %s", exc)
+        return jsonify({"error": "Authentication database unavailable. Check DATABASE_URL and database connection."}), 503
+    if not user or not check_password_hash(user["password_hash"], password):
+        return jsonify({"error": "Email or password is incorrect."}), 401
+    if not user["email_verified"]:
+        return jsonify({"error": "Email is not verified yet. Open the verification link sent to your email."}), 403
+    session.clear()
+    session.permanent = True
+    session["user_id"] = int(user["id"])
+    return jsonify({"ok": True, "user": {"email": user["email"], "is_admin": bool(user["is_admin"])}})
+
+
+@app.get("/api/auth/me")
+def auth_me():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"authenticated": False}), 200
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id,email,is_admin,email_verified FROM gm_users WHERE id=%s", (uid,))
+                user = cur.fetchone()
+        if not user or not user["email_verified"]:
+            session.clear()
+            return jsonify({"authenticated": False}), 200
+        return jsonify({"authenticated": True, "user": {"email": user["email"], "is_admin": bool(user["is_admin"])}})
+    except Exception as exc:
+        log.error("Auth status error: %s", exc)
+        return jsonify({"authenticated": False, "error": "Authentication database unavailable"}), 503
+
+
+@app.post("/api/auth/logout")
+def auth_logout():
+    session.clear()
+    return jsonify({"ok": True})
+
+
+@app.get("/api/auth/verify")
+def auth_verify():
+    token = request.args.get("token", "")
+    if not token:
+        return "Verification token missing. Please use the full link from your email.", 400
+    try:
+        payload = _auth_serializer.loads(token, max_age=86400)
+        email = str(payload.get("email", "")).lower()
+    except SignatureExpired:
+        return "Verification link expired. Ask your admin to create a new account and verification email.", 400
+    except (BadSignature, AttributeError, TypeError):
+        return "Invalid verification link.", 400
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE gm_users SET email_verified=TRUE, verified_at=NOW() WHERE LOWER(email)=LOWER(%s)", (email,))
+                if cur.rowcount != 1:
+                    return "Account not found. Contact your GHOST MATRIX admin.", 404
+        return "Email verified successfully. Return to GHOST MATRIX and log in.", 200
+    except Exception as exc:
+        log.error("Email verification database error: %s", exc)
+        return "Verification could not be completed because the database is unavailable.", 503
+
+
+@app.post("/api/auth/admin/users")
+@admin_required
+def auth_admin_create_user():
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email", "")).strip().lower()
+    password = str(body.get("password", ""))
+    if not email or "@" not in email or len(email) > 254:
+        return jsonify({"error": "Enter a valid email address."}), 400
+    if len(password) < 12 or len(password) > 1024:
+        return jsonify({"error": "Temporary password must be at least 12 characters."}), 400
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("INSERT INTO gm_users (email,password_hash,is_admin,email_verified) VALUES (%s,%s,FALSE,FALSE)",
+                            (email, generate_password_hash(password)))
+    except Exception as exc:
+        if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
+            return jsonify({"error": "An account with this email already exists."}), 409
+        log.error("Create user database error: %s", exc)
+        return jsonify({"error": "Could not create account. Check database connection."}), 503
+    token = _auth_serializer.dumps({"email": email})
+    try:
+        _send_verification_email(email, token)
+    except Exception as exc:
+        log.error("Verification email send failed: %s", exc)
+        # Keep the account unverified; never claim email was sent.
+        return jsonify({"ok": False, "account_created": True, "error": "Account was created but verification email could not be sent. Check SMTP settings; ask admin to delete/recreate this account after fixing them."}), 502
+    return jsonify({"ok": True, "message": "Account created. Verification email sent; user must verify before login."}), 201
+
+
 @app.get("/api/dashboard")
+@login_required
 def api_dashboard():
     """Read-only dashboard summary; never returns secrets."""
     try:
@@ -1609,6 +1826,7 @@ def api_dashboard():
     }), 200
 
 @app.get("/api/signals")
+@login_required
 def api_signals():
     try:
         limit = max(1, min(100, int(request.args.get("limit", "20"))))
@@ -1617,6 +1835,7 @@ def api_signals():
     return jsonify({"signals": fetch_recent_signals(limit), "source": "Twelve Data external feed", "quotex_verified": False}), 200
 
 @app.get("/api/stats")
+@login_required
 def api_stats():
     wins, losses, total = get_stats()
     return jsonify({"wins": wins, "losses": losses, "total": total, "quotex_verified": False,
@@ -1642,10 +1861,12 @@ def _api_allowed(bucket: str, limit: int, window: int = 60) -> bool:
         return True
 
 @app.get("/api/markets")
+@login_required
 def api_markets():
     return jsonify({"markets": get_catalog(), "source": "configured allowlist", "quotex_verified": False})
 
 @app.post("/api/scan")
+@login_required
 def api_scan_one():
     global _last_app_scan
     if not _api_allowed("scan", 4, 60):
@@ -1679,6 +1900,7 @@ def api_scan_one():
         return jsonify({"error": f"Market data পাওয়া যায়নি: {str(exc)[:180]}"}), 502
 
 @app.post("/api/ask")
+@login_required
 def api_ask():
     if not _api_allowed("ask", 8, 60):
         return jsonify({"error": "অনেক request হয়েছে। এক মিনিট পরে চেষ্টা করো।"}), 429
@@ -1691,6 +1913,7 @@ def api_ask():
     return jsonify({"answer": ai_answer(question), "provider": "configured AI service" if AI_API_KEY else "AI not configured"})
 
 @app.post("/api/analyze-image")
+@login_required
 def api_analyze_image():
     if not _api_allowed("vision", 4, 60):
         return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৪টি screenshot analysis। পরে আবার চেষ্টা করো।"}), 429
@@ -1726,6 +1949,7 @@ def api_analyze_image():
         return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। image format, AI_API_KEY, vision model ও provider limit পরীক্ষা করো।"}), 502
 
 @app.get("/api/news")
+@login_required
 def api_news():
     if not _api_allowed("news", 10, 60):
         return jsonify({"error": "একটু পরে আবার চেষ্টা করো।"}), 429
@@ -1745,11 +1969,13 @@ def api_news():
         return jsonify({"error": "লাইভ economic calendar এখন পাওয়া যায়নি। পরে আবার চেষ্টা করো।", "source": NEWS_SOURCE_URL}), 502
 
 @app.get("/api/lessons")
+@login_required
 def api_lessons():
     lessons = [{"key": x["key"], "title": x["title"], "caption": x["caption"], "image": f"/api/lessons/{x['key']}/image"} for x in PA_LESSONS]
     return jsonify({"lessons": lessons, "total": len(lessons), "note": "Illustrative examples, not live market data."})
 
 @app.get("/api/lessons/<lesson_key>/image")
+@login_required
 def api_lesson_image(lesson_key: str):
     lesson = next((x for x in PA_LESSONS if x["key"] == lesson_key), None)
     if lesson is None:
@@ -1757,6 +1983,7 @@ def api_lesson_image(lesson_key: str):
     return app.response_class(make_price_action_chart(lesson), mimetype="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 @app.post("/api/result")
+@login_required
 def api_result():
     if not _api_allowed("result", 12, 60):
         return jsonify({"error": "একটু পরে আবার চেষ্টা করো।"}), 429
@@ -1774,6 +2001,7 @@ def api_result():
     return jsonify({"ok": True, "signal": signal, "note": "ম্যানুয়ালি দেওয়া ফল; Quotex থেকে স্বয়ংক্রিয়ভাবে যাচাই করা হয়নি।"})
 
 @app.post("/api/news/analyze")
+@login_required
 def api_news_analyze():
     if not _api_allowed("news_analyze", 8, 60):
         return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৮টি news analysis; পরে আবার চেষ্টা করো।"}), 429
@@ -1798,6 +2026,8 @@ def start_background_threads() -> None:
 
 # Initialize DB and background workers when the Render process starts.
 _db_ok, _db_msg = init_database()
+if _db_ok:
+    _bootstrap_admin()
 if not _db_ok:
     log.warning("Database not ready at startup: %s", _db_msg)
 start_background_threads()
