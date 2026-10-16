@@ -113,9 +113,21 @@ def db_connect():
 
 @contextmanager
 def db_connection():
+    """Provide a PostgreSQL connection with explicit transaction handling.
+
+    psycopg2 does not auto-commit by default. Commit successful work so schema
+    creation and admin bootstrap persist; roll back failed work before closing.
+    """
     conn = db_connect()
     try:
         yield conn
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
     finally:
         conn.close()
 
