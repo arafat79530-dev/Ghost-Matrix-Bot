@@ -88,8 +88,7 @@ def serve_manifest():
         "manifest.json",
         mimetype="application/manifest+json"
     )
-    @app.route("/icons/<path:filename>")
-def serve_icons(filename):
+    @app.route("/icons/<path:filename>"def serve_icons(filename):
     return send_from_directory(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons"),
         filename
