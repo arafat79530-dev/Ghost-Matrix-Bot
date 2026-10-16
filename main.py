@@ -88,6 +88,12 @@ def serve_manifest():
         "manifest.json",
         mimetype="application/manifest+json"
     )
+    @app.route("/icons/<path:filename>")
+def serve_icons(filename):
+    return send_from_directory(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons"),
+        filename
+    )
 app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
 _auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
