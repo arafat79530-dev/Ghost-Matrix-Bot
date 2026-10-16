@@ -111,11 +111,16 @@ def db_connect():
     return psycopg2.connect(DATABASE_URL, connect_timeout=8, sslmode="require")
 
 
+
 @contextmanager
 def db_connection():
     conn = db_connect()
     try:
         yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
