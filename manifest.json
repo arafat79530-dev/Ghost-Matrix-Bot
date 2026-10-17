@@ -3,14 +3,14 @@
   "background_color": "#080b14",
   "dir": "ltr",
   "display": "standalone",
-  "name": "GHOST MATRIX",
+  "name": "GHOST TRADER",
   "orientation": "any",
   "scope": "/",
-  "short_name": "TRADER",
+  "short_name": "Ghost Trader",
   "start_url": "/app",
   "theme_color": "#080b14",
   "id": "ghost-matrixai",
-  "description": "GHOST MATRIX — AI-powered market analysis and signal tracking.",
+  "description": "GHOST TRADER — AI-powered market analysis and signal tracking.",
   "lang": "en",
   "icons": [
     {
