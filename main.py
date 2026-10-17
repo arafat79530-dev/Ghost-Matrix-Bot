@@ -692,9 +692,9 @@ def analyze_chart_image(file_id: str) -> str:
             json=payload, timeout=45)
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"].strip() + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal."
-    except Exception as exc:
-        log.warning("Chart image analysis failed: %s", exc)
-        return "Chart analysis ব্যর্থ হয়েছে। AI key, vision model এবং Groq limit Render Logs-এ যাচাই করো।"
+        except Exception as exc:
+        log.exception("Chart image analysis failed")
+        return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
 
 
 def get_photo_file_url(file_id: str) -> Optional[str]:
