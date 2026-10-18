@@ -692,7 +692,7 @@ def analyze_chart_image(file_id: str) -> str:
             json=payload, timeout=45)
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"].strip() + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal." 
-       except Exception as exc:
+     except Exception as exc:
         log.exception("Chart image analysis failed")
         return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
 
