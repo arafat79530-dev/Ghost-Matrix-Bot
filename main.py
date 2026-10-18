@@ -485,40 +485,124 @@ def rsi(values: list[float], period: int = 14) -> list[Optional[float]]:
     return result
 
 
+
 def analyze_candles(symbol: str, candles: list[dict[str, Any]]) -> dict[str, Any]:
-    if len(candles) < 50:
-        return {"direction": "NO TRADE", "reason": f"শুধু {len(candles)}টি candle; বিশ্লেষণের জন্য যথেষ্ট নয়।"}
+    if len(candles) < 60:
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": f"শুধু {len(candles)}টি candle; বিশ্লেষণের জন্য অন্তত 60টি দরকার।",
+            "candle_count": len(candles),
+        }
+
     closes = [c["close"] for c in candles]
     fast = ema(closes, 9)
     slow = ema(closes, 21)
+    trend = ema(closes, 50)
     rsis = rsi(closes, 14)
+
     idx = len(candles) - 1
     latest = candles[idx]
+    previous = candles[idx - 1]
+
     age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
     if age < -120 or age > MAX_SIGNAL_AGE_SECONDS:
-        return {"direction": "NO TRADE", "reason": f"সর্বশেষ M1 candle পুরোনো/সময় অসামঞ্জস্যপূর্ণ ({int(age)} sec)।", "candle": latest}
-    if fast[idx] is None or slow[idx] is None or rsis[idx] is None:
-        return {"direction": "NO TRADE", "reason": "Indicator data incomplete.", "candle": latest}
-    # Conservative filter: trend alignment + RSI confirmation + last-candle momentum.
-    previous = candles[idx - 1]
-    direction = "NO TRADE"
-    reason = "EMA/RSI/momentum একই দিকে নিশ্চিত নয়।"
-    if fast[idx] > slow[idx] and 52 <= rsis[idx] <= 68 and latest["close"] > previous["close"] and latest["close"] > latest["open"]:
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": f"সর্বশেষ M1 candle-এর সময় যাচাই করা যাচ্ছে না ({int(age)} sec)।",
+            "candle": latest,
+        }
+
+    if any(x[idx] is None for x in (fast, slow, trend, rsis)):
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": "Indicator data incomplete.",
+            "candle": latest,
+        }
+
+    # সাম্প্রতিক 20টি আগের candle দিয়ে support/resistance-এর আনুমানিক স্তর
+    recent = candles[max(0, idx - 20):idx]
+    support = min(c["low"] for c in recent)
+    resistance = max(c["high"] for c in recent)
+
+    close = latest["close"]
+    open_price = latest["open"]
+    high = latest["high"]
+    low = latest["low"]
+    candle_range = high - low
+
+    if close <= 0 or candle_range <= 0:
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": "Candle range বা price বৈধ নয়।",
+            "candle": latest,
+        }
+
+    body_ratio = abs(close - open_price) / candle_range
+    bullish = close > open_price and close > previous["close"]
+    bearish = close < open_price and close < previous["close"]
+
+    # খুব ছোট body হলে দিক পরিষ্কার নয়
+    if body_ratio < 0.25:
+        direction = "NO TRADE"
+        reason = "Candle body দুর্বল; পরিষ্কার momentum পাওয়া যায়নি।"
+
+    # Trend + momentum + RSI + support/resistance filter
+    elif (
+        fast[idx] > slow[idx] > trend[idx]
+        and 52 <= rsis[idx] <= 68
+        and bullish
+        and close < resistance
+        and (resistance - close) > candle_range * 0.15
+    ):
         direction = "CALL"
-        reason = f"দাম EMA9 ও EMA21-এর ওপরে আছে; RSI {rsis[idx]:.1f}; শেষ ১ মিনিটের candle-এ বন্ধের দাম খোলার দামের চেয়ে বেশি—এই মিনিটে ক্রেতাদের চাপ দেখা গেছে। এটি শুধু সম্ভাব্য সেটআপ।"
-    elif fast[idx] < slow[idx] and 32 <= rsis[idx] <= 48 and latest["close"] < previous["close"] and latest["close"] < latest["open"]:
+        reason = (
+            f"Trend bullish: EMA9 > EMA21 > EMA50; RSI {rsis[idx]:.1f}; "
+            "শেষ candle bullish momentum দেখিয়েছে এবং resistance-এর খুব কাছে নয়। "
+            "এটি সম্ভাব্য setup, নিশ্চিত ফল নয়।"
+        )
+
+    elif (
+        fast[idx] < slow[idx] < trend[idx]
+        and 32 <= rsis[idx] <= 48
+        and bearish
+        and close > support
+        and (close - support) > candle_range * 0.15
+    ):
         direction = "PUT"
-        reason = f"দাম EMA9 ও EMA21-এর নিচে আছে; RSI {rsis[idx]:.1f}; শেষ ১ মিনিটের candle-এ বন্ধের দাম খোলার দামের চেয়ে কম—এই মিনিটে বিক্রেতাদের চাপ দেখা গেছে। এটি শুধু সম্ভাব্য সেটআপ।"
+        reason = (
+            f"Trend bearish: EMA9 < EMA21 < EMA50; RSI {rsis[idx]:.1f}; "
+            "শেষ candle bearish momentum দেখিয়েছে এবং support-এর খুব কাছে নয়। "
+            "এটি সম্ভাব্য setup, নিশ্চিত ফল নয়।"
+        )
+
+    else:
+        direction = "NO TRADE"
+        reason = (
+            f"সব filter একমত নয়। EMA9={fast[idx]:.5f}, "
+            f"EMA21={slow[idx]:.5f}, EMA50={trend[idx]:.5f}, "
+            f"RSI={rsis[idx]:.1f}; অপেক্ষা করাই ভালো।"
+        )
+
     return {
         "symbol": symbol,
         "direction": direction,
         "reason": reason,
-        "price": latest["close"],
+        "price": close,
         "candle": latest,
         "candle_count": len(candles),
         "first_candle": candles[0]["time"],
         "last_candle": latest["time"],
         "rsi": rsis[idx],
+        "ema9": fast[idx],
+        "ema21": slow[idx],
+        "ema50": trend[idx],
+        "support": support,
+        "resistance": resistance,
+        "verified_quotex": False,
     }
 
 
