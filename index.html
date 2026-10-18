@@ -254,17 +254,49 @@ $('analyzeNewsBtn').onclick=async()=>{const b=$('analyzeNewsBtn');busy(b,true,'E
 async function loadLessons(){try{const d=await api('/api/lessons');lessons=d.lessons||[];$('lessonTotal').textContent=`${lessons.length} illustrated lessons`;$('lessonPicks').innerHTML=lessons.map((l,i)=>`<button class="btn lessonpick ${i===currentLesson?'active':''}" data-lesson="${i}">${esc(l.title)}</button>`).join('');$('lessonPicks').querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>renderLesson(Number(b.dataset.lesson)));renderLesson(0)}catch(e){$('lessonContent').innerHTML=`<div class="result error">Lesson load failed: ${esc(e.message)}</div>`}}
 function renderLesson(i){if(!lessons[i])return;currentLesson=i;const l=lessons[i];$('lessonPicks').querySelectorAll('[data-lesson]').forEach(b=>b.classList.toggle('active',Number(b.dataset.lesson)===i));$('lessonContent').innerHTML=`<h3>${esc(l.title)}</h3><img class="learnimg" src="${esc(l.image)}" alt="Illustrative chart for ${esc(l.title)}" loading="lazy"><div class="lessonbody">${esc(l.caption)}</div><div class="notice">এই ছবি educational illustration — live price/chart নয়। Pattern একা entry নিশ্চিত করে না।</div><div class="actions">${i>0?'<button class="btn" id="prevLesson">← Previous</button>':''}${i<lessons.length-1?'<button class="btn primary" id="nextLesson">Next Lesson →</button>':'<button class="btn" id="restartLesson">Start again</button>'}</div>`;if($('prevLesson'))$('prevLesson').onclick=()=>renderLesson(i-1);if($('nextLesson'))$('nextLesson').onclick=()=>renderLesson(i+1);if($('restartLesson'))$('restartLesson').onclick=()=>renderLesson(0)}
 $('askBtn').onclick=async()=>{const question=$('question').value.trim();if(!question){show('answerResult','প্রশ্ন লিখো।',true);return}const b=$('askBtn');busy(b,true,'AI is answering…');try{const d=await api('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});show('answerResult',d.answer+(d.provider==='AI not configured'?'\n\nAI service configured নয়। Render Environment-এ AI_API_KEY সেট করতে হবে।':''))}catch(e){show('answerResult',e.message,true)}finally{busy(b,false)}};$('clearAsk').onclick=()=>{$('question').value='';$('answerResult').classList.add('hidden')};
-function readPrefs(){try{return JSON.parse(localStorage.getItem('ghost-trader-prefs')||'{}')}catch{return {}; {{function applyPrefs(){
+function readPrefs(){
+  try {
+    return JSON.parse(localStorage.getItem('ghost-trader-prefs')||'{}');
+  } catch {
+    return {};
+  }
+}
+
+function applyPrefs(){
   const p=readPrefs();
   $('refreshRate').value=p.refresh||'0';
   $('notifyToggle').value=p.notify||'off';
+
   const theme=p.theme==='light'?'light':'dark';
   document.documentElement.dataset.theme=theme;
   if($('themeMode')) $('themeMode').value=theme;
-  if(refreshTimer)clearInterval(refreshTimer);
+
+  if(refreshTimer) clearInterval(refreshTimer);
   const n=Number(p.refresh||0);
-  if(n)refreshTimer=setInterval(loadStatus,n*1000);
-}$('saveSettings').onclick=async()=>{const p={refresh:$('refreshRate').value,notify:$('notifyToggle').value};try{localStorage.setItem('ghost-trader-prefs',JSON.stringify(p))}catch{}if(p.notify==='on'&&'Notification'in window&&Notification.permission==='default'){try{await Notification.requestPermission()}catch{}}applyPrefs();$('settingsSaved').textContent='Preferences saved on this device.'};$('checkStatus').onclick=loadStatus;
+  if(n) refreshTimer=setInterval(loadStatus,n*1000);
+}
+
+$('saveSettings').onclick=async()=>{
+  const p={
+    ...readPrefs(),
+    refresh:$('refreshRate').value,
+    notify:$('notifyToggle').value,
+    theme:$('themeMode').value
+  };
+
+  try {
+    localStorage.setItem('ghost-trader-prefs',JSON.stringify(p));
+  } catch {}
+
+  if(p.notify==='on'&&'Notification'in window&&Notification.permission==='default'){
+    try { await Notification.requestPermission(); } catch {}
+  }
+
+  applyPrefs();
+  $('settingsSaved').textContent='Preferences saved on this device.';
+};
+
+$('checkStatus').onclick=loadStatus;
 function lockAuth(message=''){document.body.classList.add('auth-locked');if(message)$('authMessage').textContent=message}
 function unlockAuth(user){document.body.classList.remove('auth-locked');$('authMessage').textContent='';$('signedInAs').textContent='Signed in: '+user.email;$('adminPanel').classList.toggle('hidden',!user.is_admin)}
 $('loginForm').addEventListener('submit',async ev=>{ev.preventDefault();const b=$('loginButton');busy(b,true,'Signing in…');$('authMessage').textContent='';try{const d=await fetch('/api/auth/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('authEmail').value.trim(),password:$('authPassword').value})});let j={};try{j=await d.json()}catch{}if(!d.ok)throw Error(j.error||'Login failed');unlockAuth(j.user);applyPrefs();await Promise.all([loadStatus(),loadMarkets(),loadStats()]);loadSignals();loadLessons()}catch(e){$('authMessage').textContent=e.message}finally{busy(b,false)}});
