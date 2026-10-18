@@ -9,6 +9,112 @@ body.auth-locked .app,body.auth-locked .nav{display:none!important}
 body.auth-locked #authGate{display:flex}
 .auth-card{width:min(460px,100%);padding:24px;border-radius:24px;background:rgba(255,255,255,.82);border:1px solid white;outline:1px solid rgba(72,153,181,.25);box-shadow:0 18px 48px rgba(35,131,163,.15)}
 .auth-card h1{margin:0 0 5px;font-size:23px;letter-spacing:.08em}.auth-card p{color:var(--muted);font-size:13px}.auth-card .field{margin-bottom:12px}.auth-error{white-space:pre-wrap;margin-top:12px;color:#a22e49;font-size:13px}.auth-admin{border-top:1px solid var(--line);margin-top:18px;padding-top:15px}.auth-userline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+
+/* GHOST MATRIX PRO THEME — Dark default */
+:root{
+  color-scheme: dark;
+  --bg:#080d12;
+  --ink:#e5edf5;
+  --muted:#91a2b5;
+  --line:rgba(100,180,190,.20);
+  --glass:rgba(18,29,39,.94);
+  --glass2:#15212c;
+  --blue:#20b9c5;
+  --cyan:#45d6c8;
+  --green:#32d49a;
+  --red:#ff647c;
+  --gold:#f3c66b;
+  --shadow:0 16px 42px rgba(0,0,0,.28);
+}
+
+body{
+  background:linear-gradient(145deg,#080d12,#0c151e 55%,#101b23);
+  color:var(--ink);
+}
+
+.glass,.hero,.card,.panel{
+  background:var(--glass);
+  border-color:#263744;
+  outline-color:var(--line);
+  box-shadow:var(--shadow);
+}
+
+.hero{
+  background:linear-gradient(135deg,#14232d,#101b24);
+}
+
+.btn,.btn.soft{
+  background:#192a35;
+  color:#dceaf2;
+  border-color:#304653;
+}
+
+.btn.primary{
+  background:linear-gradient(135deg,#21bfc5,#168a91);
+  color:#fff;
+  border-color:#36c9c7;
+}
+
+.field{
+  background:#101c26;
+  color:var(--ink);
+  border-color:#304653;
+}
+
+.result{
+  background:#101c26;
+  border-color:#2a414d;
+  color:var(--ink);
+}
+
+.nav{
+  background:rgba(11,19,26,.94);
+  border-color:#263944;
+  outline-color:#263944;
+}
+
+.nav button.active{
+  background:linear-gradient(145deg,#173d42,#16434a);
+  color:#73e6df;
+}
+
+#authGate{
+  background:linear-gradient(145deg,#080d12,#101b24);
+}
+
+.auth-card{
+  background:#121e28;
+  border-color:#30424e;
+  outline-color:#263944;
+  color:var(--ink);
+}
+
+.notice{
+  background:#2b2618;
+  border-color:#65532b;
+  color:#f2d997;
+}
+
+.badge,.pill{
+  background:#17313a;
+  border-color:#28515a;
+  color:#8ce5e5;
+}
+
+.filebox{
+  background:#101c26;
+  border-color:#365360;
+}
+
+.learnimg{
+  border-color:#304653;
+}
+
+.lessonpick.active,.range .btn.active{
+  background:#173d42;
+  color:#a4f2ec;
+  border-color:#327c7d;
+}
 </style></head><body class="auth-locked"><div id="authGate"><div class="auth-card"><div class="logo" style="margin-bottom:14px" aria-hidden="true">👻</div><h1>GHOST TRADER</h1><p>Secure account login · Email verification required</p><form id="loginForm"><label for="authEmail">Email</label><input id="authEmail" class="field" type="email" autocomplete="username" required maxlength="254" placeholder="your@email.com"><label for="authPassword">Password</label><input id="authPassword" class="field" type="password" autocomplete="current-password" required maxlength="1024" placeholder="Your password"><button id="loginButton" class="btn primary" type="submit" style="width:100%">Login</button></form><div id="authMessage" class="auth-error" role="status"></div><p class="small">Public signup is disabled. Ask your GHOST TRADER admin to create your account and send a verification email.</p></div></div><div class="app">
 <header class="top"><div class="brand"><div class="logo" aria-label="Ghost Trader logo"><svg viewBox="0 0 40 40" fill="none"><path d="M8 31V17C8 9.8 13.3 5 20 5s12 4.8 12 12v14l-6-4-6 4-6-4-6 4Z" fill="#b7f0fb" stroke="#1687ad" stroke-width="1.8" stroke-linejoin="round"/><circle cx="16" cy="17" r="2" fill="#146d8d"/><circle cx="24" cy="17" r="2" fill="#146d8d"/><path d="M13 24h14M13 24l3-3m-3 3 3 3m14-3-3-3m3 3-3 3" stroke="#1687ad" stroke-width="1.6" stroke-linecap="round"/></svg></div><div><h1>GHOST TRADER</h1><p>PREMIUM WATER • MARKET WORKSPACE</p></div></div><button class="btn soft" data-go="settings">⚙</button></header>
 <section id="home" class="section active"><div class="hero"><div class="eyebrow">● YOUR ALL-IN-ONE CONTROL CENTER</div><h2>Analyze. Learn.<br>Understand the market.</h2><p class="muted">Screenshot analysis, market scan, economic news, illustrated lessons and AI answers — from one app.</p><div class="statusline"><span class="badge" id="serverBadge">Checking server…</span><span class="badge warn">Quotex not verified</span></div></div>
