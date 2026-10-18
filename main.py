@@ -690,8 +690,8 @@ def analyze_chart_image(file_id: str) -> str:
         response = http_session.post(GROQ_BASE,
             headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
             json=payload, timeout=45)
-       response.raise_for_status()
-     return response.json()["choices"][0]["message"]["content"].strip() + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal."
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip() + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal." 
        except Exception as exc:
         log.exception("Chart image analysis failed")
         return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
