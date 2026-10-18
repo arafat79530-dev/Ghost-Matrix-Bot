@@ -61,4 +61,46 @@ $('loginForm').addEventListener('submit',async ev=>{ev.preventDefault();const b=
 $('logoutButton').addEventListener('click',async()=>{try{await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'})}finally{lockAuth('You have been logged out.')}});
 $('createUserForm').addEventListener('submit',async ev=>{ev.preventDefault();const box=$('adminMessage');box.classList.remove('hidden','error');box.textContent='Creating account and sending verification email…';try{const d=await api('/api/auth/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('newUserEmail').value.trim(),password:$('newUserPassword').value})});box.textContent=d.message||'Account created.';$('newUserEmail').value='';$('newUserPassword').value=''}catch(e){box.classList.add('error');box.textContent=e.message}});
 (async()=>{applyPrefs();const token=new URLSearchParams(location.search).get('token');if(token){try{const r=await fetch('/api/auth/verify?token='+encodeURIComponent(token));const t=await r.text();$('authMessage').textContent=t;history.replaceState({},document.title,location.pathname)}catch(e){$('authMessage').textContent='Could not verify email: '+e.message}}try{const r=await fetch('/api/auth/me',{credentials:'same-origin'});const d=await r.json();if(d.authenticated){unlockAuth(d.user);await Promise.all([loadStatus(),loadMarkets(),loadStats()]);loadSignals();loadLessons()}else lockAuth(d.error||'')}catch(e){lockAuth('Could not check login: '+e.message)}})();
-</script></body></html>
+</script>
+<!-- GHOST MATRIX: Help & Support -->
+<div id="gm-help-support" style="
+  margin:16px;
+  padding:16px;
+  border:1px solid #24463f;
+  border-radius:16px;
+  background:var(--card-bg, #111a20);
+  color:var(--text-color, #f2f7f5);
+">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="
+      width:44px;height:44px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+      border-radius:12px;background:#193b31;font-size:23px;
+    ">🎧</div>
+
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:16px;font-weight:700;">
+        Help &amp; Support
+      </div>
+      <div style="font-size:13px;opacity:.75;margin-top:4px;">
+        কোনো সমস্যা বা প্রশ্ন আছে? আমাদের মেসেজ দাও।
+      </div>
+    </div>
+  </div>
+
+  <a
+    href="https://t.me/ghostsupportbd"
+    target="_blank"
+    rel="noopener noreferrer"
+    style="
+      display:flex;align-items:center;justify-content:center;
+      gap:8px;margin-top:14px;padding:12px;
+      border-radius:10px;background:#168b69;color:#ffffff;
+      font-size:14px;font-weight:700;text-decoration:none;
+    "
+  >
+    ✈️ Message on Telegram
+  </a>
+</div>
+<!-- End Help & Support -->
+</body></html>
