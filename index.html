@@ -115,6 +115,98 @@ body{
   color:#a4f2ec;
   border-color:#327c7d;
 }
+  /* LIGHT THEME */
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#eafaff;
+  --ink:#12364a;
+  --muted:#638294;
+  --line:rgba(72,153,181,.22);
+  --glass:rgba(255,255,255,.78);
+  --glass2:rgba(255,255,255,.95);
+  --blue:#198dbb;
+  --cyan:#35bcd5;
+  --green:#12876b;
+  --red:#d94e69;
+  --gold:#9b6a08;
+  --shadow:0 16px 42px rgba(35,131,163,.12);
+}
+:root[data-theme="light"] body{
+  background:linear-gradient(145deg,#eafaff,#f7fdff);
+  color:var(--ink);
+}
+:root[data-theme="light"] .glass,
+:root[data-theme="light"] .hero,
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .panel{
+  background:var(--glass);
+  border-color:rgba(72,153,181,.25);
+  color:var(--ink);
+  box-shadow:var(--shadow);
+}
+:root[data-theme="light"] .hero{
+  background:linear-gradient(135deg,#d8f6ff,#f5fdff);
+}
+:root[data-theme="light"] .btn,
+:root[data-theme="light"] .btn.soft{
+  background:#fff;
+  color:#12364a;
+  border-color:#c5e4ed;
+}
+:root[data-theme="light"] .btn.primary{
+  background:linear-gradient(135deg,#35bcd5,#198dbb);
+  color:#fff;
+}
+:root[data-theme="light"] .field{
+  background:#fff;
+  color:#12364a;
+  border-color:#c5e4ed;
+}
+:root[data-theme="light"] .result{
+  background:#f5fcff;
+  color:#12364a;
+  border-color:#c5e4ed;
+}
+:root[data-theme="light"] .nav{
+  background:rgba(255,255,255,.96);
+  border-color:#c5e4ed;
+}
+:root[data-theme="light"] .nav button.active{
+  background:#d9f5fb;
+  color:#126e8d;
+}
+:root[data-theme="light"] #authGate{
+  background:linear-gradient(145deg,#eafaff,#f7fdff);
+}
+:root[data-theme="light"] .auth-card{
+  background:rgba(255,255,255,.95);
+  color:#12364a;
+  border-color:#c5e4ed;
+}
+:root[data-theme="light"] .notice{
+  background:#fff8e7;
+  border-color:#e8d49b;
+  color:#76520b;
+}
+:root[data-theme="light"] .badge,
+:root[data-theme="light"] .pill{
+  background:#e0f7fc;
+  border-color:#b7e7f0;
+  color:#126e8d;
+}
+:root[data-theme="light"] .filebox{
+  background:#f5fcff;
+  border-color:#c5e4ed;
+}
+:root[data-theme="light"] .learnimg{
+  border-color:#c5e4ed;
+}
+:root[data-theme="light"] .lessonpick.active,
+:root[data-theme="light"] .range .btn.active{
+  background:#d9f5fb;
+  color:#126e8d;
+  border-color:#8ed5e5;
+}
 </style></head><body class="auth-locked"><div id="authGate"><div class="auth-card"><div class="logo" style="margin-bottom:14px" aria-hidden="true">👻</div><h1>GHOST TRADER</h1><p>Secure account login · Email verification required</p><form id="loginForm"><label for="authEmail">Email</label><input id="authEmail" class="field" type="email" autocomplete="username" required maxlength="254" placeholder="your@email.com"><label for="authPassword">Password</label><input id="authPassword" class="field" type="password" autocomplete="current-password" required maxlength="1024" placeholder="Your password"><button id="loginButton" class="btn primary" type="submit" style="width:100%">Login</button></form><div id="authMessage" class="auth-error" role="status"></div><p class="small">Public signup is disabled. Ask your GHOST TRADER admin to create your account and send a verification email.</p></div></div><div class="app">
 <header class="top"><div class="brand"><div class="logo" aria-label="Ghost Trader logo"><svg viewBox="0 0 40 40" fill="none"><path d="M8 31V17C8 9.8 13.3 5 20 5s12 4.8 12 12v14l-6-4-6 4-6-4-6 4Z" fill="#b7f0fb" stroke="#1687ad" stroke-width="1.8" stroke-linejoin="round"/><circle cx="16" cy="17" r="2" fill="#146d8d"/><circle cx="24" cy="17" r="2" fill="#146d8d"/><path d="M13 24h14M13 24l3-3m-3 3 3 3m14-3-3-3m3 3-3 3" stroke="#1687ad" stroke-width="1.6" stroke-linecap="round"/></svg></div><div><h1>GHOST TRADER</h1><p>PREMIUM WATER • MARKET WORKSPACE</p></div></div><button class="btn soft" data-go="settings">⚙</button></header>
 <section id="home" class="section active"><div class="hero"><div class="eyebrow">● YOUR ALL-IN-ONE CONTROL CENTER</div><h2>Analyze. Learn.<br>Understand the market.</h2><p class="muted">Screenshot analysis, market scan, economic news, illustrated lessons and AI answers — from one app.</p><div class="statusline"><span class="badge" id="serverBadge">Checking server…</span><span class="badge warn">Quotex not verified</span></div></div>
