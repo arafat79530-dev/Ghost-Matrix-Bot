@@ -687,16 +687,16 @@ def analyze_chart_image(file_id: str) -> str:
             "temperature": 0.1,
             "max_completion_tokens": 700,
         }
-        response = http_session.post(GROQ_BASE,
-            headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
-            json=payload, timeout=45)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"].strip() + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal." 
-     except Exception as exc:
-        log.exception("Chart image analysis failed")
-        return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
-
-
+           response = http_session.post(GROQ_BASE,
+               headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+               json=payload, timeout=45)
+           response.raise_for_status()
+           return response.json()["choices"][0]["message"]["content"].strip() + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal." 
+        except Exception as exc:
+           log.exception("Chart image analysis failed")
+           return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
+        
+               
 def get_photo_file_url(file_id: str) -> Optional[str]:
     try:
         result = telegram_call("getFile", {"file_id": file_id})
