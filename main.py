@@ -654,47 +654,80 @@ def ai_answer(prompt: str) -> str:
         return "AI service এখন কাজ করছে না। API key/model/limit Render Logs-এ যাচাই করো।"
 
 
+
 def analyze_chart_image(file_id: str) -> str:
     """Describe visible chart context; never claim certainty or verified broker data."""
     if not AI_API_KEY:
         return "AI_API_KEY সেট করা নেই, তাই chart image analysis চালু নেই।"
+
     try:
         file_url = get_photo_file_url(file_id)
         if not file_url:
             return "Telegram থেকে ছবিটি আনতে পারিনি। আবার পাঠাও।"
+
         photo = http_session.get(file_url, timeout=25)
         photo.raise_for_status()
+
         if len(photo.content) > 15 * 1024 * 1024:
             return "ছবিটি অনেক বড়। ছোট/কম রেজোলিউশনের screenshot পাঠাও।"
+
         mime = photo.headers.get("Content-Type", "image/jpeg").split(";")[0]
         if mime not in ("image/jpeg", "image/png", "image/webp"):
             mime = "image/jpeg"
+
         encoded = base64.b64encode(photo.content).decode("ascii")
+
         payload = {
             "model": GROQ_VISION_MODEL,
             "messages": [
-                {"role": "system", "content": (
-                    "Analyze only what is visible in this trading chart screenshot. "
-                    "Reply in Bengali. Mention uncertainty and missing timeframe/asset labels. "
-                    "Do not invent price values, predict with certainty, claim Quotex verification, "
-                    "or promise profit. If unclear, say NO TRADE / insufficient evidence."
-                )},
-                {"role": "user", "content": [
-                    {"type": "text", "text": "এই chart screenshot-এ দৃশ্যমান trend, candle structure এবং অনিশ্চয়তা ব্যাখ্যা করো। নিশ্চিত CALL/PUT দাবি করবে না।"},
-                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
-                ]}
+                {
+                    "role": "system",
+                    "content": (
+                        "Analyze only what is visible in this trading chart screenshot. "
+                        "Reply in Bengali. Mention uncertainty and missing timeframe/asset labels. "
+                        "Do not invent price values, predict with certainty, claim Quotex verification, "
+                        "or promise profit. If unclear, say NO TRADE / insufficient evidence."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "এই chart screenshot-এ দৃশ্যমান trend, candle structure এবং অনিশ্চয়তা ব্যাখ্যা করো। নিশ্চিত CALL/PUT দাবি করবে না।",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime};base64,{encoded}"
+                            },
+                        },
+                    ],
+                },
             ],
             "temperature": 0.1,
             "max_completion_tokens": 700,
         }
-         response = http_session.post(GROQ_BASE,
-               headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
-               json=payload, timeout=45)
-         response.raise_for_status()
-         return response.json()["choices"][0]["message"]["content"].strip() + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal." 
-        except Exception as exc:
-         log.exception("Chart image analysis failed")
-         return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
+
+        response = http_session.post(
+            GROQ_BASE,
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=45,
+        )
+        response.raise_for_status()
+
+        return (
+            response.json()["choices"][0]["message"]["content"].strip()
+            + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal."
+        )
+
+    except Exception as exc:
+        log.exception("Chart image analysis failed")
+        return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
         
                
 def get_photo_file_url(file_id: str) -> Optional[str]:
