@@ -267,3 +267,506 @@ body.auth-locked #authGate{display:flex}
   <button data-go="lessons"><span>▤</span>Learn</button>
   <button data-go="settings"><span>⚙</span>Settings</button>
 </nav></div>
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      ...(options.body instanceof FormData
+        ? {}
+        : options.body
+          ? {"Content-Type": "application/json"}
+          : {}),
+      ...(options.headers || {})
+    }
+  });
+
+  const text = await response.text();
+  let data = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error("Server থেকে সঠিক JSON পাওয়া যায়নি। পেজ ও Render deployment পরীক্ষা করো।");
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || data.message || `Request failed (${response.status})`);
+  }
+
+  return data;
+}
+
+function show(id, message, isError = false) {
+  const el = $(id);
+  if (!el) {
+    alert(message);
+    return;
+  }
+  el.textContent = message;
+  el.classList.remove("hidden");
+  el.style.color = isError ? "#ff7777" : "#9ee7c0";
+}
+
+function showHtml(id, html) {
+  const el = $(id);
+  if (el) {
+    el.innerHTML = html;
+    el.classList.remove("hidden");
+  }
+}
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[ch]);
+}
+
+function hide(id) {
+  const el = $(id);
+  if (el) el.classList.add("hidden");
+}
+
+function go(sectionName) {
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.toggle("hidden", section.id !== sectionName);
+  });
+
+  document.querySelectorAll("[data-go]").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.go === sectionName
+    );
+  });
+
+  if (sectionName === "home") loadDashboard();
+  if (sectionName === "scan") loadMarkets();
+  if (sectionName === "history") loadHistory();
+  if (sectionName === "news") loadNews();
+  if (sectionName === "lessons") loadLessons();
+}
+
+document.querySelectorAll("[data-go]").forEach(button => {
+  button.addEventListener("click", () => go(button.dataset.go));
+});
+
+/* Login and session */
+async function checkSession() {
+  try {
+    const data = await api("/api/auth/me");
+
+    if (data.authenticated) {
+      document.body.classList.remove("auth-locked");
+      const info = $("accountInfo");
+      if (info) info.textContent = data.user?.email || "Logged in";
+      go("home");
+      await loadDashboard();
+    } else {
+      document.body.classList.add("auth-locked");
+    }
+  } catch (error) {
+    document.body.classList.add("auth-locked");
+    console.error("Session check:", error);
+  }
+}
+
+const loginForm = $("loginForm");
+
+if (loginForm) {
+  loginForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const emailInput =
+      $("loginEmail") ||
+      loginForm.querySelector('input[type="email"]');
+
+    const passwordInput =
+      $("loginPassword") ||
+      loginForm.querySelector('input[type="password"]');
+
+    const email = emailInput?.value.trim() || "";
+    const password = passwordInput?.value || "";
+
+    if (!email || !password) {
+      show("loginMessage", "Email ও password দাও।", true);
+      return;
+    }
+
+    try {
+      const data = await api("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({email, password})
+      });
+
+      if (data.ok === false) {
+        throw new Error(data.error || "Login করা যায়নি।");
+      }
+
+      show("loginMessage", data.message || "Login সফল হয়েছে।");
+      document.body.classList.remove("auth-locked");
+      await checkSession();
+    } catch (error) {
+      show("loginMessage", error.message, true);
+    }
+  });
+}
+
+/* Dashboard */
+async function loadDashboard() {
+  try {
+    const data = await api("/api/dashboard");
+
+    const status = [
+      `App: ${data.app || "GHOST MATRIX"}`,
+      `Status: ${data.status || "unknown"}`,
+      `Database: ${data.database_ok ? "Connected" : "Not connected"}`,
+      `Market list: ${data.catalog_count ?? "—"}`,
+      `API calls today: ${data.api_calls_today ?? "—"} / ${data.daily_budget ?? "—"}`,
+      `Data source: ${data.data_source || "Unknown"}`,
+      "Quotex verification: Not verified"
+    ].join("\n");
+
+    show("dashboardStatus", status);
+
+    const stats = data.stats || {};
+    show(
+      "dashboardStats",
+      `WIN: ${stats.wins ?? 0} | LOSS: ${stats.losses ?? 0} | Total: ${stats.total ?? 0}`
+    );
+
+    renderSignals(data.signals || []);
+  } catch (error) {
+    show("dashboardStatus", error.message, true);
+  }
+}
+
+/* Market list */
+async function loadMarkets() {
+  try {
+    const data = await api("/api/markets");
+    const markets = data.markets || [];
+    const select =
+      $("marketSelect") ||
+      document.querySelector('select[name="symbol"]');
+
+    if (select) {
+      select.innerHTML = "";
+
+      markets.forEach(item => {
+        const symbol = typeof item === "string"
+          ? item
+          : item.symbol;
+
+        if (!symbol) return;
+
+        const option = document.createElement("option");
+        option.value = symbol;
+        option.textContent = symbol;
+        select.appendChild(option);
+      });
+    }
+
+    show("marketStatus", `${markets.length}টি market পাওয়া গেছে।`);
+  } catch (error) {
+    show("marketStatus", error.message, true);
+  }
+}
+
+/* Single-market scan */
+const scanButton = $("scanBtn") || $("runScanBtn");
+
+if (scanButton) {
+  scanButton.addEventListener("click", async () => {
+    const select =
+      $("marketSelect") ||
+      document.querySelector('select[name="symbol"]');
+
+    const symbol = select?.value;
+
+    if (!symbol) {
+      show("scanResult", "আগে market নির্বাচন করো।", true);
+      return;
+    }
+
+    scanButton.disabled = true;
+    scanButton.textContent = "Scanning…";
+    show("scanResult", "Market data যাচাই করা হচ্ছে…");
+
+    try {
+      const data = await api("/api/scan", {
+        method: "POST",
+        body: JSON.stringify({symbol})
+      });
+
+      const result = data.result || {};
+      const rows = [
+        ["Market", result.symbol || symbol],
+        ["Signal", result.signal || result.direction || result.action || "NO TRADE"],
+        ["Timeframe", result.timeframe || "M1"],
+        ["Candle time (Bangladesh)", data.candle_time || "Unavailable"],
+        ["Source", data.source || "Twelve Data external feed"],
+        ["Quotex verified", "NO"]
+      ];
+
+      let html = '<div class="result-card">';
+      html += "<h3>Scan Result</h3>";
+
+      rows.forEach(([label, value]) => {
+        html += `<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`;
+      });
+
+      if (result.reason) {
+        html += `<p><strong>Reason:</strong> ${esc(result.reason)}</p>`;
+      }
+
+      if (result.message) {
+        html += `<p>${esc(result.message)}</p>`;
+      }
+
+      html += "<p>এটি external market data-ভিত্তিক analysis; Quotex থেকে যাচাই করা নয়।</p>";
+      html += "</div>";
+
+      showHtml("scanResult", html);
+      await loadHistory();
+    } catch (error) {
+      show("scanResult", error.message, true);
+    } finally {
+      scanButton.disabled = false;
+      scanButton.textContent = "Scan Market";
+    }
+  });
+}
+
+/* Recent signal history */
+async function loadHistory() {
+  try {
+    const data = await api("/api/signals?limit=30");
+    renderSignals(data.signals || [], "historyResult");
+  } catch (error) {
+    show("historyResult", error.message, true);
+  }
+}
+
+function renderSignals(signals, targetId = "signalList") {
+  const target = $(targetId);
+
+  if (!target) return;
+
+  if (!signals.length) {
+    target.textContent = "এখনো কোনো signal record নেই।";
+    target.classList.remove("hidden");
+    return;
+  }
+
+  let html = "";
+
+  signals.forEach(signal => {
+    html += '<div class="result-card">';
+    html += `<p><strong>Market:</strong> ${esc(signal.symbol || "—")}</p>`;
+    html += `<p><strong>Signal:</strong> ${esc(signal.signal || signal.direction || "—")}</p>`;
+    html += `<p><strong>Time:</strong> ${esc(signal.created_at || signal.time || "—")}</p>`;
+    html += `<p><strong>Result:</strong> ${esc(signal.result || "PENDING")}</p>`;
+    html += "</div>";
+  });
+
+  showHtml(targetId, html);
+}
+
+/* Reload buttons */
+const refreshHistory = $("refreshHistory");
+if (refreshHistory) {
+  refreshHistory.addEventListener("click", loadHistory);
+}
+
+const refreshDashboard = $("refreshDashboard");
+if (refreshDashboard) {
+  refreshDashboard.addEventListener("click", loadDashboard);
+}
+ /* News */
+async function loadNews() {
+  show("newsResult", "News data লোড হচ্ছে…");
+
+  try {
+    const data = await api("/api/news");
+    const items = data.news || data.articles || [];
+
+    if (!items.length) {
+      show("newsResult", data.message || "এখন কোনো news item পাওয়া যায়নি।");
+      return;
+    }
+
+    let html = "";
+
+    items.forEach(item => {
+      html += '<div class="result-card">';
+      html += `<h3>${esc(item.title || item.headline || "News")}</h3>`;
+      html += `<p>${esc(item.description || item.summary || "")}</p>`;
+
+      if (item.url) {
+        html += `<p><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">News পড়ো</a></p>`;
+      }
+
+      html += "</div>";
+    });
+
+    showHtml("newsResult", html);
+  } catch (error) {
+    show("newsResult", error.message, true);
+  }
+}
+
+const loadNewsBtn = $("loadNewsBtn");
+if (loadNewsBtn) {
+  loadNewsBtn.addEventListener("click", loadNews);
+}
+
+/* Price Action lessons */
+async function loadLessons() {
+  try {
+    const data = await api("/api/lessons");
+    const lessons = data.lessons || [];
+    const list = $("lessonList");
+
+    if (!list) return;
+
+    let html = "";
+
+    lessons.forEach((lesson, index) => {
+      html += '<div class="result-card">';
+      html += `<h3>${esc(lesson.title || `Lesson ${index + 1}`)}</h3>`;
+      html += `<p>${esc(lesson.caption || "")}</p>`;
+
+      if (lesson.image) {
+        html += `<img src="${esc(lesson.image)}" alt="${esc(lesson.title || "Lesson chart")}" loading="lazy" style="width:100%;max-width:500px;border-radius:12px">`;
+      }
+
+      html += "</div>";
+    });
+
+    list.innerHTML = html || "কোনো lesson পাওয়া যায়নি।";
+  } catch (error) {
+    show("lessonResult", error.message, true);
+  }
+}
+
+document.querySelectorAll("[data-lesson]").forEach(button => {
+  button.addEventListener("click", async () => {
+    try {
+      const data = await api("/api/lessons");
+      const lessons = data.lessons || [];
+      const index = Number(button.dataset.lesson) - 1;
+      const lesson = lessons[index];
+
+      if (!lesson) {
+        show("lessonResult", "এই lesson পাওয়া যায়নি।", true);
+        return;
+      }
+
+      let html = `<div class="result-card"><h3>${esc(lesson.title)}</h3>`;
+      html += `<p>${esc(lesson.caption || "")}</p>`;
+
+      if (lesson.image) {
+        html += `<img src="${esc(lesson.image)}" alt="${esc(lesson.title)}" loading="lazy" style="width:100%;max-width:500px;border-radius:12px">`;
+      }
+
+      html += `<p>${esc(data.note || "শিক্ষামূলক উদাহরণ; live market data নয়।")}</p></div>`;
+      showHtml("lessonResult", html);
+    } catch (error) {
+      show("lessonResult", error.message, true);
+    }
+  });
+});
+
+/* Ask AI */
+const askAiBtn = $("askAiBtn");
+
+if (askAiBtn) {
+  askAiBtn.addEventListener("click", async () => {
+    const question = $("aiQuestion")?.value.trim();
+
+    if (!question) {
+      show("aiResult", "আগে প্রশ্ন লেখো।", true);
+      return;
+    }
+
+    askAiBtn.disabled = true;
+
+    try {
+      const data = await api("/api/ask", {
+        method: "POST",
+        body: JSON.stringify({question})
+      });
+
+      show("aiResult", data.answer || data.response || data.error || "AI কোনো উত্তর দেয়নি।");
+    } catch (error) {
+      show("aiResult", error.message, true);
+    } finally {
+      askAiBtn.disabled = false;
+    }
+  });
+}
+
+const clearAiBtn = $("clearAiBtn");
+if (clearAiBtn) {
+  clearAiBtn.addEventListener("click", () => {
+    if ($("aiQuestion")) $("aiQuestion").value = "";
+    hide("aiResult");
+  });
+}
+
+/* Account status */
+const checkStatusBtn = $("checkStatusBtn");
+
+if (checkStatusBtn) {
+  checkStatusBtn.addEventListener("click", async () => {
+    try {
+      const data = await api("/api/dashboard");
+
+      show(
+        "settingsResult",
+        [
+          `Database: ${data.database_ok ? "Connected" : "Not connected"}`,
+          `Database message: ${data.database_message || "—"}`,
+          `Market count: ${data.catalog_count ?? "—"}`,
+          `API calls today: ${data.api_calls_today ?? "—"}`,
+          `Daily budget: ${data.daily_budget ?? "—"}`,
+          "Quotex verification: Not verified"
+        ].join("\n")
+      );
+    } catch (error) {
+      show("settingsResult", error.message, true);
+    }
+  });
+}
+
+/* Logout */
+const logoutBtn = $("logoutBtn");
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      await api("/api/auth/logout", {method: "POST"});
+      document.body.classList.add("auth-locked");
+      show("loginMessage", "Logout সফল হয়েছে।");
+    } catch (error) {
+      show("settingsResult", error.message, true);
+    }
+  });
+}
+
+/* Initial page setup */
+document.addEventListener("DOMContentLoaded", () => {
+  checkSession();
+});
+ </script>
+</body>
+</html>
