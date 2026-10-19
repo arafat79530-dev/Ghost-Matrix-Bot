@@ -1,348 +1,269 @@
-<!doctype html>
+ <!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><link rel="manifest" href="/manifest.json"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#e9fbff"><meta name="apple-mobile-web-app-capable" content="yes"><title>Ghost Trader — Water Glass</title>
 <style>
-:root{color-scheme:light;--bg:#eafaff;--ink:#12364a;--muted:#638294;--line:rgba(72,153,181,.22);--glass:rgba(255,255,255,.68);--glass2:rgba(255,255,255,.84);--blue:#198dbb;--cyan:#53cbe3;--green:#12876b;--red:#d94e69;--gold:#9b6a08;--shadow:0 16px 42px rgba(35,131,163,.12)}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 5% 0%,#c6f2ff 0,transparent 38%),radial-gradient(ellipse at 95% 15%,#d9f7f0 0,transparent 35%),linear-gradient(145deg,#effcff,#e5f7ff 52%,#f5fdff);color:var(--ink);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding-bottom:92px}button,input,select,textarea{font:inherit}button{cursor:pointer}.app{width:min(1120px,100%);margin:auto;padding:16px 16px 28px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 18px}.brand{display:flex;align-items:center;gap:11px}.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(131,226,245,.7));box-shadow:inset 0 1px 0 white,0 8px 24px #4ba8c52b;border:1px solid #ffffffc9}.logo svg{width:32px;height:32px}.brand h1{font-size:18px;letter-spacing:.12em;margin:0;font-weight:850}.brand p{margin:1px 0 0;color:var(--muted);font-size:10px;letter-spacing:.14em}.glass,.hero,.card,.panel{background:var(--glass);border:1px solid rgba(255,255,255,.94);outline:1px solid var(--line);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:23px}.hero{padding:24px;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(192,242,251,.67))}.hero:after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;right:-50px;top:-85px;background:radial-gradient(circle at 35% 35%,#fff,rgba(78,201,229,.22) 55%,transparent 72%);pointer-events:none}.eyebrow,.small{font-size:12px;color:var(--muted)}.eyebrow{letter-spacing:.12em;font-weight:800}.hero h2{font-size:clamp(27px,5vw,42px);line-height:1.1;margin:9px 0 12px;max-width:600px;letter-spacing:-.04em}.muted{color:var(--muted)}.notice{background:#fff8dfb8;border:1px solid #f2d78a;border-radius:15px;padding:12px 14px;color:#765719;font-size:12px;margin:14px 0}.badge,.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;background:#e5f8fd;border:1px solid #bfeaf5;color:#24728d;font-size:11px;font-weight:750}.badge.bad{background:#ffebef;border-color:#f7c3cc;color:#b82f4d}.badge.warn{background:#fff3d3;border-color:#f3d78c;color:#8a620d}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}.card{padding:16px;min-width:0}.card h3,.panel h3{margin:0 0 7px;font-size:16px}.value{font-size:23px;font-weight:850;letter-spacing:-.03em;margin-top:5px}.heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 12px}.heading h2{margin:0;font-size:22px;letter-spacing:-.03em}.section{display:none;animation:fade .18s ease}.section.active{display:block}@keyframes fade{from{opacity:.5;transform:translateY(3px)}to{opacity:1;transform:none}}.btn{border:1px solid #b9e6f2;background:linear-gradient(135deg,#fff,#dff8ff);color:#17627e;padding:10px 14px;border-radius:14px;font-weight:750;box-shadow:0 5px 15px #2a9dc21a}.btn.primary{background:linear-gradient(135deg,#37c2df,#1789ba);color:white;border-color:#65d5e9}.btn.soft{background:#ffffffa6}.btn.danger{color:#b62e4d;background:#fff1f4;border-color:#f7c7d1}.btn:disabled{opacity:.55;cursor:wait}.field{width:100%;border:1px solid #b6dce8;background:#ffffffb9;color:var(--ink);border-radius:13px;padding:11px 12px;outline:none}.field:focus{border-color:#43b9d6;box-shadow:0 0 0 3px #57c5e72b}label{display:block;font-weight:750;font-size:13px;margin:0 0 6px}.formrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.result{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7fdffbd;border:1px solid #d2eef6;border-radius:16px;padding:14px;margin-top:12px}.result.error{background:#fff0f3;border-color:#f4c4ce;color:#a22e49}.signal{display:grid;gap:8px;margin:10px 0}.signalhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.direction{font-size:18px;font-weight:900}.direction.CALL{color:var(--green)}.direction.PUT{color:var(--red)}.direction.NO\ TRADE{color:var(--gold)}.learnimg{display:block;width:100%;height:auto;border-radius:15px;border:1px solid #d5edf4;margin:12px 0;background:#102033}.lesson p{white-space:pre-line}.lesson .lessonbody{white-space:pre-line}.nav{position:fixed;z-index:10;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:min(760px,calc(100% - 20px));display:flex;justify-content:space-around;gap:4px;padding:8px;background:rgba(248,254,255,.82);border:1px solid white;outline:1px solid #adddea;border-radius:22px;box-shadow:0 12px 36px #2b90ad2e;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}.nav button{flex:1;min-width:0;border:0;background:transparent;color:#7392a1;border-radius:15px;padding:7px 3px;font-size:10px;font-weight:750}.nav button span{display:block;font-size:20px;line-height:1.15;margin-bottom:3px}.nav button.active{background:linear-gradient(145deg,#d9f8ff,#bceefa);color:#14759a;box-shadow:inset 0 1px white}.empty{text-align:center;color:var(--muted);padding:20px}.listitem{padding:13px 0;border-bottom:1px solid var(--line)}.listitem:last-child{border-bottom:0}.eventtitle{font-weight:800}.eventmeta{color:var(--muted);font-size:12px}.statusline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.logo-title{display:flex;align-items:center;gap:8px}.footnote{font-size:11px;color:var(--muted);margin-top:16px;text-align:center}.filebox{border:1px dashed #91cfe0;background:#ffffff80;border-radius:17px;padding:15px;text-align:center}.preview{max-width:100%;max-height:300px;border-radius:14px;margin-top:12px}.hidden{display:none!important}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lessonlist{display:flex;gap:8px;overflow:auto;padding:3px 0 10px}.lessonpick{white-space:nowrap;flex-shrink:0}.lessonpick.active{background:#c9f4ff;border-color:#7bd6ea}.range{display:flex;gap:7px;flex-wrap:wrap}.range .btn.active{background:#c8f5ff}
+:root{color-scheme:light;--bg:#eafaff;--ink:#12364a;--muted:#638294;--line:rgba(72,153,181,.22);--glass:rgba(255,255,255,.68);--glass2:rgba(255,255,255,.84);--blue:#198dbb;--cyan:#53cbe3;--green:#12876b;--red:#d94e69;--gold:#9b6a08;--shadow:0 16px 42px rgba(35,131,163,.12)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 5% 0%,#c6f2ff 0,transparent 38%),radial-gradient(ellipse at 95% 15%,#d9f7f0 0,transparent 35%),linear-gradient(145deg,#effcff,#e5f7ff 52%,#f5fdff);color:var(--ink);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding-bottom:92px}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{width:min(1120px,100%);margin:auto;padding:16px 16px 28px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 18px}
+.brand{display:flex;align-items:center;gap:11px}
+.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(131,226,245,.7));box-shadow:inset 0 1px 0 white,0 8px 24px #4ba8c52b;border:1px solid #ffffffc9}
+.logo svg{width:32px;height:32px}
+.brand h1{font-size:18px;letter-spacing:.12em;margin:0;font-weight:850}
+.brand p{margin:1px 0 0;color:var(--muted);font-size:10px;letter-spacing:.14em}
+.glass,.hero,.card,.panel{background:var(--glass);border:1px solid rgba(255,255,255,.94);outline:1px solid var(--line);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:23px}
+.hero{padding:24px;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(192,242,251,.67))}
+.hero:after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;right:-50px;top:-85px;background:radial-gradient(circle at 35% 35%,#fff,rgba(78,201,229,.22) 55%,transparent 72%);pointer-events:none}
+.eyebrow,.small{font-size:12px;color:var(--muted)}
+.eyebrow{letter-spacing:.12em;font-weight:800}
+.hero h2{font-size:clamp(27px,5vw,42px);line-height:1.1;margin:9px 0 12px;max-width:600px;letter-spacing:-.04em}
+.muted{color:var(--muted)}
+.notice{background:#fff8dfb8;border:1px solid #f2d78a;border-radius:15px;padding:12px 14px;color:#765719;font-size:12px;margin:14px 0}
+.badge,.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;background:#e5f8fd;border:1px solid #bfeaf5;color:#24728d;font-size:11px;font-weight:750}
+.badge.bad{background:#ffebef;border-color:#f7c3cc;color:#b82f4d}
+.badge.warn{background:#fff3d3;border-color:#f3d78c;color:#8a620d}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.card{padding:16px;min-width:0}
+.card h3,.panel h3{margin:0 0 7px;font-size:16px}
+.value{font-size:23px;font-weight:850;letter-spacing:-.03em;margin-top:5px}
+.heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 12px}
+.heading h2{margin:0;font-size:22px;letter-spacing:-.03em}
+.section{display:none;animation:fade .18s ease}
+.section.active{display:block}
+@keyframes fade{from{opacity:.5;transform:translateY(3px)}to{opacity:1;transform:none}}
+.btn{border:1px solid #b9e6f2;background:linear-gradient(135deg,#fff,#dff8ff);color:#17627e;padding:10px 14px;border-radius:14px;font-weight:750;box-shadow:0 5px 15px #2a9dc21a}
+.btn.primary{background:linear-gradient(135deg,#37c2df,#1789ba);color:white;border-color:#65d5e9}
+.btn.soft{background:#ffffffa6}
+.btn.danger{color:#b62e4d;background:#fff1f4;border-color:#f7c7d1}
+.btn:disabled{opacity:.55;cursor:wait}
+.field{width:100%;border:1px solid #b6dce8;background:#ffffffb9;color:var(--ink);border-radius:13px;padding:11px 12px;outline:none}
+.field:focus{border-color:#43b9d6;box-shadow:0 0 0 3px #57c5e72b}
+label{display:block;font-weight:750;font-size:13px;margin:0 0 6px}
+.formrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.result{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7fdffbd;border:1px solid #d2eef6;border-radius:16px;padding:14px;margin-top:12px}
+.result.error{background:#fff0f3;border-color:#f4c4ce;color:#a22e49}
+.signal{display:grid;gap:8px;margin:10px 0}
+.signalhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.direction{font-size:18px;font-weight:900}
+.direction.CALL{color:var(--green)}
+.direction.PUT{color:var(--red)}
+.direction.NO\ TRADE{color:var(--gold)}
+.learnimg{display:block;width:100%;height:auto;border-radius:15px;border:1px solid #d5edf4;margin:12px 0;background:#102033}
+.lesson p{white-space:pre-line}
+.lesson .lessonbody{white-space:pre-line}
+.nav{position:fixed;z-index:10;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:min(760px,calc(100% - 20px));display:flex;justify-content:space-around;gap:4px;padding:8px;background:rgba(248,254,255,.82);border:1px solid white;outline:1px solid #adddea;border-radius:22px;box-shadow:0 12px 36px #2b90ad2e;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.nav button{flex:1;min-width:0;border:0;background:transparent;color:#7392a1;border-radius:15px;padding:7px 3px;font-size:10px;font-weight:750}
+.nav button span{display:block;font-size:20px;line-height:1.15;margin-bottom:3px}
+.nav button.active{background:linear-gradient(145deg,#d9f8ff,#bceefa);color:#14759a;box-shadow:inset 0 1px white}
+.empty{text-align:center;color:var(--muted);padding:20px}
+.listitem{padding:13px 0;border-bottom:1px solid var(--line)}
+.listitem:last-child{border-bottom:0}
+.eventtitle{font-weight:800}
+.eventmeta{color:var(--muted);font-size:12px}
+.statusline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.logo-title{display:flex;align-items:center;gap:8px}
+.footnote{font-size:11px;color:var(--muted);margin-top:16px;text-align:center}
+.filebox{border:1px dashed #91cfe0;background:#ffffff80;border-radius:17px;padding:15px;text-align:center}
+.preview{max-width:100%;max-height:300px;border-radius:14px;margin-top:12px}
+.future-card{margin-top:12px;padding:18px;border-radius:20px;background:#11181d;border:2px solid #f6bf2a;color:#e6edf3;box-shadow:0 12px 30px #183b4b18}
+.future-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.future-pair{color:#9aa6b2;font-size:13px}
+.future-dir{font-size:clamp(30px,8vw,46px);font-weight:900;line-height:1.05;margin:8px 0;color:#ffc52f;overflow-wrap:anywhere}
+.future-dir.up{color:#20df8a}
+.future-dir.down{color:#ff667b}
+.future-score{font-size:27px;font-weight:850;text-align:right;color:#ffc52f}
+.future-score small{display:block;font-size:11px;color:#9aa6b2;font-weight:500}
+.future-meter{height:8px;border-radius:99px;background:#252d34;overflow:hidden;margin:14px 0}
+.future-meter span{display:block;height:100%;background:#ffc52f}
+.future-detail{white-space:pre-line;line-height:1.55;color:#d7dee5}
+.future-tag{display:inline-block;background:#242b32;border-radius:8px;padding:5px 9px;margin:4px 4px 4px 0;color:#d7dee5;font-size:12px}
+.future-meta{font-size:11px;color:#9aa6b2;margin-top:14px}
+.future-card.wait{border-color:#f6bf2a}
+.future-card.up{border-color:#20df8a}
+.future-card.down{border-color:#ff667b}
+.hidden{display:none!important}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lessonlist{display:flex;gap:8px;overflow:auto;padding:3px 0 10px}
+.lessonpick{white-space:nowrap;flex-shrink:0}
+.lessonpick.active{background:#c9f4ff;border-color:#7bd6ea}
+.range{display:flex;gap:7px;flex-wrap:wrap}
+.range .btn.active{background:#c8f5ff}
 @media(max-width:650px){.app{padding:12px 12px 22px}.top{margin-bottom:13px}.brand h1{font-size:16px}.grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:20px}.hero h2{font-size:30px}.card{padding:14px}.heading h2{font-size:20px}.formrow,.twocol{grid-template-columns:1fr}.nav{gap:1px}.nav button{font-size:9px}.nav button span{font-size:19px}.value{font-size:21px}}
-
 body.auth-locked .app,body.auth-locked .nav{display:none!important}
 #authGate{display:none;position:fixed;inset:0;z-index:9999;overflow:auto;padding:22px 14px;background:radial-gradient(ellipse at 5% 0%,#c6f2ff 0,transparent 38%),linear-gradient(145deg,#effcff,#e5f7ff);align-items:center;justify-content:center}
 body.auth-locked #authGate{display:flex}
 .auth-card{width:min(460px,100%);padding:24px;border-radius:24px;background:rgba(255,255,255,.82);border:1px solid white;outline:1px solid rgba(72,153,181,.25);box-shadow:0 18px 48px rgba(35,131,163,.15)}
-.auth-card h1{margin:0 0 5px;font-size:23px;letter-spacing:.08em}.auth-card p{color:var(--muted);font-size:13px}.auth-card .field{margin-bottom:12px}.auth-error{white-space:pre-wrap;margin-top:12px;color:#a22e49;font-size:13px}.auth-admin{border-top:1px solid var(--line);margin-top:18px;padding-top:15px}.auth-userline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.auth-card h1{margin:0 0 5px;font-size:23px;letter-spacing:.08em}
+.auth-card p{color:var(--muted);font-size:13px}
+</style></head><body class="auth-locked">
+  <div id="authGate">
+  <div class="auth-card">
+    <div class="logo" style="margin-bottom:14px" aria-hidden="true">👻</div>
+    <h1>GHOST TRADER</h1>
+    <p>Secure account login · Email verification required</p>
+    <form id="loginForm">
+      <label for="authEmail">Email</label>
+      <input id="authEmail" class="field" type="email" autocomplete="username" required maxlength="254" placeholder="your@email.com">
+      <label for="authPassword">Password</label>
+      <input id="authPassword" class="field" type="password" autocomplete="current-password" required maxlength="1024" placeholder="Your password">
+      <button id="loginButton" class="btn primary" type="submit" style="width:100%">Login</button>
+    </form>
+    <div id="authMessage" class="auth-error" role="status"></div>
+    <p class="small">Public signup is disabled. Ask your GHOST TRADER admin to create your account and send a verification email.</p>
+  </div>
+</div>
 
-/* GHOST MATRIX PRO THEME — Dark default */
-:root{
-  color-scheme: dark;
-  --bg:#080d12;
-  --ink:#e5edf5;
-  --muted:#91a2b5;
-  --line:rgba(100,180,190,.20);
-  --glass:rgba(18,29,39,.94);
-  --glass2:#15212c;
-  --blue:#20b9c5;
-  --cyan:#45d6c8;
-  --green:#32d49a;
-  --red:#ff647c;
-  --gold:#f3c66b;
-  --shadow:0 16px 42px rgba(0,0,0,.28);
-}
+<div class="app">
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-label="Ghost Trader logo">
+      <svg viewBox="0 0 40 40" fill="none">
+        <path d="M8 31V17C8 9.8 13.3 5 20 5s12 4.8 12 12v14l-6-4-6 4-6-4-6 4Z" fill="#b7f0fb" stroke="#1687ad" stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="16" cy="17" r="2" fill="#146d8d"/>
+        <circle cx="24" cy="17" r="2" fill="#146d8d"/>
+        <path d="M13 24h14M13 24l3-3m-3 3 3 3m14-3-3-3m3 3-3 3" stroke="#1687ad" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <h1>GHOST TRADER</h1>
+      <p>PREMIUM WATER • MARKET WORKSPACE</p>
+    </div>
+  </div>
+  <button class="btn soft" data-go="settings">⚙</button>
+</header>
 
-body{
-  background:linear-gradient(145deg,#080d12,#0c151e 55%,#101b23);
-  color:var(--ink);
-}
-
-.glass,.hero,.card,.panel{
-  background:var(--glass);
-  border-color:#263744;
-  outline-color:var(--line);
-  box-shadow:var(--shadow);
-}
-
-.hero{
-  background:linear-gradient(135deg,#14232d,#101b24);
-}
-
-.btn,.btn.soft{
-  background:#192a35;
-  color:#dceaf2;
-  border-color:#304653;
-}
-
-.btn.primary{
-  background:linear-gradient(135deg,#21bfc5,#168a91);
-  color:#fff;
-  border-color:#36c9c7;
-}
-
-.field{
-  background:#101c26;
-  color:var(--ink);
-  border-color:#304653;
-}
-
-.result{
-  background:#101c26;
-  border-color:#2a414d;
-  color:var(--ink);
-}
-
-.nav{
-  background:rgba(11,19,26,.94);
-  border-color:#263944;
-  outline-color:#263944;
-}
-
-.nav button.active{
-  background:linear-gradient(145deg,#173d42,#16434a);
-  color:#73e6df;
-}
-
-#authGate{
-  background:linear-gradient(145deg,#080d12,#101b24);
-}
-
-.auth-card{
-  background:#121e28;
-  border-color:#30424e;
-  outline-color:#263944;
-  color:var(--ink);
-}
-
-.notice{
-  background:#2b2618;
-  border-color:#65532b;
-  color:#f2d997;
-}
-
-.badge,.pill{
-  background:#17313a;
-  border-color:#28515a;
-  color:#8ce5e5;
-}
-
-.filebox{
-  background:#101c26;
-  border-color:#365360;
-}
-
-.learnimg{
-  border-color:#304653;
-}
-
-.lessonpick.active,.range .btn.active{
-  background:#173d42;
-  color:#a4f2ec;
-  border-color:#327c7d;
-}
-  /* LIGHT THEME */
-:root[data-theme="light"]{
-  color-scheme:light;
-  --bg:#eafaff;
-  --ink:#12364a;
-  --muted:#638294;
-  --line:rgba(72,153,181,.22);
-  --glass:rgba(255,255,255,.78);
-  --glass2:rgba(255,255,255,.95);
-  --blue:#198dbb;
-  --cyan:#35bcd5;
-  --green:#12876b;
-  --red:#d94e69;
-  --gold:#9b6a08;
-  --shadow:0 16px 42px rgba(35,131,163,.12);
-}
-:root[data-theme="light"] body{
-  background:linear-gradient(145deg,#eafaff,#f7fdff);
-  color:var(--ink);
-}
-:root[data-theme="light"] .glass,
-:root[data-theme="light"] .hero,
-:root[data-theme="light"] .card,
-:root[data-theme="light"] .panel{
-  background:var(--glass);
-  border-color:rgba(72,153,181,.25);
-  color:var(--ink);
-  box-shadow:var(--shadow);
-}
-:root[data-theme="light"] .hero{
-  background:linear-gradient(135deg,#d8f6ff,#f5fdff);
-}
-:root[data-theme="light"] .btn,
-:root[data-theme="light"] .btn.soft{
-  background:#fff;
-  color:#12364a;
-  border-color:#c5e4ed;
-}
-:root[data-theme="light"] .btn.primary{
-  background:linear-gradient(135deg,#35bcd5,#198dbb);
-  color:#fff;
-}
-:root[data-theme="light"] .field{
-  background:#fff;
-  color:#12364a;
-  border-color:#c5e4ed;
-}
-:root[data-theme="light"] .result{
-  background:#f5fcff;
-  color:#12364a;
-  border-color:#c5e4ed;
-}
-:root[data-theme="light"] .nav{
-  background:rgba(255,255,255,.96);
-  border-color:#c5e4ed;
-}
-:root[data-theme="light"] .nav button.active{
-  background:#d9f5fb;
-  color:#126e8d;
-}
-:root[data-theme="light"] #authGate{
-  background:linear-gradient(145deg,#eafaff,#f7fdff);
-}
-:root[data-theme="light"] .auth-card{
-  background:rgba(255,255,255,.95);
-  color:#12364a;
-  border-color:#c5e4ed;
-}
-:root[data-theme="light"] .notice{
-  background:#fff8e7;
-  border-color:#e8d49b;
-  color:#76520b;
-}
-:root[data-theme="light"] .badge,
-:root[data-theme="light"] .pill{
-  background:#e0f7fc;
-  border-color:#b7e7f0;
-  color:#126e8d;
-}
-:root[data-theme="light"] .filebox{
-  background:#f5fcff;
-  border-color:#c5e4ed;
-}
-:root[data-theme="light"] .learnimg{
-  border-color:#c5e4ed;
-}
-:root[data-theme="light"] .lessonpick.active,
-:root[data-theme="light"] .range .btn.active{
-  background:#d9f5fb;
-  color:#126e8d;
-  border-color:#8ed5e5;
-}
-</style></head><body class="auth-locked"><div id="authGate"><div class="auth-card"><div class="logo" style="margin-bottom:14px" aria-hidden="true">👻</div><h1>GHOST TRADER</h1><p>Secure account login · Email verification required</p><form id="loginForm"><label for="authEmail">Email</label><input id="authEmail" class="field" type="email" autocomplete="username" required maxlength="254" placeholder="your@email.com"><label for="authPassword">Password</label><input id="authPassword" class="field" type="password" autocomplete="current-password" required maxlength="1024" placeholder="Your password"><button id="loginButton" class="btn primary" type="submit" style="width:100%">Login</button></form><div id="authMessage" class="auth-error" role="status"></div><p class="small">Public signup is disabled. Ask your GHOST TRADER admin to create your account and send a verification email.</p></div></div><div class="app">
-<header class="top"><div class="brand"><div class="logo" aria-label="Ghost Trader logo"><svg viewBox="0 0 40 40" fill="none"><path d="M8 31V17C8 9.8 13.3 5 20 5s12 4.8 12 12v14l-6-4-6 4-6-4-6 4Z" fill="#b7f0fb" stroke="#1687ad" stroke-width="1.8" stroke-linejoin="round"/><circle cx="16" cy="17" r="2" fill="#146d8d"/><circle cx="24" cy="17" r="2" fill="#146d8d"/><path d="M13 24h14M13 24l3-3m-3 3 3 3m14-3-3-3m3 3-3 3" stroke="#1687ad" stroke-width="1.6" stroke-linecap="round"/></svg></div><div><h1>GHOST TRADER</h1><p>PREMIUM WATER • MARKET WORKSPACE</p></div></div><button class="btn soft" data-go="settings">⚙</button></header>
-<section id="home" class="section active"><div class="hero"><div class="eyebrow">● YOUR ALL-IN-ONE CONTROL CENTER</div><h2>Analyze. Learn.<br>Understand the market.</h2><p class="muted">Screenshot analysis, market scan, economic news, illustrated lessons and AI answers — from one app.</p><div class="statusline"><span class="badge" id="serverBadge">Checking server…</span><span class="badge warn">Quotex not verified</span></div></div>
-<div class="grid four"><div class="card"><div class="small">Twelve Data</div><div class="value" id="apiState">—</div></div><div class="card"><div class="small">Saved signals</div><div class="value" id="signalCount">—</div></div><div class="card"><div class="small">API usage today</div><div class="value" id="apiUsage">—</div></div><div class="card"><div class="small">Market pairs</div><div class="value" id="marketCount">—</div></div></div>
-<div class="heading"><h2>Quick tools</h2></div><div class="grid"><button class="card btn" data-go="analyze"><h3>📷 Screenshot Analysis</h3><span class="muted small">Upload a chart image</span></button><button class="card btn" data-go="scan"><h3>📈 Scan a Market</h3><span class="muted small">Choose pair and analyze</span></button><button class="card btn" data-go="news"><h3>📰 Economic News</h3><span class="muted small">Calendar and event impact</span></button><button class="card btn" data-go="ask"><h3>✨ Ask AI</h3><span class="muted small">Ask in Bangla or English</span></button></div>
-<div class="notice">Safety: market scans use external Twelve Data candles, not verified Quotex prices. AI and screenshot analysis are educational, not guaranteed trading signals. Never share passwords, API keys or Quotex session cookies in this app.</div></section>
-
-<section id="analyze" class="section"><div class="heading"><h2>📷 Screenshot Analysis</h2><span class="pill">AI Vision</span></div><div class="card"><p class="muted">Quotex chart screenshot upload করো। AI দৃশ্যমান trend, candle structure, support/resistance ও অনিশ্চয়তা ব্যাখ্যা করবে।</p><div class="filebox"><input id="chartFile" type="file" class="field" accept="image/png,image/jpeg,image/webp"><img id="chartPreview" class="preview hidden" alt="Chart preview"><p class="small">PNG / JPG / WEBP • সর্বোচ্চ 12 MB</p></div><div class="actions"><button id="analyzeBtn" class="btn primary">Analyze Screenshot</button><button id="clearImage" class="btn">Clear</button></div><div id="imageResult" class="result hidden" aria-live="polite"></div></div><div class="notice">AI কেবল ছবিতে যা দেখা যায় তা বিশ্লেষণ করে। Screenshot-এ asset/timeframe দেখা না গেলে নিজে থেকে অনুমান করবে না।</div></section>
-
-<section id="scan" class="section"><div class="heading"><h2>📈 Market Scan</h2><span class="pill">Manual • One pair</span></div><div class="card"><p class="muted">একটি pair বেছে scan করো। এতে API credit খরচ হতে পারে; safety limit অনুযায়ী scan সীমিত।</p><label for="marketSelect">Market pair</label><select id="marketSelect" class="field"><option>Loading markets…</option></select><div class="actions"><button id="scanBtn" class="btn primary">Scan Selected Pair</button><button id="loadSignalsBtn" class="btn">View History</button></div><div id="scanResult" class="result hidden" aria-live="polite"></div></div><div class="notice">CALL/PUT থাকলেও এটি সম্ভাব্য setup মাত্র; Quotex-এ একই REAL pair, timeframe ও candle নিজে মিলিয়ে দেখো। ডেটা না থাকলে NO TRADE দেখানো হবে।</div></section>
-
-<section id="signals" class="section"><div class="heading"><h2>Signal History</h2><button id="refreshSignals" class="btn">↻ Refresh</button></div><p class="muted small">Saved setups ও manually recorded results. এটি broker-verified performance নয়।</p><div id="signalList"><div class="empty">Loading…</div></div><button id="csv" class="btn">Export CSV</button></section>
-
-<section id="news" class="section"><div class="heading"><h2>📰 Economic News</h2><button id="refreshNews" class="btn">↻ Refresh</button></div><div class="card"><label for="newsDays">Calendar range</label><select id="newsDays" class="field"><option value="1">Today</option><option value="7" selected>Next 7 days</option><option value="14">Next 14 days</option></select><p class="small muted">Times shown in Bangladesh time (UTC+6), when supplied by the source.</p><div id="newsList"><div class="empty">Load the calendar to begin.</div></div></div><div class="heading"><h2>News Release Analyzer</h2></div><div class="card"><p class="muted small">Actual বনাম Forecast বুঝতে release-এর মানগুলো দাও। Live price reaction এই form থেকে যাচাই হয় না।</p><div class="formrow"><div><label for="newsCurrency">Currency</label><select id="newsCurrency" class="field"><option>USD</option><option>EUR</option><option>GBP</option><option>AUD</option><option>CAD</option><option>JPY</option><option>CHF</option><option>NZD</option></select></div><div><label for="newsEvent">Event name</label><input id="newsEvent" class="field" placeholder="e.g. CPI / Interest Rate"></div><div><label for="newsActual">Actual</label><input id="newsActual" class="field" placeholder="Released value"></div><div><label for="newsForecast">Forecast</label><input id="newsForecast" class="field" placeholder="Expected value"></div><div><label for="newsPrevious">Previous (optional)</label><input id="newsPrevious" class="field" placeholder="Previous value"></div></div><button id="analyzeNewsBtn" class="btn primary">Explain News</button><div id="newsAnalysis" class="result hidden"></div></div></section>
-
-<section id="learn" class="section"><div class="heading"><h2>📘 Learning Center</h2><span class="pill" id="lessonTotal">7 illustrated lessons</span></div><p class="muted">প্রতিটি lesson-এ বিস্তারিত বাংলা ব্যাখ্যা, উদাহরণ এবং illustrative chart থাকবে। এগুলো live market chart নয়।</p><div id="lessonPicks" class="lessonlist"></div><div id="lessonContent" class="card lesson"><div class="empty">Loading lessons…</div></div></section>
-
-<section id="ask" class="section"><div class="heading"><h2>✨ Ask AI Anything</h2><span class="pill">Bangla supported</span></div><div class="card"><p class="muted">Trading concept, chart, news বা learning নিয়ে প্রশ্ন করো। Screenshot বুঝতে চাইলে Screenshot Analysis ব্যবহার করো।</p><label for="question">Your question</label><textarea id="question" class="field" rows="5" maxlength="3000" placeholder="উদাহরণ: Bullish engulfing কী? একটা সহজ example দিয়ে বোঝাও…"></textarea><div class="actions"><button id="askBtn" class="btn primary">Get Answer</button><button id="clearAsk" class="btn">Clear</button></div><div id="answerResult" class="result hidden" aria-live="polite"></div></div><div class="notice">AI উত্তর ভুল বা অসম্পূর্ণ হতে পারে। এটি live market data বা নিশ্চিত financial advice নয়।</div></section>
-
-<section id="stats" class="section"><div class="heading"><h2>📊 Statistics</h2><button id="refreshStats" class="btn">↻ Refresh</button></div><div class="grid four"><div class="card">WIN<div class="value" id="wins">—</div></div><div class="card">LOSS<div class="value" id="losses">—</div></div><div class="card">Pending<div class="value" id="pending">—</div></div><div class="card">Recorded win rate<div class="value" id="rate">—</div></div></div><div class="notice">শুধু হাতে record করা WIN/LOSS গণনা করা হয়। Quotex থেকে auto-result verification নেই।</div></section>
-
-<section id="settings" class="section"><div class="heading"><h2>⚙ App Settings</h2></div><div class="card"><h3>Appearance & Behavior</h3>
-<div><label for="themeMode">Color Theme</label><select id="themeMode" class="field"><option value="dark">Dark (Pro)</option><option value="light">Light</option></select></div>
-<div class="formrow"><div><label for="refreshRate">Auto refresh status</label><select id="refreshRate" class="field"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div><label for="notifyToggle">Browser notifications</label><select id="notifyToggle" class="field"><option value="off">Off</option><option value="on">On (if supported)</option></select></div></div><button id="saveSettings" class="btn primary">Save Preferences</button><div id="settingsSaved" class="small muted" style="margin-top:8px"></div></div><div id="adminPanel" class="card auth-admin hidden" style="margin-top:14px"><h3>Admin · Create User</h3><p class="small muted">Only verified accounts can log in. New user will receive a verification email.</p><form id="createUserForm"><label for="newUserEmail">New user email</label><input id="newUserEmail" class="field" type="email" maxlength="254" required placeholder="user@example.com"><label for="newUserPassword">Temporary password (12+ characters)</label><input id="newUserPassword" class="field" type="password" minlength="12" maxlength="1024" required placeholder="Create a temporary password"><button class="btn primary" type="submit">Create account & send verification</button></form><div id="adminMessage" class="result hidden"></div></div><div class="card" style="margin-top:14px"><div class="auth-userline"><span id="signedInAs">Signed in</span><button id="logoutButton" class="btn danger" type="button">Log out</button></div></div><div class="card" style="margin-top:14px"><h3>Service Status</h3><div id="serviceStatus" class="result">Checking…</div><button id="checkStatus" class="btn" style="margin-top:10px">Check again</button></div><div class="card" style="margin-top:14px"><h3>What is connected?</h3><p class="muted small">Market data: Twelve Data external feed. News: configured economic calendar source. AI: optional Groq-compatible API. Screenshot analysis requires AI_API_KEY and a compatible vision model. Quotex integration is not verified by this app.</p><p class="muted small">Secrets belong only in Render Environment settings — never paste tokens, API keys or account cookies into the app.</p></div></section>
-<div class="footnote">GHOST TRADER • Premium Water Interface • Learning and analysis only</div></div>
-<nav class="nav" aria-label="Main navigation"><button class="active" data-go="home"><span>⌂</span>Home</button><button data-go="analyze"><span>▧</span>Analyze</button><button data-go="scan"><span>⌁</span>Scan</button><button data-go="news"><span>◷</span>News</button><button data-go="learn"><span>▤</span>Learn</button><button data-go="ask"><span>✦</span>Ask AI</button><button data-go="settings"><span>⚙</span>Settings</button></nav>
-<script>
-const $=id=>document.getElementById(id);let markets=[],signals=[],lessons=[],currentLesson=0,refreshTimer=null;
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function api(path,opts={}){const r=await fetch(path,{cache:'no-store',credentials:'same-origin',...opts});let d;try{d=await r.json()}catch{d={error:'Server returned an unreadable response'}}if(r.status===401&&d.auth_required){lockAuth(d.error||'Please log in again.')}if(!r.ok)throw Error(d.error||('HTTP '+r.status));return d}
-function busy(btn,on,label){if(!btn)return;btn.disabled=on;if(on){btn.dataset.old=btn.textContent;btn.textContent=label||'Please wait…'}else{btn.textContent=btn.dataset.old||btn.textContent;delete btn.dataset.old}}
-function show(id,text,error=false){const e=$(id);e.classList.remove('hidden');e.classList.toggle('error',error);e.textContent=text}
-function go(id){document.querySelectorAll('.section').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('[data-go]').forEach(x=>x.classList.toggle('active',x.dataset.go===id));if(id==='signals')loadSignals();if(id==='settings')loadStatus();if(id==='news')loadNews();if(id==='learn'&&!lessons.length)loadLessons()}
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));$('loadSignalsBtn').onclick=()=>go('signals');
-async function loadStatus(){try{const [h,s,q]=await Promise.all([api('/health'),api('/status'),api('/api/signals?limit=50')]);$('serverBadge').textContent='● Server online';$('serverBadge').className='badge';$('apiState').textContent=h.twelve_data_key_configured?'Ready':'Missing';$('signalCount').textContent=(q.signals||[]).length;$('apiUsage').textContent=`${s.api_calls_today??'—'} / ${s.daily_budget??'—'}`;$('marketCount').textContent=h.catalog_count??markets.length;$('serviceStatus').textContent=`Server: online\nTwelve Data key: ${h.twelve_data_key_configured?'configured':'MISSING'}\nTelegram bot: ${h.bot_token_configured?'configured':'missing'}\nDatabase: ${s.database_ok?'connected':'not connected'}\nAI key: ${h.ai_api_key_configured?'configured':'missing'}\nQuotex verified: no\nLast scan: ${h.last_scan_utc||'not yet'}\nLast error: ${h.last_error||'none'}`}catch(e){$('serverBadge').textContent='Server/API error';$('serverBadge').className='badge bad';$('serviceStatus').textContent='Status error: '+e.message}}
-async function loadMarkets(){try{const d=await api('/api/markets');markets=d.markets||[];$('marketSelect').innerHTML=markets.map(m=>`<option value="${esc(m.symbol)}">${esc(m.symbol)}</option>`).join('')||'<option value="">No markets configured</option>';$('marketCount').textContent=markets.length}catch(e){$('marketSelect').innerHTML='<option value="">Could not load markets</option>'}}
-async function runScan(){const btn=$('scanBtn');busy(btn,true,'Scanning…');$('scanResult').classList.add('hidden');try{const d=await api('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symbol:$('marketSelect').value})});const r=d.result||{};const text=`${r.symbol||''} • ${r.direction||'NO TRADE'}\nPrice: ${r.price??'N/A'}\nCandle time (Bangladesh): ${d.candle_time||'N/A'}\n\n${r.reason||'No explanation'}\n\nSource: ${d.source}\nQuotex verified: NO`;show('scanResult',text);await loadSignals();await loadStatus()}catch(e){show('scanResult',e.message,true)}finally{busy(btn,false)}}$('scanBtn').onclick=runScan;
-async function loadSignals(){try{const d=await api('/api/signals?limit=100');signals=d.signals||[];if(!signals.length){$('signalList').innerHTML='<div class="card empty">No saved setups yet. Scan a pair to create a recorded setup when criteria are met.</div>';return}$('signalList').innerHTML=signals.map(s=>`<div class="card signal"><div class="signalhead"><div><div class="small">${esc(s.symbol)} · ID ${esc(s.id)}</div><div class="direction ${esc(s.direction)}">${esc(s.direction)}</div></div><span class="pill">${esc(s.status||'PENDING')}</span></div><div>Price: <b>${esc(s.entry_price??s.price??'N/A')}</b></div><div>${esc(s.reason||'No explanation recorded')}</div><div class="small">${esc(s.candle_time||s.created_at||'')} · External feed · Quotex verified: no</div>${(s.status||'PENDING')==='PENDING'?`<div class="actions"><button class="btn" data-result="WIN" data-id="${esc(s.id)}">Record WIN</button><button class="btn danger" data-result="LOSS" data-id="${esc(s.id)}">Record LOSS</button></div>`:''}</div>`).join('');$('signalList').querySelectorAll('[data-result]').forEach(b=>b.onclick=()=>recordResult(b.dataset.id,b.dataset.result));$('signalCount').textContent=signals.length}catch(e){$('signalList').innerHTML=`<div class="card result error">Signal API unavailable: ${esc(e.message)}<br>Check that updated main.py is deployed.</div>`}}
-async function recordResult(id,result){if(!confirm(`Signal ${id}-এর ফল ${result} হিসেবে save করবে? এটি manual result.`))return;try{await api('/api/result',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,result})});await loadSignals();await loadStats()}catch(e){alert(e.message)}}
-async function loadStats(){try{const [d,q]=await Promise.all([api('/api/stats'),api('/api/signals?limit=100')]);const w=d.wins||0,l=d.losses||0,t=w+l;$('wins').textContent=w;$('losses').textContent=l;$('pending').textContent=(q.signals||[]).filter(x=>(x.status||'PENDING')==='PENDING').length;$('rate').textContent=t?Math.round(w/t*100)+'%':'—'}catch(e){$('rate').textContent='Unavailable'}}$('refreshSignals').onclick=loadSignals;$('refreshStats').onclick=loadStats;
-$('csv').onclick=()=>{const rows=[['id','symbol','direction','status','price','reason'],...signals.map(s=>[s.id,s.symbol,s.direction,s.status,s.entry_price??s.price,s.reason])];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='ghost-trader-signals.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
-let selectedImage=null;$('chartFile').onchange=()=>{const f=$('chartFile').files[0];selectedImage=f;if(!f){$('chartPreview').classList.add('hidden');return}if(f.size>12*1024*1024){show('imageResult','Image is over 12 MB. Choose a smaller screenshot.',true);selectedImage=null;return}const u=URL.createObjectURL(f);$('chartPreview').src=u;$('chartPreview').classList.remove('hidden');$('imageResult').classList.add('hidden')};$('clearImage').onclick=()=>{$('chartFile').value='';selectedImage=null;$('chartPreview').classList.add('hidden');$('imageResult').classList.add('hidden')};$('analyzeBtn').onclick=async()=>{if(!selectedImage){show('imageResult','আগে একটি screenshot নির্বাচন করো।',true);return}const b=$('analyzeBtn');busy(b,true,'Analyzing image…');try{const f=new FormData();f.append('image',selectedImage);const d=await api('/api/analyze-image',{method:'POST',body:f});show('imageResult',d.analysis+'\n\n⚠️ '+d.warning)}catch(e){show('imageResult',e.message,true)}finally{busy(b,false)}};
-async function loadNews(){const b=$('refreshNews');busy(b,true,'Loading…');$('newsList').innerHTML='<div class="empty">Loading calendar…</div>';try{const d=await api('/api/news?days='+encodeURIComponent($('newsDays').value));if(!d.events.length){$('newsList').innerHTML='<div class="empty">এই সময়সীমায় high-impact event পাওয়া যায়নি।</div>';return}$('newsList').innerHTML=d.events.map(e=>`<div class="listitem"><div class="eventtitle">🔴 ${esc(e.currency)} · ${esc(e.name)}</div><div class="eventmeta">${esc(e.datetime_bd)} (Bangladesh time) · Impact: ${esc(e.impact||'high')}</div><div class="small">Actual: ${esc(e.actual??'—')} · Forecast: ${esc(e.forecast??'—')} · Previous: ${esc(e.previous??'—')}</div>${e.url?`<a href="${esc(e.url)}" target="_blank" rel="noopener">Source / details</a>`:''}</div>`).join('')+`<p class="small muted">Source: ${esc(d.source||'calendar provider')}</p>`}catch(e){$('newsList').innerHTML=`<div class="result error">${esc(e.message)}</div>`}finally{busy(b,false)}}$('refreshNews').onclick=loadNews;$('newsDays').onchange=loadNews;
-$('analyzeNewsBtn').onclick=async()=>{const b=$('analyzeNewsBtn');busy(b,true,'Explaining…');$('newsAnalysis').classList.add('hidden');try{const d=await api('/api/news/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({currency:$('newsCurrency').value,event:$('newsEvent').value,actual:$('newsActual').value,forecast:$('newsForecast').value,previous:$('newsPrevious').value})});show('newsAnalysis',d.analysis+'\n\n'+d.note)}catch(e){show('newsAnalysis',e.message,true)}finally{busy(b,false)}};
-async function loadLessons(){try{const d=await api('/api/lessons');lessons=d.lessons||[];$('lessonTotal').textContent=`${lessons.length} illustrated lessons`;$('lessonPicks').innerHTML=lessons.map((l,i)=>`<button class="btn lessonpick ${i===currentLesson?'active':''}" data-lesson="${i}">${esc(l.title)}</button>`).join('');$('lessonPicks').querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>renderLesson(Number(b.dataset.lesson)));renderLesson(0)}catch(e){$('lessonContent').innerHTML=`<div class="result error">Lesson load failed: ${esc(e.message)}</div>`}}
-function renderLesson(i){if(!lessons[i])return;currentLesson=i;const l=lessons[i];$('lessonPicks').querySelectorAll('[data-lesson]').forEach(b=>b.classList.toggle('active',Number(b.dataset.lesson)===i));$('lessonContent').innerHTML=`<h3>${esc(l.title)}</h3><img class="learnimg" src="${esc(l.image)}" alt="Illustrative chart for ${esc(l.title)}" loading="lazy"><div class="lessonbody">${esc(l.caption)}</div><div class="notice">এই ছবি educational illustration — live price/chart নয়। Pattern একা entry নিশ্চিত করে না।</div><div class="actions">${i>0?'<button class="btn" id="prevLesson">← Previous</button>':''}${i<lessons.length-1?'<button class="btn primary" id="nextLesson">Next Lesson →</button>':'<button class="btn" id="restartLesson">Start again</button>'}</div>`;if($('prevLesson'))$('prevLesson').onclick=()=>renderLesson(i-1);if($('nextLesson'))$('nextLesson').onclick=()=>renderLesson(i+1);if($('restartLesson'))$('restartLesson').onclick=()=>renderLesson(0)}
-$('askBtn').onclick=async()=>{const question=$('question').value.trim();if(!question){show('answerResult','প্রশ্ন লিখো।',true);return}const b=$('askBtn');busy(b,true,'AI is answering…');try{const d=await api('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});show('answerResult',d.answer+(d.provider==='AI not configured'?'\n\nAI service configured নয়। Render Environment-এ AI_API_KEY সেট করতে হবে।':''))}catch(e){show('answerResult',e.message,true)}finally{busy(b,false)}};$('clearAsk').onclick=()=>{$('question').value='';$('answerResult').classList.add('hidden')};
-function readPrefs(){
-  try {
-    return JSON.parse(localStorage.getItem('ghost-trader-prefs')||'{}');
-  } catch {
-    return {};
-  }
-}
-
-function applyPrefs(){
-  const p=readPrefs();
-  $('refreshRate').value=p.refresh||'0';
-  $('notifyToggle').value=p.notify||'off';
-
-  const theme=p.theme==='light'?'light':'dark';
-  document.documentElement.dataset.theme=theme;
-  if($('themeMode')) $('themeMode').value=theme;
-
-  if(refreshTimer) clearInterval(refreshTimer);
-  const n=Number(p.refresh||0);
-  if(n) refreshTimer=setInterval(loadStatus,n*1000);
-}
-
-$('saveSettings').onclick=async()=>{
-  const p={
-    ...readPrefs(),
-    refresh:$('refreshRate').value,
-    notify:$('notifyToggle').value,
-    theme:$('themeMode').value
-  };
-
-  try {
-    localStorage.setItem('ghost-trader-prefs',JSON.stringify(p));
-  } catch {}
-
-  if(p.notify==='on'&&'Notification'in window&&Notification.permission==='default'){
-    try { await Notification.requestPermission(); } catch {}
-  }
-
-  applyPrefs();
-  $('settingsSaved').textContent='Preferences saved on this device.';
-};
-
-$('checkStatus').onclick=loadStatus;
-function lockAuth(message=''){document.body.classList.add('auth-locked');if(message)$('authMessage').textContent=message}
-function unlockAuth(user){document.body.classList.remove('auth-locked');$('authMessage').textContent='';$('signedInAs').textContent='Signed in: '+user.email;$('adminPanel').classList.toggle('hidden',!user.is_admin)}
-$('loginForm').addEventListener('submit',async ev=>{ev.preventDefault();const b=$('loginButton');busy(b,true,'Signing in…');$('authMessage').textContent='';try{const d=await fetch('/api/auth/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('authEmail').value.trim(),password:$('authPassword').value})});let j={};try{j=await d.json()}catch{}if(!d.ok)throw Error(j.error||'Login failed');unlockAuth(j.user);applyPrefs();await Promise.all([loadStatus(),loadMarkets(),loadStats()]);loadSignals();loadLessons()}catch(e){$('authMessage').textContent=e.message}finally{busy(b,false)}});
-$('logoutButton').addEventListener('click',async()=>{try{await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'})}finally{lockAuth('You have been logged out.')}});
-$('createUserForm').addEventListener('submit',async ev=>{ev.preventDefault();const box=$('adminMessage');box.classList.remove('hidden','error');box.textContent='Creating account and sending verification email…';try{const d=await api('/api/auth/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('newUserEmail').value.trim(),password:$('newUserPassword').value})});box.textContent=d.message||'Account created.';$('newUserEmail').value='';$('newUserPassword').value=''}catch(e){box.classList.add('error');box.textContent=e.message}});
-(async()=>{applyPrefs();const token=new URLSearchParams(location.search).get('token');if(token){try{const r=await fetch('/api/auth/verify?token='+encodeURIComponent(token));const t=await r.text();$('authMessage').textContent=t;history.replaceState({},document.title,location.pathname)}catch(e){$('authMessage').textContent='Could not verify email: '+e.message}}try{const r=await fetch('/api/auth/me',{credentials:'same-origin'});const d=await r.json();if(d.authenticated){unlockAuth(d.user);await Promise.all([loadStatus(),loadMarkets(),loadStats()]);loadSignals();loadLessons()}else lockAuth(d.error||'')}catch(e){lockAuth('Could not check login: '+e.message)}})();
-</script>
-<!-- GHOST TRADER: Help & Support -->
-<div id="gm-help-support" style="
-  margin:16px;
-  padding:16px;
-  border:1px solid #24463f;
-  border-radius:16px;
-  background:var(--card-bg, #111a20);
-  color:var(--text-color, #f2f7f5);
-">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <div style="
-      width:44px;height:44px;flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;
-      border-radius:12px;background:#193b31;font-size:23px;
-    ">🎧</div>
-
-    <div style="flex:1;min-width:0;">
-      <div style="font-size:16px;font-weight:700;">
-        Help &amp; Support
-      </div>
-      <div style="font-size:13px;opacity:.75;margin-top:4px;">
-        কোনো সমস্যা বা প্রশ্ন আছে? আমাদের মেসেজ দাও।
-      </div>
+<section id="home" class="section active">
+  <div class="hero">
+    <div class="eyebrow">● YOUR ALL-IN-ONE CONTROL CENTER</div>
+    <h2>Analyze. Learn.<br>Understand the market.</h2>
+    <p class="muted">Screenshot analysis, market scan, economic news, illustrated lessons and AI answers — from one app.</p>
+    <div class="statusline">
+      <span class="badge" id="serverBadge">Checking server…</span>
+      <span class="badge warn">Quotex not verified</span>
     </div>
   </div>
 
-  <a
-    href="https://t.me/ghostsupportbd"
-    target="_blank"
-    rel="noopener noreferrer"
-    style="
-      display:flex;align-items:center;justify-content:center;
-      gap:8px;margin-top:14px;padding:12px;
-      border-radius:10px;background:#168b69;color:#ffffff;
-      font-size:14px;font-weight:700;text-decoration:none;
-    "
-  >
-    ✈️ Message on Telegram
-  </a>
-</div>
-<!-- End Help & Support -->
-</body></html>
+  <div class="grid four">
+    <div class="card"><div class="small">Twelve Data</div><div class="value" id="apiState">—</div></div>
+    <div class="card"><div class="small">Saved signals</div><div class="value" id="signalCount">—</div></div>
+    <div class="card"><div class="small">API usage today</div><div class="value" id="apiUsage">—</div></div>
+    <div class="card"><div class="small">Market pairs</div><div class="value" id="marketCount">—</div></div>
+  </div>
+
+  <div class="heading"><h2>Quick tools</h2></div>
+  <div class="grid">
+    <button class="card btn" data-go="analyze"><h3>📷 Screenshot Analysis</h3><span class="muted small">Upload a chart image</span></button>
+    <button class="card btn" data-go="scan"><h3>📈 Scan a Market</h3><span class="muted small">Choose pair and analyze</span></button>
+    <button class="card btn" data-go="news"><h3>📰 Economic News</h3><span class="muted small">Calendar and event impact</span></button>
+    <button class="card btn" data-go="ask"><h3>✨ Ask AI</h3><span class="muted small">Ask in Bangla or English</span></button>
+  </div>
+  <div class="notice">Safety: market scans use external Twelve Data candles, not verified Quotex prices. AI and screenshot analysis are educational, not guaranteed trading signals. Never share passwords, API keys or Quotex session cookies in this app.</div>
+</section>
+
+<section id="analyze" class="section">
+  <div class="heading"><h2>📷 Screenshot Analysis</h2><span class="pill">AI Vision</span></div>
+  <div class="card">
+    <p class="muted">Quotex chart screenshot upload করো। AI দৃশ্যমান trend, candle structure, support/resistance ও অনিশ্চয়তা ব্যাখ্যা করবে।</p>
+    <div class="filebox">
+      <input id="chartFile" type="file" class="field" accept="image/png,image/jpeg,image/webp">
+      <img id="chartPreview" class="preview hidden" alt="Chart preview">
+      <p class="small">PNG / JPG / WEBP • সর্বোচ্চ 12 MB</p>
+    </div>
+    <div class="actions">
+      <button id="analyzeBtn" class="btn primary">Analyze Screenshot</button>
+      <button id="clearImage" class="btn">Clear</button>
+    </div>
+    <div id="imageResult" class="result hidden" aria-live="polite"></div>
+  </div>
+  <div class="notice">AI কেবল ছবিতে যা দেখা যায় তা বিশ্লেষণ করে। Screenshot-এ asset/timeframe দেখা না গেলে নিজে থেকে অনুমান করবে না।</div>
+</section>
+
+<section id="scan" class="section">
+  <div class="heading"><h2>📈 Market Scan</h2><span class="pill">Manual • One pair</span></div>
+  <div class="card">
+    <p class="muted">একটি pair বেছে scan করো। এতে API credit খরচ হতে পারে; safety limit অনুযায়ী scan সীমিত।</p>
+    <label for="marketSelect">Market pair</label>
+    <select id="marketSelect" class="field"><option>Loading markets…</option></select>
+    <div class="actions">
+      <button id="scanBtn" class="btn primary">Scan Selected Pair</button>
+      <button id="loadSignalsBtn" class="btn">View History</button>
+    </div>
+    <div id="scanResult" class="result hidden" aria-live="polite"></div>
+  </div>
+  <div class="notice">CALL/PUT থাকলেও এটি সম্ভাব্য setup মাত্র; Quotex-এ একই REAL pair, timeframe ও candle নিজে মিলিয়ে দেখো। ডেটা না থাকলে NO TRADE দেখানো হবে।</div>
+</section>
+<section id="history" class="section">
+  <div class="heading"><h2>📜 Signal History</h2></div>
+  <div class="card">
+    <p class="muted">আগের scan ও result দেখো।</p>
+    <button id="refreshHistory" class="btn primary">Refresh History</button>
+    <div id="historyResult" class="result">History এখনো লোড হয়নি।</div>
+  </div>
+</section>
+
+<section id="news" class="section">
+  <div class="heading"><h2>📰 Economic News</h2></div>
+  <div class="card">
+    <p class="muted">অর্থনৈতিক খবর ও event risk যাচাই করো।</p>
+    <button id="loadNewsBtn" class="btn primary">Load News</button>
+    <div id="newsResult" class="result">খবর লোড করতে বোতামে চাপ দাও।</div>
+  </div>
+  <div class="notice">খবরের সময় ও প্রভাবের তথ্য না পাওয়া গেলে অ্যাপ অনুমান করে দেখাবে না।</div>
+</section>
+
+<section id="lessons" class="section">
+  <div class="heading"><h2>🎓 Price Action Academy</h2></div>
+  <div class="card">
+    <p class="muted">ধাপে ধাপে Price Action শিখো।</p>
+    <div id="lessonList" class="lessonlist">
+      <button class="btn lessonpick" data-lesson="1">Lesson 1</button>
+      <button class="btn lessonpick" data-lesson="2">Lesson 2</button>
+      <button class="btn lessonpick" data-lesson="3">Lesson 3</button>
+      <button class="btn lessonpick" data-lesson="4">Lesson 4</button>
+      <button class="btn lessonpick" data-lesson="5">Lesson 5</button>
+      <button class="btn lessonpick" data-lesson="6">Lesson 6</button>
+      <button class="btn lessonpick" data-lesson="7">Lesson 7</button>
+    </div>
+    <div id="lessonResult" class="result">একটি lesson নির্বাচন করো।</div>
+  </div>
+</section>
+
+<section id="ask" class="section">
+  <div class="heading"><h2>✨ Ask AI</h2></div>
+  <div class="card">
+    <label for="aiQuestion">তোমার প্রশ্ন</label>
+    <textarea id="aiQuestion" class="field" rows="4" maxlength="2000" placeholder="বাংলা বা English-এ প্রশ্ন লেখো…"></textarea>
+    <div class="actions">
+      <button id="askAiBtn" class="btn primary">Ask AI</button>
+      <button id="clearAiBtn" class="btn">Clear</button>
+    </div>
+    <div id="aiResult" class="result hidden" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="settings" class="section">
+  <div class="heading"><h2>⚙ Settings</h2></div>
+  <div class="card">
+    <h3>Account</h3>
+    <div id="accountInfo" class="result">Account information loading…</div>
+    <div class="actions">
+      <button id="checkStatusBtn" class="btn">Check Server Status</button>
+      <button id="logoutBtn" class="btn danger">Logout</button>
+    </div>
+    <div id="settingsResult" class="result hidden"></div>
+  </div>
+  <div class="notice">API key, bot token বা password এখানে লিখবে না। Server credentials শুধু Render environment variables-এ রাখবে।</div>
+</section>
+
+<nav class="nav" aria-label="Main navigation">
+  <button class="active" data-go="home"><span>⌂</span>Home</button>
+  <button data-go="analyze"><span>▧</span>Analyze</button>
+  <button data-go="scan"><span>↗</span>Scan</button>
+  <button data-go="history"><span>◷</span>History</button>
+  <button data-go="lessons"><span>▤</span>Learn</button>
+  <button data-go="settings"><span>⚙</span>Settings</button>
+</nav></div>
