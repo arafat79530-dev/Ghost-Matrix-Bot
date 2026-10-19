@@ -1565,42 +1565,42 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
                 "API limit বজায় রাখতে অনুরোধগুলো ধীরে করা হবে; শেষ হলে সব সম্ভাব্য setup একসাথে পাঠাব।\n"
                 "Automatic signals OFF — এই স্ক্যানটি শুধু তোমার /future command-এর জন্য।", chat_id)  
         # Scan only 5 pairs per request to reduce stale signals.
-        results = []
-        selected = catalog[:5]
-        last_request_at = 0.0
+            results = []
+            selected = catalog[:5]
+            last_request_at = 0.0
 
-        for item in selected:
-            if last_request_at:
-                wait = 8.0 - (time.monotonic() - last_request_at)
-                if wait > 0:
-                    time.sleep(wait)
+            for item in selected:
+                if last_request_at:
+                    wait = 8.0 - (time.monotonic() - last_request_at)
+                    if wait > 0:
+                        time.sleep(wait)
 
-            if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
-                results.append({
-                    "symbol": item["symbol"],
-                    "direction": "NO TRADE",
-                    "reason": "দৈনিক API safety budget শেষ; এই pair স্ক্যান হয়নি।"
-                })
-                continue
+                if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+                    results.append({
+                        "symbol": item["symbol"],
+                        "direction": "NO TRADE",
+                        "reason": "দৈনিক API safety budget শেষ; এই pair স্ক্যান হয়নি।"
+                    })
+                    continue
 
-            try:
-                last_request_at = time.monotonic()
-                result = scan_one_symbol(item["symbol"])
-                results.append(result)
-            except Exception as scan_exc:
-                log.warning(
-                    "Manual scan failed for %s: %s",
-                    item["symbol"], scan_exc
-                )
-                results.append({
-                    "symbol": item["symbol"],
-                    "direction": "NO TRADE",
-                    "reason": "এই pair-এর ডেটা পাওয়া যায়নি।"
-                })
+                try:
+                    last_request_at = time.monotonic()
+                    result = scan_one_symbol(item["symbol"])
+                    results.append(result)
+                except Exception as scan_exc:
+                    log.warning(
+                        "Manual scan failed for %s: %s",
+                        item["symbol"], scan_exc
+                    )
+                    results.append({
+                        "symbol": item["symbol"],
+                        "direction": "NO TRADE",
+                        "reason": "এই pair-এর ডেটা পাওয়া যায়নি।"
+                    })
 
-        state["last_scan_utc"] = datetime.now(timezone.utc).isoformat()
-        state["last_error"] = None
-        send_message(format_future_batch(results, len(selected)), chat_id) 
+            state["last_scan_utc"] = datetime.now(timezone.utc).isoformat()
+            state["last_error"] = None
+            send_message(format_future_batch(results, len(selected)), chat_id) 
         except Exception as exc:
             send_message(f"❌ Manual scan failed: {exc}", chat_id)
     elif command == "/stats":
