@@ -338,7 +338,11 @@ function hide(id) {
 
 function go(sectionName) {
   document.querySelectorAll(".section").forEach(section => {
-    section.classList.toggle("hidden", section.id !== sectionName);
+    section.classList.toggle(
+      "active",
+      section.id === sectionName
+    );
+    section.classList.remove("hidden");
   });
 
   document.querySelectorAll("[data-go]").forEach(button => {
