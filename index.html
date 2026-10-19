@@ -1,776 +1,510 @@
- <!doctype html>
-<html lang="bn"><head><meta charset="utf-8"><link rel="manifest" href="/manifest.json"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#e9fbff"><meta name="apple-mobile-web-app-capable" content="yes"><title>Ghost Trader — Water Glass</title>
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>GHOST MATRIX V2.0</title>
 <style>
-:root{color-scheme:light;--bg:#eafaff;--ink:#12364a;--muted:#638294;--line:rgba(72,153,181,.22);--glass:rgba(255,255,255,.68);--glass2:rgba(255,255,255,.84);--blue:#198dbb;--cyan:#53cbe3;--green:#12876b;--red:#d94e69;--gold:#9b6a08;--shadow:0 16px 42px rgba(35,131,163,.12)}
+:root{--bg:#080b12;--panel:#101722;--panel2:#151f2c;--line:#243242;--green:#39ff9c;--text:#eaf2f7;--muted:#91a2b4;--red:#ff6376;--yellow:#ffcf66}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at 5% 0%,#c6f2ff 0,transparent 38%),radial-gradient(ellipse at 95% 15%,#d9f7f0 0,transparent 35%),linear-gradient(145deg,#effcff,#e5f7ff 52%,#f5fdff);color:var(--ink);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding-bottom:92px}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
-.app{width:min(1120px,100%);margin:auto;padding:16px 16px 28px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 18px}
-.brand{display:flex;align-items:center;gap:11px}
-.logo{width:48px;height:48px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(131,226,245,.7));box-shadow:inset 0 1px 0 white,0 8px 24px #4ba8c52b;border:1px solid #ffffffc9}
-.logo svg{width:32px;height:32px}
-.brand h1{font-size:18px;letter-spacing:.12em;margin:0;font-weight:850}
-.brand p{margin:1px 0 0;color:var(--muted);font-size:10px;letter-spacing:.14em}
-.glass,.hero,.card,.panel{background:var(--glass);border:1px solid rgba(255,255,255,.94);outline:1px solid var(--line);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:23px}
-.hero{padding:24px;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(192,242,251,.67))}
-.hero:after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;right:-50px;top:-85px;background:radial-gradient(circle at 35% 35%,#fff,rgba(78,201,229,.22) 55%,transparent 72%);pointer-events:none}
-.eyebrow,.small{font-size:12px;color:var(--muted)}
-.eyebrow{letter-spacing:.12em;font-weight:800}
-.hero h2{font-size:clamp(27px,5vw,42px);line-height:1.1;margin:9px 0 12px;max-width:600px;letter-spacing:-.04em}
-.muted{color:var(--muted)}
-.notice{background:#fff8dfb8;border:1px solid #f2d78a;border-radius:15px;padding:12px 14px;color:#765719;font-size:12px;margin:14px 0}
-.badge,.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;background:#e5f8fd;border:1px solid #bfeaf5;color:#24728d;font-size:11px;font-weight:750}
-.badge.bad{background:#ffebef;border-color:#f7c3cc;color:#b82f4d}
-.badge.warn{background:#fff3d3;border-color:#f3d78c;color:#8a620d}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
-.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
-.card{padding:16px;min-width:0}
-.card h3,.panel h3{margin:0 0 7px;font-size:16px}
-.value{font-size:23px;font-weight:850;letter-spacing:-.03em;margin-top:5px}
-.heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 12px}
-.heading h2{margin:0;font-size:22px;letter-spacing:-.03em}
-.section{display:none;animation:fade .18s ease}
-.section.active{display:block}
-@keyframes fade{from{opacity:.5;transform:translateY(3px)}to{opacity:1;transform:none}}
-.btn{border:1px solid #b9e6f2;background:linear-gradient(135deg,#fff,#dff8ff);color:#17627e;padding:10px 14px;border-radius:14px;font-weight:750;box-shadow:0 5px 15px #2a9dc21a}
-.btn.primary{background:linear-gradient(135deg,#37c2df,#1789ba);color:white;border-color:#65d5e9}
-.btn.soft{background:#ffffffa6}
-.btn.danger{color:#b62e4d;background:#fff1f4;border-color:#f7c7d1}
-.btn:disabled{opacity:.55;cursor:wait}
-.field{width:100%;border:1px solid #b6dce8;background:#ffffffb9;color:var(--ink);border-radius:13px;padding:11px 12px;outline:none}
-.field:focus{border-color:#43b9d6;box-shadow:0 0 0 3px #57c5e72b}
-label{display:block;font-weight:750;font-size:13px;margin:0 0 6px}
-.formrow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
-.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
-.result{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7fdffbd;border:1px solid #d2eef6;border-radius:16px;padding:14px;margin-top:12px}
-.result.error{background:#fff0f3;border-color:#f4c4ce;color:#a22e49}
-.signal{display:grid;gap:8px;margin:10px 0}
-.signalhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.direction{font-size:18px;font-weight:900}
-.direction.CALL{color:var(--green)}
-.direction.PUT{color:var(--red)}
-.direction.NO\ TRADE{color:var(--gold)}
-.learnimg{display:block;width:100%;height:auto;border-radius:15px;border:1px solid #d5edf4;margin:12px 0;background:#102033}
-.lesson p{white-space:pre-line}
-.lesson .lessonbody{white-space:pre-line}
-.nav{position:fixed;z-index:10;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:min(760px,calc(100% - 20px));display:flex;justify-content:space-around;gap:4px;padding:8px;background:rgba(248,254,255,.82);border:1px solid white;outline:1px solid #adddea;border-radius:22px;box-shadow:0 12px 36px #2b90ad2e;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
-.nav button{flex:1;min-width:0;border:0;background:transparent;color:#7392a1;border-radius:15px;padding:7px 3px;font-size:10px;font-weight:750}
-.nav button span{display:block;font-size:20px;line-height:1.15;margin-bottom:3px}
-.nav button.active{background:linear-gradient(145deg,#d9f8ff,#bceefa);color:#14759a;box-shadow:inset 0 1px white}
-.empty{text-align:center;color:var(--muted);padding:20px}
-.listitem{padding:13px 0;border-bottom:1px solid var(--line)}
-.listitem:last-child{border-bottom:0}
-.eventtitle{font-weight:800}
-.eventmeta{color:var(--muted);font-size:12px}
-.statusline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.logo-title{display:flex;align-items:center;gap:8px}
-.footnote{font-size:11px;color:var(--muted);margin-top:16px;text-align:center}
-.filebox{border:1px dashed #91cfe0;background:#ffffff80;border-radius:17px;padding:15px;text-align:center}
-.preview{max-width:100%;max-height:300px;border-radius:14px;margin-top:12px}
-.future-card{margin-top:12px;padding:18px;border-radius:20px;background:#11181d;border:2px solid #f6bf2a;color:#e6edf3;box-shadow:0 12px 30px #183b4b18}
-.future-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-.future-pair{color:#9aa6b2;font-size:13px}
-.future-dir{font-size:clamp(30px,8vw,46px);font-weight:900;line-height:1.05;margin:8px 0;color:#ffc52f;overflow-wrap:anywhere}
-.future-dir.up{color:#20df8a}
-.future-dir.down{color:#ff667b}
-.future-score{font-size:27px;font-weight:850;text-align:right;color:#ffc52f}
-.future-score small{display:block;font-size:11px;color:#9aa6b2;font-weight:500}
-.future-meter{height:8px;border-radius:99px;background:#252d34;overflow:hidden;margin:14px 0}
-.future-meter span{display:block;height:100%;background:#ffc52f}
-.future-detail{white-space:pre-line;line-height:1.55;color:#d7dee5}
-.future-tag{display:inline-block;background:#242b32;border-radius:8px;padding:5px 9px;margin:4px 4px 4px 0;color:#d7dee5;font-size:12px}
-.future-meta{font-size:11px;color:#9aa6b2;margin-top:14px}
-.future-card.wait{border-color:#f6bf2a}
-.future-card.up{border-color:#20df8a}
-.future-card.down{border-color:#ff667b}
+button:disabled{opacity:.5;cursor:not-allowed}
 .hidden{display:none!important}
-.twocol{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.lessonlist{display:flex;gap:8px;overflow:auto;padding:3px 0 10px}
-.lessonpick{white-space:nowrap;flex-shrink:0}
-.lessonpick.active{background:#c9f4ff;border-color:#7bd6ea}
-.range{display:flex;gap:7px;flex-wrap:wrap}
-.range .btn.active{background:#c8f5ff}
-@media(max-width:650px){.app{padding:12px 12px 22px}.top{margin-bottom:13px}.brand h1{font-size:16px}.grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:20px}.hero h2{font-size:30px}.card{padding:14px}.heading h2{font-size:20px}.formrow,.twocol{grid-template-columns:1fr}.nav{gap:1px}.nav button{font-size:9px}.nav button span{font-size:19px}.value{font-size:21px}}
-body.auth-locked .app,body.auth-locked .nav{display:none!important}
-#authGate{display:none;position:fixed;inset:0;z-index:9999;overflow:auto;padding:22px 14px;background:radial-gradient(ellipse at 5% 0%,#c6f2ff 0,transparent 38%),linear-gradient(145deg,#effcff,#e5f7ff);align-items:center;justify-content:center}
-body.auth-locked #authGate{display:flex}
-.auth-card{width:min(460px,100%);padding:24px;border-radius:24px;background:rgba(255,255,255,.82);border:1px solid white;outline:1px solid rgba(72,153,181,.25);box-shadow:0 18px 48px rgba(35,131,163,.15)}
-.auth-card h1{margin:0 0 5px;font-size:23px;letter-spacing:.08em}
-.auth-card p{color:var(--muted);font-size:13px}
-</style></head><body class="auth-locked">
-  <div id="authGate">
-  <div class="auth-card">
-    <div class="logo" style="margin-bottom:14px" aria-hidden="true">👻</div>
-    <h1>GHOST TRADER</h1>
-    <p>Secure account login · Email verification required</p>
+header{height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#080b12ed;z-index:5}
+.brand{font-weight:900;letter-spacing:1px;color:var(--green);font-size:17px}
+.brand small{display:block;font-size:9px;color:var(--muted);letter-spacing:2px}
+.wrap{max-width:1200px;margin:auto;padding:16px}
+.layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:16px}
+aside,.panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:13px}
+aside{padding:10px;height:max-content;position:sticky;top:76px}
+.nav{display:block;width:100%;text-align:left;background:transparent;color:var(--muted);border:0;padding:11px 12px;border-radius:8px;margin:2px 0}
+.nav.active,.nav:hover{background:#153127;color:var(--green)}
+main{min-width:0}
+.page{display:none}
+.page.active{display:block}
+h1{font-size:23px;margin:0 0 5px}
+h2{font-size:17px;margin:0 0 12px}
+h3{font-size:14px;margin:0 0 8px}
+p{color:var(--muted)}
+.sub{color:var(--muted);font-size:12px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel,.card{padding:16px;margin-bottom:14px;min-width:0}
+.metric{font-size:25px;font-weight:800;color:var(--green);overflow-wrap:anywhere}
+.label{color:var(--muted);font-size:12px}
+input,select,textarea{width:100%;padding:11px;background:#080e16;color:var(--text);border:1px solid var(--line);border-radius:8px;outline:none;margin:5px 0 10px}
+input:focus,select:focus,textarea:focus{border-color:var(--green)}
+textarea{min-height:90px;resize:vertical}
+.btn{background:var(--green);color:#06110b;font-weight:800;border:0;border-radius:8px;padding:11px 14px}
+.btn.secondary{background:#1a2935;color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:#3b1922;color:#ff9baa}
+.btn.full{width:100%}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:0}
+.row .btn{flex:0 0 auto}
+.status{padding:10px 12px;background:#101c25;border:1px solid var(--line);border-radius:8px;margin:8px 0;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.good{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--yellow)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:450px}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:12px}
+th{color:var(--muted)}
+.signal{padding:12px;border:1px solid var(--line);border-radius:9px;margin:9px 0;background:#0c131d}
+.signal strong{color:var(--green)}
+img.preview{max-width:100%;border-radius:9px;border:1px solid var(--line);margin-top:10px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#192733;border:1px solid var(--line);border-radius:10px;padding:12px 16px;max-width:90%;z-index:20;display:none}
+.loginbox{max-width:420px;margin:8vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+footer{text-align:center;color:#617286;padding:25px;font-size:11px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}aside{position:static;display:flex;gap:5px;overflow-x:auto;padding:7px}.nav{white-space:nowrap;width:auto;flex-shrink:0;padding:9px}.grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:10px}.panel,.card{padding:12px}h1{font-size:20px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}.brand{font-size:15px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">GHOST MATRIX <small>V2.0 · MARKET ANALYSIS</small></div>
+  <div class="row" style="flex:0 0 auto">
+    <span id="userBadge" class="label"></span>
+    <button id="logoutBtn" class="btn secondary hidden" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div id="loginScreen" class="wrap">
+  <div class="loginbox">
+    <div class="brand" style="font-size:22px">GHOST MATRIX</div>
+    <p>Secure account login</p>
     <form id="loginForm">
-      <label for="authEmail">Email</label>
-      <input id="authEmail" class="field" type="email" autocomplete="username" required maxlength="254" placeholder="your@email.com">
-      <label for="authPassword">Password</label>
-      <input id="authPassword" class="field" type="password" autocomplete="current-password" required maxlength="1024" placeholder="Your password">
-      <button id="loginButton" class="btn primary" type="submit" style="width:100%">Login</button>
+      <label>Email</label>
+      <input id="loginEmail" type="email" autocomplete="username" required maxlength="254" placeholder="Your admin-created email">
+      <label>Password</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password">
+      <button class="btn full" id="loginBtn" type="submit">LOGIN</button>
     </form>
-    <div id="authMessage" class="auth-error" role="status"></div>
-    <p class="small">Public signup is disabled. Ask your GHOST TRADER admin to create your account and send a verification email.</p>
+    <div id="loginMsg" class="status hidden"></div>
+    <p class="sub">Account creation is managed by the administrator. If email verification is required, verify your email before logging in.</p>
   </div>
 </div>
 
-<div class="app">
-<header class="top">
-  <div class="brand">
-    <div class="logo" aria-label="Ghost Trader logo">
-      <svg viewBox="0 0 40 40" fill="none">
-        <path d="M8 31V17C8 9.8 13.3 5 20 5s12 4.8 12 12v14l-6-4-6 4-6-4-6 4Z" fill="#b7f0fb" stroke="#1687ad" stroke-width="1.8" stroke-linejoin="round"/>
-        <circle cx="16" cy="17" r="2" fill="#146d8d"/>
-        <circle cx="24" cy="17" r="2" fill="#146d8d"/>
-        <path d="M13 24h14M13 24l3-3m-3 3 3 3m14-3-3-3m3 3-3 3" stroke="#1687ad" stroke-width="1.6" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <div>
-      <h1>GHOST TRADER</h1>
-      <p>PREMIUM WATER • MARKET WORKSPACE</p>
-    </div>
-  </div>
-  <button class="btn soft" data-go="settings">⚙</button>
-</header>
+<div id="appScreen" class="wrap hidden">
+<div class="layout">
+<aside>
+  <button class="nav active" data-page="dashboard">⌂ Dashboard</button>
+  <button class="nav" data-page="scanner">⌁ Market Scanner</button>
+  <button class="nav" data-page="signals">◈ Signals</button>
+  <button class="nav" data-page="screenshot">▧ Screenshot AI</button>
+  <button class="nav" data-page="news">◷ News Analysis</button>
+  <button class="nav" data-page="lessons">▤ Learn Price Action</button>
+  <button class="nav" data-page="assistant">✦ AI Assistant</button>
+  <button class="nav" data-page="stats">▥ Statistics</button>
+</aside>
 
-<section id="home" class="section active">
-  <div class="hero">
-    <div class="eyebrow">● YOUR ALL-IN-ONE CONTROL CENTER</div>
-    <h2>Analyze. Learn.<br>Understand the market.</h2>
-    <p class="muted">Screenshot analysis, market scan, economic news, illustrated lessons and AI answers — from one app.</p>
-    <div class="statusline">
-      <span class="badge" id="serverBadge">Checking server…</span>
-      <span class="badge warn">Quotex not verified</span>
-    </div>
-  </div>
-
+<main>
+<section id="page-dashboard" class="page active">
+  <h1>Dashboard</h1>
+  <p class="sub">System status · Bangladesh time (UTC+6)</p>
   <div class="grid four">
-    <div class="card"><div class="small">Twelve Data</div><div class="value" id="apiState">—</div></div>
-    <div class="card"><div class="small">Saved signals</div><div class="value" id="signalCount">—</div></div>
-    <div class="card"><div class="small">API usage today</div><div class="value" id="apiUsage">—</div></div>
-    <div class="card"><div class="small">Market pairs</div><div class="value" id="marketCount">—</div></div>
+    <div class="card"><div class="label">System</div><div class="metric" id="sysStatus">—</div></div>
+    <div class="card"><div class="label">Database</div><div class="metric" id="dbStatus">—</div></div>
+    <div class="card"><div class="label">API calls today</div><div class="metric" id="apiCalls">—</div></div>
+    <div class="card"><div class="label">Catalog</div><div class="metric" id="catalogCount">—</div></div>
   </div>
+  <div class="panel">
+    <div class="row"><h2>System Information</h2><button class="btn secondary" onclick="loadDashboard()">Refresh</button></div>
+    <div id="dashboardInfo" class="status">Loading status…</div>
+    <p class="sub">Market data source: external provider. This app does not independently verify Quotex prices or execute trades.</p>
+  </div>
+  <div class="panel">
+    <h2>Recent Signals</h2><div id="recentSignals">Loading…</div>
+  </div>
+</section>
 
-  <div class="heading"><h2>Quick tools</h2></div>
+<section id="page-scanner" class="page">
+  <h1>Market Scanner</h1>
+  <p class="sub">Manual scan using the configured external market-data feed.</p>
+  <div class="panel">
+    <label>Market pair</label>
+    <select id="marketSelect"><option value="EUR/USD">EUR/USD</option></select>
+    <button class="btn full" id="scanBtn" onclick="scanMarket()">SCAN MARKET</button>
+    <div id="scanResult" class="status">Select a pair and scan.</div>
+  </div>
+  <div class="panel">
+    <h2>Available Markets</h2>
+    <button class="btn secondary" onclick="loadMarkets()">Refresh markets</button>
+    <div id="marketList" class="status">Loading markets…</div>
+  </div>
+</section>
+
+<section id="page-signals" class="page">
+  <h1>Signals</h1><p class="sub">Signal history and manually entered outcomes.</p>
+  <div class="panel">
+    <button class="btn secondary" onclick="loadSignals()">Refresh signals</button>
+    <div id="signalList" class="status">Loading…</div>
+  </div>
+</section>
+
+<section id="page-screenshot" class="page">
+  <h1>Screenshot AI</h1>
+  <p class="sub">Upload a chart screenshot for educational visual analysis.</p>
+  <div class="panel">
+    <label>Choose chart image</label>
+    <input type="file" id="chartImage" accept="image/png,image/jpeg,image/webp">
+    <img id="imagePreview" class="preview hidden" alt="Selected chart preview">
+    <button class="btn full" id="imageBtn" onclick="analyzeImage()">ANALYZE SCREENSHOT</button>
+    <div id="imageResult" class="status">Choose an image to begin.</div>
+    <p class="sub">Screenshot analysis is not a verified trade signal. Confirm the actual asset, timeframe and current market data yourself.</p>
+  </div>
+</section>
+
+<section id="page-news" class="page">
+  <h1>Economic News Analysis</h1>
+  <p class="sub">Compare actual economic data with forecast. Do not infer a live price reaction from news alone.</p>
+  <div class="panel">
+    <label>Currency</label><select id="newsCurrency">
+      <option>USD</option><option>EUR</option><option>GBP</option><option>JPY</option>
+      <option>AUD</option><option>CAD</option><option>CHF</option><option>NZD</option>
+    </select>
+    <label>Event name</label><input id="newsEvent" placeholder="e.g. CPI, Interest Rate">
+    <div class="grid">
+      <div><label>Actual</label><input id="newsActual" placeholder="Actual value"></div>
+      <div><label>Forecast</label><input id="newsForecast" placeholder="Forecast value"></div>
+    </div>
+    <label>Previous (optional)</label><input id="newsPrevious" placeholder="Previous value">
+    <button class="btn full" onclick="analyzeNews()">ANALYZE NEWS</button>
+    <div id="newsResult" class="status hidden"></div>
+  </div>
+</section>
+
+<section id="page-lessons" class="page">
+  <h1>Price Action Learning</h1>
+  <p class="sub">Illustrative educational examples, not live market data.</p>
+  <div class="panel">
+    <button class="btn secondary" onclick="loadLessons()">Refresh lessons</button>
+    <div id="lessonList">Loading lessons…</div>
+    <div id="lessonDetail" class="status hidden"></div>
+  </div>
+</section>
+
+<section id="page-assistant" class="page">
+  <h1>AI Assistant</h1>
+  <p class="sub">Ask about trading concepts, market structure, risk management or technical analysis.</p>
+  <div class="panel">
+    <label>Your question</label>
+    <textarea id="question" maxlength="3000" placeholder="Explain BOS, CHoCH, RSI, support/resistance…"></textarea>
+    <button class="btn full" id="askBtn" onclick="askAI()">ASK AI</button>
+    <div id="answer" class="status hidden"></div>
+  </div>
+</section>
+
+<section id="page-stats" class="page">
+  <h1>Statistics</h1>
+  <p class="sub">Recorded outcomes may be manually entered. They are not automatically verified by Quotex.</p>
   <div class="grid">
-    <button class="card btn" data-go="analyze"><h3>📷 Screenshot Analysis</h3><span class="muted small">Upload a chart image</span></button>
-    <button class="card btn" data-go="scan"><h3>📈 Scan a Market</h3><span class="muted small">Choose pair and analyze</span></button>
-    <button class="card btn" data-go="news"><h3>📰 Economic News</h3><span class="muted small">Calendar and event impact</span></button>
-    <button class="card btn" data-go="ask"><h3>✨ Ask AI</h3><span class="muted small">Ask in Bangla or English</span></button>
+    <div class="card"><div class="label">Wins</div><div id="wins" class="metric">—</div></div>
+    <div class="card"><div class="label">Losses</div><div id="losses" class="metric">—</div></div>
   </div>
-  <div class="notice">Safety: market scans use external Twelve Data candles, not verified Quotex prices. AI and screenshot analysis are educational, not guaranteed trading signals. Never share passwords, API keys or Quotex session cookies in this app.</div>
+  <div class="card"><div class="label">Total recorded</div><div id="total" class="metric">—</div></div>
+  <button class="btn secondary" onclick="loadStats()">Refresh statistics</button>
+  <div id="statsNote" class="status"></div>
 </section>
 
-<section id="analyze" class="section">
-  <div class="heading"><h2>📷 Screenshot Analysis</h2><span class="pill">AI Vision</span></div>
-  <div class="card">
-    <p class="muted">Quotex chart screenshot upload করো। AI দৃশ্যমান trend, candle structure, support/resistance ও অনিশ্চয়তা ব্যাখ্যা করবে।</p>
-    <div class="filebox">
-      <input id="chartFile" type="file" class="field" accept="image/png,image/jpeg,image/webp">
-      <img id="chartPreview" class="preview hidden" alt="Chart preview">
-      <p class="small">PNG / JPG / WEBP • সর্বোচ্চ 12 MB</p>
-    </div>
-    <div class="actions">
-      <button id="analyzeBtn" class="btn primary">Analyze Screenshot</button>
-      <button id="clearImage" class="btn">Clear</button>
-    </div>
-    <div id="imageResult" class="result hidden" aria-live="polite"></div>
-  </div>
-  <div class="notice">AI কেবল ছবিতে যা দেখা যায় তা বিশ্লেষণ করে। Screenshot-এ asset/timeframe দেখা না গেলে নিজে থেকে অনুমান করবে না।</div>
-</section>
+<footer>GHOST MATRIX V2.0 · External market data · Trading involves risk.</footer>
+</main>
+</div>
+</div>
+<div id="toast" role="status"></div>
 
-<section id="scan" class="section">
-  <div class="heading"><h2>📈 Market Scan</h2><span class="pill">Manual • One pair</span></div>
-  <div class="card">
-    <p class="muted">একটি pair বেছে scan করো। এতে API credit খরচ হতে পারে; safety limit অনুযায়ী scan সীমিত।</p>
-    <label for="marketSelect">Market pair</label>
-    <select id="marketSelect" class="field"><option>Loading markets…</option></select>
-    <div class="actions">
-      <button id="scanBtn" class="btn primary">Scan Selected Pair</button>
-      <button id="loadSignalsBtn" class="btn">View History</button>
-    </div>
-    <div id="scanResult" class="result hidden" aria-live="polite"></div>
-  </div>
-  <div class="notice">CALL/PUT থাকলেও এটি সম্ভাব্য setup মাত্র; Quotex-এ একই REAL pair, timeframe ও candle নিজে মিলিয়ে দেখো। ডেটা না থাকলে NO TRADE দেখানো হবে।</div>
-</section>
-<section id="history" class="section">
-  <div class="heading"><h2>📜 Signal History</h2></div>
-  <div class="card">
-    <p class="muted">আগের scan ও result দেখো।</p>
-    <button id="refreshHistory" class="btn primary">Refresh History</button>
-    <div id="historyResult" class="result">History এখনো লোড হয়নি।</div>
-  </div>
-</section>
-
-<section id="news" class="section">
-  <div class="heading"><h2>📰 Economic News</h2></div>
-  <div class="card">
-    <p class="muted">অর্থনৈতিক খবর ও event risk যাচাই করো।</p>
-    <button id="loadNewsBtn" class="btn primary">Load News</button>
-    <div id="newsResult" class="result">খবর লোড করতে বোতামে চাপ দাও।</div>
-  </div>
-  <div class="notice">খবরের সময় ও প্রভাবের তথ্য না পাওয়া গেলে অ্যাপ অনুমান করে দেখাবে না।</div>
-</section>
-
-<section id="lessons" class="section">
-  <div class="heading"><h2>🎓 Price Action Academy</h2></div>
-  <div class="card">
-    <p class="muted">ধাপে ধাপে Price Action শিখো।</p>
-    <div id="lessonList" class="lessonlist">
-      <button class="btn lessonpick" data-lesson="1">Lesson 1</button>
-      <button class="btn lessonpick" data-lesson="2">Lesson 2</button>
-      <button class="btn lessonpick" data-lesson="3">Lesson 3</button>
-      <button class="btn lessonpick" data-lesson="4">Lesson 4</button>
-      <button class="btn lessonpick" data-lesson="5">Lesson 5</button>
-      <button class="btn lessonpick" data-lesson="6">Lesson 6</button>
-      <button class="btn lessonpick" data-lesson="7">Lesson 7</button>
-    </div>
-    <div id="lessonResult" class="result">একটি lesson নির্বাচন করো।</div>
-  </div>
-</section>
-
-<section id="ask" class="section">
-  <div class="heading"><h2>✨ Ask AI</h2></div>
-  <div class="card">
-    <label for="aiQuestion">তোমার প্রশ্ন</label>
-    <textarea id="aiQuestion" class="field" rows="4" maxlength="2000" placeholder="বাংলা বা English-এ প্রশ্ন লেখো…"></textarea>
-    <div class="actions">
-      <button id="askAiBtn" class="btn primary">Ask AI</button>
-      <button id="clearAiBtn" class="btn">Clear</button>
-    </div>
-    <div id="aiResult" class="result hidden" aria-live="polite"></div>
-  </div>
-</section>
-
-<section id="settings" class="section">
-  <div class="heading"><h2>⚙ Settings</h2></div>
-  <div class="card">
-    <h3>Account</h3>
-    <div id="accountInfo" class="result">Account information loading…</div>
-    <div class="actions">
-      <button id="checkStatusBtn" class="btn">Check Server Status</button>
-      <button id="logoutBtn" class="btn danger">Logout</button>
-    </div>
-    <div id="settingsResult" class="result hidden"></div>
-  </div>
-  <div class="notice">API key, bot token বা password এখানে লিখবে না। Server credentials শুধু Render environment variables-এ রাখবে।</div>
-</section>
-
-<nav class="nav" aria-label="Main navigation">
-  <button class="active" data-go="home"><span>⌂</span>Home</button>
-  <button data-go="analyze"><span>▧</span>Analyze</button>
-  <button data-go="scan"><span>↗</span>Scan</button>
-  <button data-go="history"><span>◷</span>History</button>
-  <button data-go="lessons"><span>▤</span>Learn</button>
-  <button data-go="settings"><span>⚙</span>Settings</button>
-</nav></div>
 <script>
 "use strict";
 
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
+let currentUser = null;
+let toastTimer = null;
 
-async function api(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: "same-origin",
-    ...options,
-    headers: {
-      ...(options.body instanceof FormData
-        ? {}
-        : options.body
-          ? {"Content-Type": "application/json"}
-          : {}),
-      ...(options.headers || {})
+function toast(message) {
+  const el = $("toast");
+  el.textContent = String(message || "");
+  el.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display = "none", 3500);
+}
+function text(el, value) {
+  el.textContent = value == null ? "—" : String(value);
+}
+function showStatus(id, value, isError=false) {
+  const el = $(id);
+  el.classList.remove("hidden");
+  el.classList.toggle("bad", isError);
+  el.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+}
+function safeJson(value) {
+  try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+}
+async function api(url, options={}) {
+  const opts = {...options, credentials:"same-origin"};
+  if (opts.body && !(opts.body instanceof FormData) && typeof opts.body !== "string") {
+    opts.headers = {...opts.headers, "Content-Type":"application/json"};
+    opts.body = JSON.stringify(opts.body);
+  }
+  const response = await fetch(url, opts);
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    if (response.status === 401 || response.redirected) {
+      await showLogin();
+      throw new Error("Session ended. Please log in again.");
     }
-  });
-
-  const text = await response.text();
-  let data = {};
-
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    throw new Error("Server থেকে সঠিক JSON পাওয়া যায়নি। পেজ ও Render deployment পরীক্ষা করো।");
+    throw new Error("Server returned a non-JSON response (HTTP " + response.status + "). Check the backend route.");
   }
-
+  const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error || data.message || `Request failed (${response.status})`);
+    if (response.status === 401 && data.auth_required) await showLogin();
+    throw new Error(data.error || data.message || ("Request failed: HTTP " + response.status));
   }
-
   return data;
 }
-
-function show(id, message, isError = false) {
-  const el = $(id);
-  if (!el) {
-    alert(message);
-    return;
-  }
-  el.textContent = message;
-  el.classList.remove("hidden");
-  el.style.color = isError ? "#ff7777" : "#9ee7c0";
+async function showLogin() {
+  currentUser = null;
+  $("appScreen").classList.add("hidden");
+  $("loginScreen").classList.remove("hidden");
+  $("logoutBtn").classList.add("hidden");
+  $("userBadge").textContent = "";
 }
-
-function showHtml(id, html) {
-  const el = $(id);
-  if (el) {
-    el.innerHTML = html;
-    el.classList.remove("hidden");
-  }
+function showApp(user) {
+  currentUser = user || {};
+  $("loginScreen").classList.add("hidden");
+  $("appScreen").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  text($("userBadge"), currentUser.email || "Logged in");
 }
-
-function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[ch]);
-}
-
-function hide(id) {
-  const el = $(id);
-  if (el) el.classList.add("hidden");
-}
-
-function go(sectionName) {
-  document.querySelectorAll(".section").forEach(section => {
-    section.classList.toggle(
-      "active",
-      section.id === sectionName
-    );
-    section.classList.remove("hidden");
-  });
-
-  document.querySelectorAll("[data-go]").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.go === sectionName
-    );
-  });
-
-  if (sectionName === "home") loadDashboard();
-  if (sectionName === "scan") loadMarkets();
-  if (sectionName === "history") loadHistory();
-  if (sectionName === "news") loadNews();
-  if (sectionName === "lessons") loadLessons();
-}
-
-document.querySelectorAll("[data-go]").forEach(button => {
-  button.addEventListener("click", () => go(button.dataset.go));
-});
-
-/* Login and session */
 async function checkSession() {
   try {
     const data = await api("/api/auth/me");
-
-    if (data.authenticated) {
-      document.body.classList.remove("auth-locked");
-      const info = $("accountInfo");
-      if (info) info.textContent = data.user?.email || "Logged in";
-      go("home");
-      await loadDashboard();
+    if (data.authenticated && data.user) {
+      showApp(data.user);
+      await initializeApp();
     } else {
-      document.body.classList.add("auth-locked");
+      await showLogin();
     }
-  } catch (error) {
-    document.body.classList.add("auth-locked");
-    console.error("Session check:", error);
+  } catch (e) {
+    await showLogin();
+    $("loginMsg").classList.remove("hidden");
+    text($("loginMsg"), e.message);
   }
 }
-
-const loginForm = $("loginForm");
-
-if (loginForm) {
-  loginForm.addEventListener("submit", async event => {
-    event.preventDefault();
-
-    const emailInput =
-      $("loginEmail") ||
-      loginForm.querySelector('input[type="email"]');
-
-    const passwordInput =
-      $("loginPassword") ||
-      loginForm.querySelector('input[type="password"]');
-
-    const email = emailInput?.value.trim() || "";
-    const password = passwordInput?.value || "";
-
-    if (!email || !password) {
-      show("loginMessage", "Email ও password দাও।", true);
-      return;
-    }
-
-    try {
-      const data = await api("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({email, password})
-      });
-
-      if (data.ok === false) {
-        throw new Error(data.error || "Login করা যায়নি।");
-      }
-
-      show("loginMessage", data.message || "Login সফল হয়েছে।");
-      document.body.classList.remove("auth-locked");
-      await checkSession();
-    } catch (error) {
-      show("loginMessage", error.message, true);
-    }
-  });
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("loginBtn");
+  btn.disabled = true;
+  text(btn, "Signing in…");
+  $("loginMsg").classList.add("hidden");
+  try {
+    const data = await api("/api/auth/login", {
+      method:"POST",
+      body:{email:$("loginEmail").value.trim(), password:$("loginPassword").value}
+    });
+    if (!data.ok) throw new Error("Login response was not successful.");
+    showApp(data.user);
+    $("loginPassword").value = "";
+    toast("Login successful");
+    await initializeApp();
+  } catch (e) {
+    showStatus("loginMsg", e.message, true);
+  } finally {
+    btn.disabled = false;
+    text(btn, "LOGIN");
+  }
+});
+async function logout() {
+  try { await api("/api/auth/logout", {method:"POST"}); }
+  catch(e) { toast(e.message); }
+  await showLogin();
 }
-
-/* Dashboard */
+document.querySelectorAll(".nav").forEach(btn => btn.addEventListener("click", async () => {
+  document.querySelectorAll(".nav").forEach(n => n.classList.toggle("active", n === btn));
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + btn.dataset.page));
+  const page = btn.dataset.page;
+  try {
+    if(page==="dashboard") await loadDashboard();
+    if(page==="scanner") await loadMarkets();
+    if(page==="signals") await loadSignals();
+    if(page==="stats") await loadStats();
+    if(page==="lessons") await loadLessons();
+  } catch(e) { toast(e.message); }
+}));
+async function initializeApp() {
+  try {
+    await Promise.allSettled([loadDashboard(), loadMarkets(), loadSignals(), loadStats(), loadLessons()]);
+  } catch(e) { toast(e.message); }
+}
 async function loadDashboard() {
-  try {
-    const data = await api("/api/dashboard");
-
-    const status = [
-      `App: ${data.app || "GHOST MATRIX"}`,
-      `Status: ${data.status || "unknown"}`,
-      `Database: ${data.database_ok ? "Connected" : "Not connected"}`,
-      `Market list: ${data.catalog_count ?? "—"}`,
-      `API calls today: ${data.api_calls_today ?? "—"} / ${data.daily_budget ?? "—"}`,
-      `Data source: ${data.data_source || "Unknown"}`,
-      "Quotex verification: Not verified"
-    ].join("\n");
-
-    show("dashboardStatus", status);
-
-    const stats = data.stats || {};
-    show(
-      "dashboardStats",
-      `WIN: ${stats.wins ?? 0} | LOSS: ${stats.losses ?? 0} | Total: ${stats.total ?? 0}`
-    );
-
-    renderSignals(data.signals || []);
-  } catch (error) {
-    show("dashboardStatus", error.message, true);
-  }
+  const d = await api("/api/dashboard");
+  text($("sysStatus"), d.status || (d.running ? "RUNNING" : "—"));
+  text($("dbStatus"), d.database_ok ? "OK" : "CHECK");
+  text($("apiCalls"), d.api_calls_today ?? 0);
+  text($("catalogCount"), d.catalog_count ?? "—");
+  showStatus("dashboardInfo", {
+    app:d.app, data_source:d.data_source,
+    database:d.database_message, database_ok:d.database_ok,
+    daily_budget:d.daily_budget, api_calls_today:d.api_calls_today,
+    last_scan_utc:d.last_scan_utc, last_error:d.last_error,
+    quotex_verified:d.quotex_verified
+  });
+  if (Array.isArray(d.signals)) renderSignals(d.signals.slice(0,5), "recentSignals");
 }
-
-/* Market list */
 async function loadMarkets() {
-  try {
-    const data = await api("/api/markets");
-    const markets = data.markets || [];
-    const select =
-      $("marketSelect") ||
-      document.querySelector('select[name="symbol"]');
-
-    if (select) {
-      select.innerHTML = "";
-
-      markets.forEach(item => {
-        const symbol = typeof item === "string"
-          ? item
-          : item.symbol;
-
-        if (!symbol) return;
-
-        const option = document.createElement("option");
-        option.value = symbol;
-        option.textContent = symbol;
-        select.appendChild(option);
-      });
-    }
-
-    show("marketStatus", `${markets.length}টি market পাওয়া গেছে।`);
-  } catch (error) {
-    show("marketStatus", error.message, true);
+  const d = await api("/api/markets");
+  const markets = Array.isArray(d.markets) ? d.markets : [];
+  const select = $("marketSelect");
+  const old = select.value;
+  select.replaceChildren();
+  markets.forEach(item => {
+    const symbol = typeof item === "string" ? item : (item.symbol || item.pair || item.name);
+    if(!symbol) return;
+    const option = document.createElement("option");
+    option.value = symbol; option.textContent = symbol;
+    select.appendChild(option);
+  });
+  if(!markets.length) {
+    const option = document.createElement("option");
+    option.value = "EUR/USD"; option.textContent = "EUR/USD";
+    select.appendChild(option);
   }
+  if ([...select.options].some(o => o.value === old)) select.value = old;
+  showStatus("marketList", {count:markets.length, source:d.source, markets});
 }
-
-/* Single-market scan */
-const scanButton = $("scanBtn") || $("runScanBtn");
-
-if (scanButton) {
-  scanButton.addEventListener("click", async () => {
-    const select =
-      $("marketSelect") ||
-      document.querySelector('select[name="symbol"]');
-
-    const symbol = select?.value;
-
-    if (!symbol) {
-      show("scanResult", "আগে market নির্বাচন করো।", true);
-      return;
+async function scanMarket() {
+  const btn = $("scanBtn");
+  btn.disabled = true; text(btn, "Scanning…");
+  showStatus("scanResult", "Fetching market data…");
+  try {
+    const d = await api("/api/scan", {method:"POST", body:{symbol:$("marketSelect").value}});
+    showStatus("scanResult", d);
+    if(d.result && typeof d.result === "object") {
+      toast("Scan completed");
     }
-
-    scanButton.disabled = true;
-    scanButton.textContent = "Scanning…";
-    show("scanResult", "Market data যাচাই করা হচ্ছে…");
-
-    try {
-      const data = await api("/api/scan", {
-        method: "POST",
-        body: JSON.stringify({symbol})
+  } catch(e) { showStatus("scanResult", e.message, true); }
+  finally { btn.disabled = false; text(btn, "SCAN MARKET"); }
+}
+async function loadSignals() {
+  const d = await api("/api/signals");
+  renderSignals(d.signals || [], "signalList");
+}
+function renderSignals(signals, target) {
+  const box = $(target);
+  box.replaceChildren();
+  if(!signals.length) { box.textContent = "No signals available."; return; }
+  signals.forEach(s => {
+    const card = document.createElement("div");
+    card.className = "signal";
+    const title = document.createElement("strong");
+    title.textContent = (s.symbol || s.pair || "Market") + " · " + (s.direction || s.signal || s.action || "Analysis");
+    const detail = document.createElement("p");
+    detail.textContent = "ID: " + (s.id ?? "—") + " | Time: " + (s.created_at || s.time || "—") +
+      " | Result: " + (s.result || "PENDING");
+    const body = document.createElement("div");
+    body.className = "sub";
+    body.textContent = s.reason || s.analysis || s.note || "";
+    card.append(title, detail, body);
+    if (s.id != null && (!s.result || String(s.result).toUpperCase()==="PENDING")) {
+      const row = document.createElement("div"); row.className="row";
+      ["WIN","LOSS"].forEach(outcome => {
+        const b = document.createElement("button");
+        b.className = "btn secondary"; b.textContent = "Record " + outcome;
+        b.onclick = () => recordResult(s.id, outcome);
+        row.appendChild(b);
       });
-
-      const result = data.result || {};
-      const rows = [
-        ["Market", result.symbol || symbol],
-        ["Signal", result.signal || result.direction || result.action || "NO TRADE"],
-        ["Timeframe", result.timeframe || "M1"],
-        ["Candle time (Bangladesh)", data.candle_time || "Unavailable"],
-        ["Source", data.source || "Twelve Data external feed"],
-        ["Quotex verified", "NO"]
-      ];
-
-      let html = '<div class="result-card">';
-      html += "<h3>Scan Result</h3>";
-
-      rows.forEach(([label, value]) => {
-        html += `<p><strong>${esc(label)}:</strong> ${esc(value)}</p>`;
-      });
-
-      if (result.reason) {
-        html += `<p><strong>Reason:</strong> ${esc(result.reason)}</p>`;
-      }
-
-      if (result.message) {
-        html += `<p>${esc(result.message)}</p>`;
-      }
-
-      html += "<p>এটি external market data-ভিত্তিক analysis; Quotex থেকে যাচাই করা নয়।</p>";
-      html += "</div>";
-
-      showHtml("scanResult", html);
-      await loadHistory();
-    } catch (error) {
-      show("scanResult", error.message, true);
-    } finally {
-      scanButton.disabled = false;
-      scanButton.textContent = "Scan Market";
+      card.appendChild(row);
     }
+    box.appendChild(card);
   });
 }
-
-/* Recent signal history */
-async function loadHistory() {
+async function recordResult(id, result) {
+  if(!confirm("Record this outcome as " + result + "? This is manual, not Quotex-verified.")) return;
   try {
-    const data = await api("/api/signals?limit=30");
-    renderSignals(data.signals || [], "historyResult");
-  } catch (error) {
-    show("historyResult", error.message, true);
+    const d = await api("/api/result", {method:"POST", body:{id:Number(id), result}});
+    toast(d.note || "Outcome recorded");
+    await Promise.allSettled([loadSignals(),loadStats(),loadDashboard()]);
+  } catch(e) { toast(e.message); }
+}
+$("chartImage").addEventListener("change", () => {
+  const file = $("chartImage").files[0];
+  const img = $("imagePreview");
+  if(!file) { img.classList.add("hidden"); return; }
+  if(file.size > 12*1024*1024) {
+    $("chartImage").value = "";
+    toast("Image must be smaller than 12 MB.");
+    img.classList.add("hidden"); return;
   }
-}
-
-function renderSignals(signals, targetId = "signalList") {
-  const target = $(targetId);
-
-  if (!target) return;
-
-  if (!signals.length) {
-    target.textContent = "এখনো কোনো signal record নেই।";
-    target.classList.remove("hidden");
-    return;
-  }
-
-  let html = "";
-
-  signals.forEach(signal => {
-    html += '<div class="result-card">';
-    html += `<p><strong>Market:</strong> ${esc(signal.symbol || "—")}</p>`;
-    html += `<p><strong>Signal:</strong> ${esc(signal.signal || signal.direction || "—")}</p>`;
-    html += `<p><strong>Time:</strong> ${esc(signal.created_at || signal.time || "—")}</p>`;
-    html += `<p><strong>Result:</strong> ${esc(signal.result || "PENDING")}</p>`;
-    html += "</div>";
-  });
-
-  showHtml(targetId, html);
-}
-
-/* Reload buttons */
-const refreshHistory = $("refreshHistory");
-if (refreshHistory) {
-  refreshHistory.addEventListener("click", loadHistory);
-}
-
-const refreshDashboard = $("refreshDashboard");
-if (refreshDashboard) {
-  refreshDashboard.addEventListener("click", loadDashboard);
-}
- /* News */
-async function loadNews() {
-  show("newsResult", "News data লোড হচ্ছে…");
-
+  img.src = URL.createObjectURL(file);
+  img.classList.remove("hidden");
+});
+async function analyzeImage() {
+  const file = $("chartImage").files[0];
+  if(!file) { toast("Choose a chart image first."); return; }
+  const btn=$("imageBtn"); btn.disabled=true; text(btn,"Analyzing…");
+  showStatus("imageResult","AI is analyzing the screenshot…");
   try {
-    const data = await api("/api/news");
-    const items = data.news || data.articles || [];
-
-    if (!items.length) {
-      show("newsResult", data.message || "এখন কোনো news item পাওয়া যায়নি।");
-      return;
-    }
-
-    let html = "";
-
-    items.forEach(item => {
-      html += '<div class="result-card">';
-      html += `<h3>${esc(item.title || item.headline || "News")}</h3>`;
-      html += `<p>${esc(item.description || item.summary || "")}</p>`;
-
-      if (item.url) {
-        html += `<p><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">News পড়ো</a></p>`;
-      }
-
-      html += "</div>";
-    });
-
-    showHtml("newsResult", html);
-  } catch (error) {
-    show("newsResult", error.message, true);
-  }
+    const form = new FormData(); form.append("image",file);
+    const d = await api("/api/analyze-image",{method:"POST",body:form});
+    showStatus("imageResult", (d.analysis || "No analysis returned.") + "\n\n" + (d.warning || ""));
+  } catch(e) { showStatus("imageResult",e.message,true); }
+  finally { btn.disabled=false; text(btn,"ANALYZE SCREENSHOT"); }
 }
-
-const loadNewsBtn = $("loadNewsBtn");
-if (loadNewsBtn) {
-  loadNewsBtn.addEventListener("click", loadNews);
+async function analyzeNews() {
+  const body = {
+    currency:$("newsCurrency").value,
+    event:$("newsEvent").value.trim(),
+    actual:$("newsActual").value.trim(),
+    forecast:$("newsForecast").value.trim(),
+    previous:$("newsPrevious").value.trim()
+  };
+  try {
+    showStatus("newsResult","Analyzing news…");
+    const d=await api("/api/news/analyze",{method:"POST",body});
+    showStatus("newsResult",(d.analysis || "")+"\n\n"+(d.note || ""));
+  } catch(e) { showStatus("newsResult",e.message,true); }
 }
-
-/* Price Action lessons */
 async function loadLessons() {
+  const d=await api("/api/lessons");
+  const box=$("lessonList"); box.replaceChildren();
+  (d.lessons||[]).forEach((lesson,i)=>{
+    const card=document.createElement("div"); card.className="signal";
+    const title=document.createElement("h3"); title.textContent=(i+1)+". "+lesson.title;
+    const caption=document.createElement("p"); caption.textContent=lesson.caption||"";
+    const button=document.createElement("button"); button.className="btn secondary"; button.textContent="Open lesson";
+    button.onclick=()=>{
+      const detail=$("lessonDetail"); detail.classList.remove("hidden"); detail.replaceChildren();
+      const h=document.createElement("h3"); h.textContent=lesson.title;
+      const p=document.createElement("p"); p.textContent=lesson.caption||"";
+      detail.append(h,p);
+      if(lesson.image){
+        const img=document.createElement("img"); img.className="preview"; img.alt=lesson.title+" illustration";
+        img.src=lesson.image; detail.appendChild(img);
+      }
+    };
+    card.append(title,caption,button); box.appendChild(card);
+  });
+  if(!(d.lessons||[]).length) box.textContent="No lessons returned.";
+}
+async function askAI() {
+  const question=$("question").value.trim();
+  if(!question) { toast("Write a question first."); return; }
+  const btn=$("askBtn"); btn.disabled=true; text(btn,"Thinking…");
+  showStatus("answer","Generating answer…");
   try {
-    const data = await api("/api/lessons");
-    const lessons = data.lessons || [];
-    const list = $("lessonList");
-
-    if (!list) return;
-
-    let html = "";
-
-    lessons.forEach((lesson, index) => {
-      html += '<div class="result-card">';
-      html += `<h3>${esc(lesson.title || `Lesson ${index + 1}`)}</h3>`;
-      html += `<p>${esc(lesson.caption || "")}</p>`;
-
-      if (lesson.image) {
-        html += `<img src="${esc(lesson.image)}" alt="${esc(lesson.title || "Lesson chart")}" loading="lazy" style="width:100%;max-width:500px;border-radius:12px">`;
-      }
-
-      html += "</div>";
-    });
-
-    list.innerHTML = html || "কোনো lesson পাওয়া যায়নি।";
-  } catch (error) {
-    show("lessonResult", error.message, true);
-  }
+    const d=await api("/api/ask",{method:"POST",body:{question}});
+    showStatus("answer",d.answer || d.error || "No answer returned.");
+  } catch(e) { showStatus("answer",e.message,true); }
+  finally { btn.disabled=false; text(btn,"ASK AI"); }
 }
-
-document.querySelectorAll("[data-lesson]").forEach(button => {
-  button.addEventListener("click", async () => {
-    try {
-      const data = await api("/api/lessons");
-      const lessons = data.lessons || [];
-      const index = Number(button.dataset.lesson) - 1;
-      const lesson = lessons[index];
-
-      if (!lesson) {
-        show("lessonResult", "এই lesson পাওয়া যায়নি।", true);
-        return;
-      }
-
-      let html = `<div class="result-card"><h3>${esc(lesson.title)}</h3>`;
-      html += `<p>${esc(lesson.caption || "")}</p>`;
-
-      if (lesson.image) {
-        html += `<img src="${esc(lesson.image)}" alt="${esc(lesson.title)}" loading="lazy" style="width:100%;max-width:500px;border-radius:12px">`;
-      }
-
-      html += `<p>${esc(data.note || "শিক্ষামূলক উদাহরণ; live market data নয়।")}</p></div>`;
-      showHtml("lessonResult", html);
-    } catch (error) {
-      show("lessonResult", error.message, true);
-    }
-  });
-});
-
-/* Ask AI */
-const askAiBtn = $("askAiBtn");
-
-if (askAiBtn) {
-  askAiBtn.addEventListener("click", async () => {
-    const question = $("aiQuestion")?.value.trim();
-
-    if (!question) {
-      show("aiResult", "আগে প্রশ্ন লেখো।", true);
-      return;
-    }
-
-    askAiBtn.disabled = true;
-
-    try {
-      const data = await api("/api/ask", {
-        method: "POST",
-        body: JSON.stringify({question})
-      });
-
-      show("aiResult", data.answer || data.response || data.error || "AI কোনো উত্তর দেয়নি।");
-    } catch (error) {
-      show("aiResult", error.message, true);
-    } finally {
-      askAiBtn.disabled = false;
-    }
-  });
+async function loadStats() {
+  const d=await api("/api/stats");
+  text($("wins"),d.wins ?? 0); text($("losses"),d.losses ?? 0); text($("total"),d.total ?? 0);
+  showStatus("statsNote",(d.note || "Recorded results")+"\nQuotex verified: "+String(d.quotex_verified===true));
 }
-
-const clearAiBtn = $("clearAiBtn");
-if (clearAiBtn) {
-  clearAiBtn.addEventListener("click", () => {
-    if ($("aiQuestion")) $("aiQuestion").value = "";
-    hide("aiResult");
-  });
-}
-
-/* Account status */
-const checkStatusBtn = $("checkStatusBtn");
-
-if (checkStatusBtn) {
-  checkStatusBtn.addEventListener("click", async () => {
-    try {
-      const data = await api("/api/dashboard");
-
-      show(
-        "settingsResult",
-        [
-          `Database: ${data.database_ok ? "Connected" : "Not connected"}`,
-          `Database message: ${data.database_message || "—"}`,
-          `Market count: ${data.catalog_count ?? "—"}`,
-          `API calls today: ${data.api_calls_today ?? "—"}`,
-          `Daily budget: ${data.daily_budget ?? "—"}`,
-          "Quotex verification: Not verified"
-        ].join("\n")
-      );
-    } catch (error) {
-      show("settingsResult", error.message, true);
-    }
-  });
-}
-
-/* Logout */
-const logoutBtn = $("logoutBtn");
-
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    try {
-      await api("/api/auth/logout", {method: "POST"});
-      document.body.classList.add("auth-locked");
-      show("loginMessage", "Logout সফল হয়েছে।");
-    } catch (error) {
-      show("settingsResult", error.message, true);
-    }
-  });
-}
-
-/* Initial page setup */
-document.addEventListener("DOMContentLoaded", () => {
-  checkSession();
-});
- </script>
+checkSession();
+</script>
 </body>
 </html>
