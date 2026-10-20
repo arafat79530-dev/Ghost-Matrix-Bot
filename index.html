@@ -1,0 +1,585 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>GHOST MATRIX V2.0</title>
+<style>
+:root{--bg:#080b12;--panel:#101722;--panel2:#151f2c;--line:#243242;--green:#39ff9c;--text:#eaf2f7;--muted:#91a2b4;--red:#ff6376;--yellow:#ffcf66}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.hidden{display:none!important}
+header{height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#080b12ed;z-index:5}
+.brand{font-weight:900;letter-spacing:1px;color:var(--green);font-size:17px}
+.brand small{display:block;font-size:9px;color:var(--muted);letter-spacing:2px}
+.wrap{max-width:1200px;margin:auto;padding:16px}
+.layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:16px}
+aside,.panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:13px}
+aside{padding:10px;height:max-content;position:sticky;top:76px}
+.nav{display:block;width:100%;text-align:left;background:transparent;color:var(--muted);border:0;padding:11px 12px;border-radius:8px;margin:2px 0}
+.nav.active,.nav:hover{background:#153127;color:var(--green)}
+main{min-width:0}
+.page{display:none}
+.page.active{display:block}
+h1{font-size:23px;margin:0 0 5px}
+h2{font-size:17px;margin:0 0 12px}
+h3{font-size:14px;margin:0 0 8px}
+p{color:var(--muted)}
+.sub{color:var(--muted);font-size:12px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.panel,.card{padding:16px;margin-bottom:14px;min-width:0}
+.metric{font-size:25px;font-weight:800;color:var(--green);overflow-wrap:anywhere}
+.label{color:var(--muted);font-size:12px}
+input,select,textarea{width:100%;padding:11px;background:#080e16;color:var(--text);border:1px solid var(--line);border-radius:8px;outline:none;margin:5px 0 10px}
+input:focus,select:focus,textarea:focus{border-color:var(--green)}
+textarea{min-height:90px;resize:vertical}
+.btn{background:var(--green);color:#06110b;font-weight:800;border:0;border-radius:8px;padding:11px 14px}
+.btn.secondary{background:#1a2935;color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:#3b1922;color:#ff9baa}
+.btn.full{width:100%}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:0}
+.row .btn{flex:0 0 auto}
+.status{padding:10px 12px;background:#101c25;border:1px solid var(--line);border-radius:8px;margin:8px 0;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.good{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--yellow)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:450px}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:12px}
+th{color:var(--muted)}
+.signal{padding:12px;border:1px solid var(--line);border-radius:9px;margin:9px 0;background:#0c131d}
+.signal strong{color:var(--green)}
+img.preview{max-width:100%;border-radius:9px;border:1px solid var(--line);margin-top:10px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#192733;border:1px solid var(--line);border-radius:10px;padding:12px 16px;max-width:90%;z-index:20;display:none}
+.loginbox{max-width:420px;margin:8vh auto;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.statusrow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);align-items:flex-start}.statusrow span{color:var(--muted);min-width:95px}.statusrow strong{text-align:right;overflow-wrap:anywhere}.marketgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}.marketpill{background:#0c131d;color:var(--green);border:1px solid var(--line);border-radius:8px;padding:10px}.pastezone{border:2px dashed #2b7053;border-radius:12px;padding:25px 14px;text-align:center;color:var(--green);background:#0b1714;margin:8px 0;cursor:pointer}footer{text-align:center;color:#617286;padding:25px;font-size:11px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}aside{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding:7px}.nav{white-space:normal;width:100%;padding:9px}.grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:10px}.panel,.card{padding:12px}h1{font-size:20px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}.brand{font-size:15px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">GHOST MATRIX <small>V2.0 · MARKET ANALYSIS</small></div>
+  <div class="row" style="flex:0 0 auto">
+    <select id="languageSelect" aria-label="Language" style="width:auto;margin:0;padding:7px" onchange="setLanguage(this.value)"><option value="bn">বাংলা</option><option value="en">English</option></select>
+    <button id="themeBtn" class="btn secondary" onclick="toggleTheme()" type="button">☀ Light</button>
+    <a class="btn secondary" href="https://t.me/ghostsupportbd" target="_blank" rel="noopener">Support</a>
+    <span id="userBadge" class="label"></span>
+    <button id="logoutBtn" class="btn secondary hidden" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div id="loginScreen" class="wrap">
+  <div class="loginbox">
+    <div class="brand" style="font-size:22px">GHOST MATRIX</div>
+    <p>Secure account login</p>
+    <form id="loginForm">
+      <label>Email</label>
+      <input id="loginEmail" type="email" autocomplete="username" required maxlength="254" placeholder="Your admin-created email">
+      <label>Password</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password">
+      <button class="btn full" id="loginBtn" type="submit">LOGIN</button>
+    </form>
+    <div id="loginMsg" class="status hidden"></div>
+    <p class="sub">Account creation is managed by the administrator. If you have a problem, <a href="https://t.me/ghostsupportbd" target="_blank" rel="noopener">Contact Telegram Support</a>.</p>
+  </div>
+</div>
+
+<div id="appScreen" class="wrap hidden">
+<div class="layout">
+<aside>
+  <button class="nav active" data-page="dashboard">⌂ Dashboard</button>
+  <button class="nav" data-page="scanner">⌁ Market Scanner</button>
+  <button class="nav" data-page="signals">◈ Signals</button>
+  <button class="nav" data-page="screenshot">▧ Screenshot AI</button>
+  <button class="nav" data-page="news">◷ News Analysis</button>
+  <button class="nav" data-page="lessons">▤ Learn Price Action</button>
+  <button class="nav" data-page="assistant">✦ AI Assistant</button>
+  <button class="nav" data-page="stats">▥ Statistics</button>
+  <button class="nav hidden" id="adminNav" data-page="admin">⚙ User Access</button>
+</aside>
+
+<main>
+<section id="page-dashboard" class="page active">
+  <h1>Dashboard</h1>
+  <p class="sub">System status · Bangladesh time (UTC+6)</p>
+  <div class="grid four">
+    <div class="card"><div class="label">System</div><div class="metric" id="sysStatus">—</div></div>
+    <div class="card"><div class="label">Database</div><div class="metric" id="dbStatus">—</div></div>
+    <div class="card"><div class="label">API calls today</div><div class="metric" id="apiCalls">—</div></div>
+    <div class="card"><div class="label">Catalog</div><div class="metric" id="catalogCount">—</div></div>
+  </div>
+  <div class="panel">
+    <div class="row"><h2>System Information</h2><button class="btn secondary" onclick="loadDashboard()">Refresh</button></div>
+    <div id="dashboardInfo" class="status">Loading status…</div>
+    <p class="sub">Market data source: external provider. This app does not independently verify Quotex prices or execute trades.</p>
+  </div>
+  <div class="panel">
+    <h2>Recent Signals</h2><div id="recentSignals">Loading…</div>
+  </div>
+</section>
+
+<section id="page-scanner" class="page">
+  <h1>Market Scanner</h1>
+  <p class="sub">Manual scan using the configured external market-data feed.</p>
+  <div class="panel">
+    <label>Market pair</label>
+    <select id="marketSelect"><option value="EUR/USD">EUR/USD</option></select>
+    <button class="btn full" id="scanBtn" onclick="scanMarket()">SCAN MARKET</button>
+    <div id="scanResult" class="status">Select a pair and scan.</div>
+  </div>
+  <div class="panel">
+    <h2>Available Markets</h2>
+    <button class="btn secondary" onclick="loadMarkets()">Refresh markets</button>
+    <div id="marketList" class="status">Loading markets…</div>
+  </div>
+</section>
+
+<section id="page-signals" class="page">
+  <h1>Signals</h1><p class="sub">Signal history and manually entered outcomes.</p>
+  <div class="panel">
+    <button class="btn secondary" onclick="loadSignals()">Refresh signals</button>
+    <div id="signalList" class="status">Loading…</div>
+  </div>
+</section>
+
+<section id="page-screenshot" class="page">
+  <h1>Screenshot AI</h1>
+  <p class="sub">Upload a chart screenshot for educational visual analysis.</p>
+  <div class="panel">
+    <label>Upload or paste chart image</label>
+    <div id="pasteZone" class="pastezone" tabindex="0">Tap to choose an image, or paste a copied chart image here</div>
+    <input type="file" id="chartImage" accept="image/png,image/jpeg,image/webp">
+    <img id="imagePreview" class="preview hidden" alt="Selected chart preview">
+    <button class="btn full" id="imageBtn" onclick="analyzeImage()">ANALYZE SCREENSHOT</button>
+    <div id="imageResult" class="status">Choose an image to begin.</div>
+    <p class="sub">Screenshot analysis is not a verified trade signal. Confirm the actual asset, timeframe and current market data yourself.</p>
+  </div>
+</section>
+
+<section id="page-news" class="page">
+  <h1>Economic News Analysis</h1>
+  <p class="sub">Compare actual economic data with forecast. Do not infer a live price reaction from news alone.</p>
+  <div class="panel">
+    <div class="row"><h2>Upcoming events · Bangladesh time</h2><button class="btn secondary" onclick="loadNewsCalendar()">Refresh</button></div>
+    <label>Calendar range</label><select id="newsDays"><option value="1">Today / next 24h</option><option value="3">3 days</option><option value="7" selected>7 days</option><option value="14">14 days</option></select>
+    <div id="newsCalendar" class="status">Calendar not loaded yet.</div>
+  </div>
+  <div class="panel">
+    <label>Currency</label><select id="newsCurrency">
+      <option>USD</option><option>EUR</option><option>GBP</option><option>JPY</option>
+      <option>AUD</option><option>CAD</option><option>CHF</option><option>NZD</option>
+    </select>
+    <label>Event name</label><input id="newsEvent" placeholder="e.g. CPI, Interest Rate">
+    <div class="grid">
+      <div><label>Actual</label><input id="newsActual" placeholder="Actual value"></div>
+      <div><label>Forecast</label><input id="newsForecast" placeholder="Forecast value"></div>
+    </div>
+    <label>Previous (optional)</label><input id="newsPrevious" placeholder="Previous value">
+    <button class="btn full" onclick="analyzeNews()">ANALYZE NEWS</button>
+    <div id="newsResult" class="status hidden"></div>
+  </div>
+</section>
+
+<section id="page-admin" class="page">
+  <h1>Admin · User Access</h1><p class="sub">Enable or disable non-admin accounts. Disabled users cannot log in or continue an active session.</p>
+  <div class="panel"><h2>Create user account</h2><form id="createUserForm"><label>User email</label><input id="newUserEmail" type="email" required maxlength="254" placeholder="user@example.com"><label>Temporary password (minimum 12 characters)</label><input id="newUserPassword" type="password" required minlength="12" maxlength="1024" autocomplete="new-password"><button class="btn" type="submit">Create account & send verification</button></form><div id="createUserMsg" class="status hidden"></div><p class="sub">SMTP email verification must be configured. Users cannot log in until they verify their email.</p></div>
+  <div class="panel"><div class="row"><h2>Accounts</h2><button class="btn secondary" onclick="loadAdminUsers()">Refresh</button></div><div id="adminUsers" class="status">Admin only.</div></div>
+</section>
+
+<section id="page-lessons" class="page">
+  <h1>Price Action Learning</h1>
+  <p class="sub">Illustrative educational examples, not live market data.</p>
+  <div class="panel">
+    <button class="btn secondary" onclick="loadLessons()">Refresh lessons</button>
+    <div id="lessonList">Loading lessons…</div>
+    <div id="lessonDetail" class="status hidden"></div>
+  </div>
+</section>
+
+<section id="page-assistant" class="page">
+  <h1>AI Assistant</h1>
+  <p class="sub">Ask about trading concepts, market structure, risk management or technical analysis.</p>
+  <div class="panel">
+    <label>Your question</label>
+    <textarea id="question" maxlength="3000" placeholder="Explain BOS, CHoCH, RSI, support/resistance…"></textarea>
+    <button class="btn full" id="askBtn" onclick="askAI()">ASK AI</button>
+    <div id="answer" class="status hidden"></div>
+  </div>
+</section>
+
+<section id="page-stats" class="page">
+  <h1>Statistics</h1>
+  <p class="sub">Recorded outcomes may be manually entered. They are not automatically verified by Quotex.</p>
+  <div class="grid">
+    <div class="card"><div class="label">Wins</div><div id="wins" class="metric">—</div></div>
+    <div class="card"><div class="label">Losses</div><div id="losses" class="metric">—</div></div>
+  </div>
+  <div class="card"><div class="label">Total recorded</div><div id="total" class="metric">—</div></div>
+  <button class="btn secondary" onclick="loadStats()">Refresh statistics</button>
+  <div id="statsNote" class="status"></div>
+</section>
+
+<footer>GHOST MATRIX V2.0 · External market data · Trading involves risk.</footer>
+</main>
+</div>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+let currentUser = null;
+let toastTimer = null;
+
+function toast(message) {
+  const el = $("toast");
+  el.textContent = String(message || "");
+  el.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display = "none", 3500);
+}
+const translations = {
+  bn: {loginTitle:"নিরাপদ অ্যাকাউন্ট লগইন", email:"ইমেইল", password:"পাসওয়ার্ড", login:"লগইন", dashboard:"ড্যাশবোর্ড", scanner:"মার্কেট স্ক্যানার", signals:"সিগন্যাল", screenshot:"স্ক্রিনশট AI", news:"নিউজ বিশ্লেষণ", lessons:"প্রাইস অ্যাকশন শিখুন", assistant:"AI সহকারী", stats:"পরিসংখ্যান", admin:"ইউজার অ্যাক্সেস", logout:"লগআউট", support:"সাপোর্ট"},
+  en: {loginTitle:"Secure account login", email:"Email", password:"Password", login:"LOGIN", dashboard:"Dashboard", scanner:"Market Scanner", signals:"Signals", screenshot:"Screenshot AI", news:"News Analysis", lessons:"Learn Price Action", assistant:"AI Assistant", stats:"Statistics", admin:"User Access", logout:"Logout", support:"Support"}
+};
+function setLanguage(lang) {
+  if (!translations[lang]) lang="bn";
+  localStorage.setItem("gm-language", lang);
+  document.documentElement.lang=lang;
+  const t=translations[lang];
+  const labels={dashboard:0,scanner:1,signals:2,screenshot:3,news:4,lessons:5,assistant:6,stats:7,admin:8};
+  document.querySelectorAll(".nav").forEach(btn=>{const k=btn.dataset.page;if(t[k]) { const icons={dashboard:"⌂",scanner:"⌁",signals:"◈",screenshot:"▧",news:"◷",lessons:"▤",assistant:"✦",stats:"▥",admin:"⚙"}; btn.textContent=(icons[k]||"")+" "+t[k]; }});
+  $("logoutBtn").textContent=t.logout;
+  $("themeBtn").textContent=(localStorage.getItem("gm-theme")==="light"?"🌙 Dark":"☀ Light");
+  const labelsEls=document.querySelectorAll("#loginForm label"); if(labelsEls[0]) labelsEls[0].textContent=t.email; if(labelsEls[1]) labelsEls[1].textContent=t.password;
+  $("loginBtn").textContent=t.login;
+}
+function applyTheme(theme) {
+  const light=theme==="light";
+  document.documentElement.style.setProperty("--bg",light?"#f3f6fa":"#080b12");
+  document.documentElement.style.setProperty("--panel",light?"#ffffff":"#101722");
+  document.documentElement.style.setProperty("--panel2",light?"#edf1f6":"#151f2c");
+  document.documentElement.style.setProperty("--line",light?"#cbd5e1":"#243242");
+  document.documentElement.style.setProperty("--text",light?"#17212b":"#eaf2f7");
+  document.documentElement.style.setProperty("--muted",light?"#526174":"#91a2b4");
+  document.body.style.background=light?"var(--bg)":"var(--bg)";
+  document.querySelectorAll("input,select,textarea").forEach(el=>{el.style.background=light?"#fff":"#080e16";el.style.color=light?"#17212b":"var(--text)";});
+  localStorage.setItem("gm-theme",theme); $("themeBtn").textContent=light?"🌙 Dark":"☀ Light";
+}
+function toggleTheme(){applyTheme(localStorage.getItem("gm-theme")==="light"?"dark":"light");}
+function text(el, value) {
+  el.textContent = value == null ? "—" : String(value);
+}
+function showStatus(id, value, isError=false) {
+  const el = $(id);
+  el.classList.remove("hidden");
+  el.classList.toggle("bad", isError);
+  el.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+}
+function safeJson(value) {
+  try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+}
+async function api(url, options={}) {
+  const opts = {...options, credentials:"same-origin", cache:"no-store", headers:{"Cache-Control":"no-cache", ...(options.headers||{})}};
+  if (opts.body && !(opts.body instanceof FormData) && typeof opts.body !== "string") {
+    opts.headers = {...opts.headers, "Content-Type":"application/json"};
+    opts.body = JSON.stringify(opts.body);
+  }
+  const response = await fetch(url, opts);
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    if (response.status === 401 || response.redirected) {
+      await showLogin();
+      throw new Error("Session ended. Please log in again.");
+    }
+    throw new Error("Server returned a non-JSON response (HTTP " + response.status + "). Check the backend route.");
+  }
+  const data = await response.json();
+  if (!response.ok) {
+    if (response.status === 401 && data.auth_required) await showLogin();
+    throw new Error(data.error || data.message || ("Request failed: HTTP " + response.status));
+  }
+  return data;
+}
+async function showLogin() {
+  currentUser = null;
+  $("appScreen").classList.add("hidden");
+  $("loginScreen").classList.remove("hidden");
+  $("logoutBtn").classList.add("hidden");
+  $("userBadge").textContent = "";
+}
+function showApp(user) {
+  currentUser = user || {};
+  $("loginScreen").classList.add("hidden");
+  $("appScreen").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  text($("userBadge"), currentUser.email || "Logged in");
+  $("adminNav").classList.toggle("hidden", !currentUser.is_admin);
+}
+async function checkSession() {
+  try {
+    const data = await api("/api/auth/me");
+    if (data.authenticated && data.user) {
+      showApp(data.user);
+      await initializeApp();
+    } else {
+      await showLogin();
+    }
+  } catch (e) {
+    await showLogin();
+    $("loginMsg").classList.remove("hidden");
+    text($("loginMsg"), e.message);
+  }
+}
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("loginBtn");
+  btn.disabled = true;
+  text(btn, "Signing in…");
+  $("loginMsg").classList.add("hidden");
+  try {
+    const data = await api("/api/auth/login", {
+      method:"POST",
+      body:{email:$("loginEmail").value.trim(), password:$("loginPassword").value}
+    });
+    if (!data.ok) throw new Error("Login response was not successful.");
+    showApp(data.user);
+    $("loginPassword").value = "";
+    toast("Login successful");
+    await initializeApp();
+  } catch (e) {
+    showStatus("loginMsg", e.message, true);
+  } finally {
+    btn.disabled = false;
+    text(btn, "LOGIN");
+  }
+});
+async function logout() {
+  try {
+    const result=await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"Cache-Control":"no-cache"}});
+    if(!result.ok) throw new Error("Logout failed. Check connection and try again.");
+    currentUser=null;
+    await showLogin();
+    $("loginPassword").value="";
+    history.replaceState(null,"","/app");
+    toast("Logged out successfully");
+  } catch(e) { await showLogin(); toast(e.message); }
+}
+document.querySelectorAll(".nav").forEach(btn => btn.addEventListener("click", async () => {
+  document.querySelectorAll(".nav").forEach(n => n.classList.toggle("active", n === btn));
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + btn.dataset.page));
+  const page = btn.dataset.page;
+  try {
+    if(page==="dashboard") await loadDashboard();
+    if(page==="scanner") await loadMarkets();
+    if(page==="signals") await loadSignals();
+    if(page==="stats") await loadStats();
+    if(page==="lessons") await loadLessons();
+    if(page==="news") await loadNewsCalendar();
+    if(page==="admin" && currentUser?.is_admin) await loadAdminUsers();
+  } catch(e) { toast(e.message); }
+}));
+async function initializeApp() {
+  try {
+    await Promise.allSettled([loadDashboard(), loadMarkets(), loadSignals(), loadStats(), loadLessons()]);
+  } catch(e) { toast(e.message); }
+}
+async function loadDashboard() {
+  const d = await api("/api/dashboard");
+  text($("sysStatus"), d.status || (d.running ? "RUNNING" : "—"));
+  text($("dbStatus"), d.database_ok ? "OK" : "CHECK");
+  text($("apiCalls"), d.api_calls_today ?? 0);
+  text($("catalogCount"), d.catalog_count ?? "—");
+  const info=$("dashboardInfo"); info.replaceChildren();
+  [["App",d.app||"GHOST MATRIX"],["Data source",d.data_source||"—"],["Database",(d.database_ok?"Connected":"Check required")+" · "+(d.database_message||"")],["API usage",`${d.api_calls_today??0} / ${d.daily_budget??"—"}`],["Last scan (UTC)",d.last_scan_utc||"No scan recorded"],["Quotex verification",d.quotex_verified?"Verified":"Not verified"],["Last error",d.last_error||"None"]].forEach(([k,v])=>{const r=document.createElement("div");r.className="statusrow";const a=document.createElement("span");a.textContent=k;const b=document.createElement("strong");b.textContent=String(v);r.append(a,b);info.appendChild(r);});
+  if (Array.isArray(d.signals)) renderSignals(d.signals.slice(0,5), "recentSignals");
+}
+async function loadMarkets() {
+  const d = await api("/api/markets");
+  const markets = Array.isArray(d.markets) ? d.markets : [];
+  const select = $("marketSelect");
+  const old = select.value;
+  select.replaceChildren();
+  markets.forEach(item => {
+    const symbol = typeof item === "string" ? item : (item.symbol || item.pair || item.name);
+    if(!symbol) return;
+    const option = document.createElement("option");
+    option.value = symbol; option.textContent = symbol;
+    select.appendChild(option);
+  });
+  if(!markets.length) {
+    const option = document.createElement("option");
+    option.value = "EUR/USD"; option.textContent = "EUR/USD";
+    select.appendChild(option);
+  }
+  if ([...select.options].some(o => o.value === old)) select.value = old;
+  const box=$("marketList"); box.replaceChildren(); const caption=document.createElement("p"); caption.className="sub"; caption.textContent=`${markets.length} markets · ${d.source||"Configured catalog"}`; box.appendChild(caption); const grid=document.createElement("div");grid.className="marketgrid"; markets.forEach(item=>{const symbol=typeof item==="string"?item:(item.symbol||item.pair||item.name);if(!symbol)return;const b=document.createElement("button");b.className="marketpill";b.textContent=symbol;b.onclick=()=>{select.value=symbol;document.querySelector('[data-page="scanner"]').click();};grid.appendChild(b);});box.appendChild(grid);
+}
+async function scanMarket() {
+  const btn = $("scanBtn");
+  btn.disabled = true; text(btn, "Scanning…");
+  showStatus("scanResult", "Fetching market data…");
+  try {
+    const d = await api("/api/scan", {method:"POST", body:{symbol:$("marketSelect").value}});
+    showStatus("scanResult", d);
+    if(d.result && typeof d.result === "object") {
+      toast("Scan completed");
+    }
+  } catch(e) { showStatus("scanResult", e.message, true); }
+  finally { btn.disabled = false; text(btn, "SCAN MARKET"); }
+}
+async function loadSignals() {
+  const d = await api("/api/signals");
+  renderSignals(d.signals || [], "signalList");
+}
+function renderSignals(signals, target) {
+  const box = $(target);
+  box.replaceChildren();
+  if(!signals.length) { box.textContent = "No signals available."; return; }
+  signals.forEach(s => {
+    const card = document.createElement("div");
+    card.className = "signal";
+    const title = document.createElement("strong");
+    title.textContent = (s.symbol || s.pair || "Market") + " · " + (s.direction || s.signal || s.action || "Analysis");
+    const detail = document.createElement("p");
+    detail.textContent = "ID: " + (s.id ?? "—") + " | Time: " + (s.created_at || s.time || "—") +
+      " | Result: " + (s.result || "PENDING");
+    const body = document.createElement("div");
+    body.className = "sub";
+    body.textContent = s.reason || s.analysis || s.note || "";
+    card.append(title, detail, body);
+    if (s.id != null && (!s.result || String(s.result).toUpperCase()==="PENDING")) {
+      const row = document.createElement("div"); row.className="row";
+      ["WIN","LOSS"].forEach(outcome => {
+        const b = document.createElement("button");
+        b.className = "btn secondary"; b.textContent = "Record " + outcome;
+        b.onclick = () => recordResult(s.id, outcome);
+        row.appendChild(b);
+      });
+      card.appendChild(row);
+    }
+    box.appendChild(card);
+  });
+}
+async function recordResult(id, result) {
+  if(!confirm("Record this outcome as " + result + "? This is manual, not Quotex-verified.")) return;
+  try {
+    const d = await api("/api/result", {method:"POST", body:{id:Number(id), result}});
+    toast(d.note || "Outcome recorded");
+    await Promise.allSettled([loadSignals(),loadStats(),loadDashboard()]);
+  } catch(e) { toast(e.message); }
+}
+$("chartImage").addEventListener("change", () => {
+  const file = $("chartImage").files[0];
+  const img = $("imagePreview");
+  if(!file) { img.classList.add("hidden"); return; }
+  if(file.size > 12*1024*1024) {
+    $("chartImage").value = "";
+    toast("Image must be smaller than 12 MB.");
+    img.classList.add("hidden"); return;
+  }
+  pastedChartFile=null; img.src = URL.createObjectURL(file);
+  img.classList.remove("hidden");
+});
+let pastedChartFile=null;
+$("pasteZone").addEventListener("click",()=>$("chartImage").click());
+document.addEventListener("paste",e=>{const items=[...(e.clipboardData?.items||[])];const item=items.find(x=>x.type.startsWith("image/"));if(!item)return;const f=item.getAsFile();if(f){pastedChartFile=new File([f],"pasted-chart.png",{type:f.type||"image/png"});const img=$("imagePreview");img.src=URL.createObjectURL(pastedChartFile);img.classList.remove("hidden");toast("Chart image pasted");}});
+async function analyzeImage() {
+  const file = pastedChartFile || $("chartImage").files[0];
+  if(!file) { toast("Upload or paste a chart image first."); return; }
+  const btn=$("imageBtn"); btn.disabled=true; text(btn,"Analyzing…");
+  showStatus("imageResult","AI is analyzing the screenshot…");
+  try {
+    const form = new FormData(); form.append("image",file);
+    const d = await api("/api/analyze-image",{method:"POST",body:form});
+    showStatus("imageResult", (d.analysis || "No analysis returned.") + "\n\n" + (d.warning || ""));
+  } catch(e) { showStatus("imageResult",e.message,true); }
+  finally { btn.disabled=false; text(btn,"ANALYZE SCREENSHOT"); }
+}
+async function loadNewsCalendar() {
+  const box=$("newsCalendar"); showStatus("newsCalendar","Loading economic calendar…");
+  try { const d=await api("/api/news?days="+encodeURIComponent($("newsDays").value||7)); box.replaceChildren();
+    const events=d.events||[]; if(!events.length){box.textContent="No events returned for this range.";return;}
+    events.forEach(ev=>{const card=document.createElement("div");card.className="signal";const title=document.createElement("strong");title.textContent=`${ev.currency||"—"} · ${ev.name||"Economic event"}`;const meta=document.createElement("p");meta.textContent=`${ev.datetime_bd||"Time unavailable"} · Impact: ${ev.impact||"—"}`;const values=document.createElement("p");values.textContent=`Previous: ${ev.previous??"—"} | Forecast: ${ev.forecast??"—"} | Actual: ${ev.actual??"Not released"}`;card.append(title,meta,values);if(ev.actual!=null&&ev.forecast!=null){const b=document.createElement("button");b.className="btn secondary";b.textContent="Analyze this event";b.onclick=()=>{$("newsCurrency").value=ev.currency||"USD";$("newsEvent").value=ev.name||"";$("newsActual").value=ev.actual??"";$("newsForecast").value=ev.forecast??"";$("newsPrevious").value=ev.previous??"";analyzeNews();};card.appendChild(b);}box.appendChild(card);});
+  } catch(e){showStatus("newsCalendar",e.message,true);}
+}
+async function analyzeNews() {
+  const body = {
+    currency:$("newsCurrency").value,
+    event:$("newsEvent").value.trim(),
+    actual:$("newsActual").value.trim(),
+    forecast:$("newsForecast").value.trim(),
+    previous:$("newsPrevious").value.trim()
+  };
+  try {
+    showStatus("newsResult","Analyzing news…");
+    const d=await api("/api/news/analyze",{method:"POST",body});
+    showStatus("newsResult",(d.analysis || "")+"\n\n"+(d.note || ""));
+  } catch(e) { showStatus("newsResult",e.message,true); }
+}
+$("createUserForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const msg=$("createUserMsg"); msg.classList.remove("hidden"); msg.textContent="Creating account…";
+  try { const d=await api("/api/auth/admin/users",{method:"POST",body:{email:$("newUserEmail").value.trim(),password:$("newUserPassword").value}}); msg.textContent=d.message||"Account created."; $("newUserPassword").value=""; await loadAdminUsers(); }
+  catch(err){msg.textContent=err.message;msg.classList.add("bad");}
+});
+async function loadAdminUsers() {
+  if(!currentUser?.is_admin) return;
+  const box=$("adminUsers"); showStatus("adminUsers","Loading accounts…");
+  try { const d=await api("/api/auth/admin/users"); box.replaceChildren();
+    (d.users||[]).forEach(u=>{const card=document.createElement("div");card.className="signal";const title=document.createElement("strong");title.textContent=u.email||("User #"+u.id);const info=document.createElement("p");info.textContent=`${u.is_admin?"Admin":"User"} · Email ${u.email_verified?"verified":"not verified"} · Access ${u.access_enabled?"enabled":"disabled"}`;card.append(title,info);if(!u.is_admin){const b=document.createElement("button");b.className="btn "+(u.access_enabled?"danger":"secondary");b.textContent=u.access_enabled?"Disable access":"Enable access";b.onclick=async()=>{if(!confirm((u.access_enabled?"Disable":"Enable")+" access for "+u.email+"?"))return;try{await api(`/api/auth/admin/users/${u.id}/access`,{method:"PATCH",body:{enabled:!u.access_enabled}});toast("Access updated");await loadAdminUsers();}catch(e){toast(e.message);}};card.appendChild(b);}box.appendChild(card);});
+    if(!(d.users||[]).length) box.textContent="No accounts found.";
+  } catch(e){showStatus("adminUsers",e.message,true);}
+}
+async function loadLessons() {
+  const d=await api("/api/lessons");
+  const box=$("lessonList"); box.replaceChildren();
+  (d.lessons||[]).forEach((lesson,i)=>{
+    const card=document.createElement("div"); card.className="signal";
+    const title=document.createElement("h3"); title.textContent=(i+1)+". "+lesson.title;
+    const caption=document.createElement("p"); caption.textContent=lesson.caption||"";
+    const button=document.createElement("button"); button.className="btn secondary"; button.textContent="Open lesson";
+    button.onclick=()=>{
+      const detail=$("lessonDetail"); detail.classList.remove("hidden"); detail.replaceChildren();
+      const h=document.createElement("h3"); h.textContent=lesson.title;
+      const p=document.createElement("p"); p.textContent=lesson.caption||"";
+      detail.append(h,p);
+      if(lesson.image){
+        const img=document.createElement("img"); img.className="preview"; img.alt=lesson.title+" illustration";
+        img.src=lesson.image; detail.appendChild(img);
+      }
+    };
+    card.append(title,caption,button); box.appendChild(card);
+  });
+  if(!(d.lessons||[]).length) box.textContent="No lessons returned.";
+}
+async function askAI() {
+  const question=$("question").value.trim();
+  if(!question) { toast("Write a question first."); return; }
+  const btn=$("askBtn"); btn.disabled=true; text(btn,"Thinking…");
+  showStatus("answer","Generating answer…");
+  try {
+    const d=await api("/api/ask",{method:"POST",body:{question}});
+    showStatus("answer",d.answer || d.error || "No answer returned.");
+  } catch(e) { showStatus("answer",e.message,true); }
+  finally { btn.disabled=false; text(btn,"ASK AI"); }
+}
+async function loadStats() {
+  const d=await api("/api/stats");
+  text($("wins"),d.wins ?? 0); text($("losses"),d.losses ?? 0); text($("total"),d.total ?? 0);
+  showStatus("statsNote",(d.note || "Recorded results")+"\nQuotex verified: "+String(d.quotex_verified===true));
+}
+applyTheme(localStorage.getItem("gm-theme")||"dark");
+$("languageSelect").value=localStorage.getItem("gm-language")||"bn"; setLanguage($("languageSelect").value);
+window.addEventListener("pageshow", async event=>{ if(event.persisted){ await checkSession(); } });
+checkSession();
+</script>
+</body>
+</html>
