@@ -1,4 +1,4 @@
-"""GHOST MATRIX V2.0 — cautious Telegram market-analysis bot.
+"""GHOST TRADER — cautious Telegram market-analysis bot.
 
 Uses Twelve Data candles as an EXTERNAL data source. It does not connect to or
 verify prices against Quotex. No trade outcome or win rate is fabricated.
@@ -80,7 +80,7 @@ logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
     format="%(asctime)s %(levelname)s %(message)s",
 )
-log = logging.getLogger("ghost-matrix")
+log = logging.getLogger("ghost-trader")
 app = Flask(__name__)
 
 @app.after_request
@@ -109,10 +109,10 @@ def serve_icons(filename):
     return send_from_directory(icon_dir, filename)
 app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
-_auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
+_auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-trader-email-verification-v1")
 
 http_session = requests.Session()
-http_session.headers.update({"User-Agent": "GHOST-MATRIX-V2/2.0"})
+http_session.headers.update({"User-Agent": "GHOST-TRADER"})
 state_lock = threading.Lock()
 state = {
     "last_scan_utc": None,
