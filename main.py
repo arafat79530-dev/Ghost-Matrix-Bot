@@ -1,4 +1,4 @@
-"""GHOST MATRIX V2.0 — cautious Telegram market-analysis bot.
+"""GHOST TRADER — cautious Telegram market-analysis bot.
 
 Uses Twelve Data candles as an EXTERNAL data source. It does not connect to or
 verify prices against Quotex. No trade outcome or win rate is fabricated.
