@@ -24,278 +24,253 @@
 </style>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>GHOST TRADER - Clone</title>
+<title>GHOST • Otc Chart Analyzer</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:#05030a;color:#e9e7ff;font:13px/1.4 system-ui,-apple-system,sans-serif;overflow:hidden;height:100vh;display:flex;justify-content:center;align-items:center}
-.phone{width:100%;max-width:390px;height:100vh;max-height:844px;background:linear-gradient(180deg,#1a1033 0%,#0f0b1e 100%);position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0}
-@media(min-width:400px){.phone{border-radius:28px;border:1px solid #2a1f4a;box-shadow:0 20px 60px rgba(0,0,0,.8)} body{background:radial-gradient(800px 600px at 50% 0%, #2a1f4a, #05030a)}}
+body{background:#060412;color:#c4b5fd;font:12px/1.2 system-ui,-apple-system,sans-serif;display:flex;justify-content:center;min-height:100vh}
+.app{width:100%;max-width:390px;height:100vh;max-height:844px;background:linear-gradient(180deg,#1a1033 0%,#150d2e 50%,#0a0614 100%);display:flex;flex-direction:column;overflow:hidden;position:relative}
+@media(min-width:420px){.app{margin:12px 0;border-radius:28px;border:1px solid #221544;box-shadow:0 30px 80px rgba(0,0,0,.8)}body{background:#02010a}}
 
-/* STATUS BAR */
-.status-bar{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 20px;font-size:12px;color:white;z-index:10}
-.status-right{display:flex;gap:6px;align-items:center}
+/* TOP - Quotex + OTC Real - EXACT PHOTO */
+.top{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.leftT{display:flex;align-items:center;gap:8px}
+.logo{width:28px;height:28px;background:#fff;border-radius:8px;display:grid;place-items:center;font-size:14px}
+.q{font-size:11px;font-weight:800;color:#fff;line-height:1} .q2{font-size:8px;color:#8b8ba7}
+.pills{display:flex;gap:6px}
+.pill{font-size:9px;font-weight:800;padding:5px 10px;border-radius:8px;border:0}
+.pill.otc{background:#7c3aed;color:#fff} .pill.real{background:rgba(255,255,255,.06);color:#6b7280}
 
-/* APP HEADER - like photo */
-.app-header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;z-index:10}
-.app-logo{display:flex;align-items:center;gap:8px}
-.logo-icon{width:28px;height:28px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
-.app-name{font-size:13px;font-weight:700;color:white}
-.otc-badge{background:#7c3aed;color:white;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;margin-left:6px}
-.header-right{display:flex;align-items:center;gap:8px}
-.live-dot{width:6px;height:6px;background:#10b981;border-radius:50%;animation:blink 1s infinite}
+/* BROWSER BAR - cocobai - Otc Chart Analyzer - EXACT */
+.bbar{margin:4px 12px 8px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03));border:1px solid rgba(139,92,246,.12);border-radius:14px;padding:9px 12px;display:flex;align-items:center;gap:8px;font-size:10px;color:#6b7280}
+.dots{display:flex;gap:4px} .d{width:7px;height:7px;border-radius:50%} .d1{background:#ff5f56} .d2{background:#ffbd2e} .d3{background:#27c93f}
+.btxt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* MAIN CONTENT */
-.main{flex:1;position:relative;overflow:hidden;padding:0 16px 16px}
+/* FLOW CONTAINER - DARK PURPLE CARD EXACT PHOTO */
+.flowBox{flex:1;margin:0 12px;background:radial-gradient(520px 360px at 50% 0%,rgba(124,58,237,.18),rgba(10,6,20,.9) 60%),linear-gradient(180deg,#13102a,#0c0a1e);border:1px solid rgba(124,58,237,.18);border-radius:22px;position:relative;overflow:hidden;padding:14px 10px 54px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 30px rgba(0,0,0,.4)}
+.glow{position:absolute;width:220px;height:220px;background:radial-gradient(circle,rgba(124,58,237,.22),transparent 70%);left:50%;top:42%;transform:translate(-50%,-50%);pointer-events:none;filter:blur(8px)}
 
-/* ANALYZING FLOW - EXACT PHOTO CLONE */
-.flow-container{position:relative;width:100%;height:100%;min-height:520px}
-.flow-bg{position:absolute;inset:0;background:radial-gradient(500px 300px at 50% 0%, rgba(124,58,237,.15), transparent), radial-gradient(400px 400px at 20% 80%, rgba(139,92,246,.08), transparent)}
+/* CHART - EXACT 7 NODES POS */
+.chart{position:relative;width:100%;height:340px}
+.node{position:absolute;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:18px;border:1px solid rgba(255,255,255,.08);box-shadow:0 6px 16px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.1);z-index:3;animation:float 3.2s ease-in-out infinite}
+.node::after{content:'';position:absolute;inset:-1px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.12),transparent);pointer-events:none}
+.n1{background:#6d28d9;left:18%;top:8%;animation-delay:0s}
+.n2{background:#0f766e;left:50%;top:4%;transform:translateX(-50%);animation-delay:.2s}
+.n3{background:#92400e;right:18%;top:8%;animation-delay:.4s}
+.n4{background:#0e7490;left:12%;top:43%;animation-delay:.6s}
+.n5{width:52px;height:52px;border-radius:50%;left:50%;top:46%;transform:translate(-50%,-50%);background:radial-gradient(circle at 30% 30%,#ede9fe,#c4b5fd);border:2px solid #8b5cf6;box-shadow:0 0 0 6px rgba(124,58,237,.12),0 0 24px rgba(124,58,237,.6);font-size:22px;z-index:4;animation:centerGlow 2s ease-in-out infinite}
+.n6{background:#be185d;left:24%;bottom:12%;animation-delay:.8s}
+.n7{background:#a16207;right:20%;bottom:18%;animation-delay:1s}
 
-/* QUOTEX CARD */
-.quotex-card{background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(139,92,246,.2);border-radius:16px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;backdrop-filter:blur(20px)}
-.q-left{display:flex;align-items:center;gap:8px}
-.q-dots{display:flex;gap:4px}
-.q-dot{width:8px;height:8px;border-radius:50%}
-.q-dot.red{background:#ff5f56} .q-dot.yellow{background:#ffbd2e} .q-dot.green{background:#27c93f}
-.q-text{font-size:11px;color:#8b8ba7}
-.q-right{font-size:10px;color:#6b7280}
+@keyframes float{0%,100%{transform:translateY(0) translateX(var(--tx,0))}50%{transform:translateY(-5px) translateX(var(--tx,0))}}
+.n2{--tx:-50%} .n5{--tx:-50%}
+@keyframes centerGlow{0%,100%{box-shadow:0 0 0 6px rgba(124,58,237,.12),0 0 24px rgba(124,58,237,.6)}50%{box-shadow:0 0 0 10px rgba(124,58,237,.18),0 0 36px rgba(124,58,237,.8)}}
 
-/* FLOWCHART - 7 nodes like photo */
-.flowchart{position:relative;width:100%;height:380px;margin:20px 0}
+/* SVG LINES + ANIMATED DOTS - EXACT LIKE VIDEO */
+.svg{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.line{fill:none;stroke:rgba(168,140,255,.28);stroke-width:1.2;stroke-linecap:round}
+.jdot{fill:#a78bfa;filter:drop-shadow(0 0 4px #8b5cf6)}
+.moving-dot{filter:drop-shadow(0 0 6px currentColor)}
 
-/* SVG LINES - animated */
-.svg-lines{position:absolute;inset:0;width:100%;height:100%;z-index:1}
-.svg-lines path{fill:none;stroke:rgba(139,92,246,.25);stroke-width:1.5;stroke-dasharray:8 8;animation:dashMove 2s linear infinite}
-.svg-lines path.active{stroke:rgba(139,92,246,.6);stroke-width:2}
+/* ANALYZING TEXT - EXACT BOTTOM */
+.anal{position:absolute;left:0;right:0;bottom:12px;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:5}
+.anal-main{display:flex;align-items:center;gap:7px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.2);padding:6px 12px;border-radius:20px;font-size:10px;color:#c4b5fd;font-weight:600;letter-spacing:.02em}
+.dotp{width:7px;height:7px;background:#8b5cf6;border-radius:50%;animation:blink 1s infinite;box-shadow:0 0 8px #8b5cf6}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
-/* NODES - exact like photo */
-.flow-node{position:absolute;width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;z-index:2;backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.1);animation:floatNode 3s ease-in-out infinite;transition:all .3s}
-.flow-node.purple{background:linear-gradient(135deg,#7c3aed,#6d28d9);left:12%;top:8%;animation-delay:0s}
-.flow-node.green{background:linear-gradient(135deg,#10b981,#059669);left:50%;top:4%;transform:translateX(-50%);animation-delay:.2s}
-.flow-node.orange{background:linear-gradient(135deg,#f59e0b,#d97706);right:12%;top:8%;animation-delay:.4s}
-.flow-node.blue{background:linear-gradient(135deg,#0ea5e9,#0284c7);left:10%;top:38%;animation-delay:.6s}
-.flow-node.center{background:linear-gradient(135deg,#ede9fe,#ddd6fe);width:68px;height:68px;border-radius:50%;left:50%;top:42%;transform:translate(-50%,-50%);border:2px solid #8b5cf6;box-shadow:0 0 40px rgba(139,92,246,.6), 0 0 80px rgba(139,92,246,.2);animation:centerPulse 2.5s infinite;z-index:3}
-.flow-node.pink{background:linear-gradient(135deg,#ec4899,#db2777);left:14%;bottom:18%;top:auto;animation-delay:.8s}
-.flow-node.yellow{background:linear-gradient(135deg,#facc15,#eab308);right:14%;bottom:16%;top:auto;animation-delay:1s}
-.flow-node.dark{background:linear-gradient(135deg,#374151,#1f2937);left:50%;bottom:20%;top:auto;transform:translateX(-50%);border:1px solid #4b5563;animation-delay:1.2s}
+/* BOTTOM NAV - EXACT 5 ITEMS - CENTER PURPLE ACTIVE */
+.bnav{height:66px;background:#0a0614;border-top:1px solid rgba(124,58,237,.14);display:grid;grid-template-columns:1fr 1fr 1.2fr 1fr 1fr;align-items:end;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:10}
+.bi{display:flex;flex-direction:column;align-items:center;gap:4px;color:#4b5563;font-size:8px;font-weight:600;cursor:pointer;padding:4px 0}
+.bi.active{color:#8b5cf6}
+.bi.center .ic{width:48px;height:48px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:16px;display:grid;place-items:center;color:white;font-size:20px;box-shadow:0 8px 20px rgba(124,58,237,.5);transform:translateY(-6px)}
+.ic{font-size:16px;line-height:1}
 
-@keyframes floatNode{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.02)}}
-@keyframes centerPulse{0%,100%{box-shadow:0 0 40px rgba(139,92,246,.6), 0 0 80px rgba(139,92,246,.2); transform:translate(-50%,-50%) scale(1)}50%{box-shadow:0 0 60px rgba(139,92,246,.8), 0 0 100px rgba(139,92,246,.3); transform:translate(-50%,-50%) scale(1.05)}}
-@keyframes dashMove{to{stroke-dashoffset:-32}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+/* REST UI - COMPACT */
+.page{display:none;flex:1;overflow-y:auto;padding:0 12px 12px} .page.on{display:block}
+.marketRow{display:flex;gap:6px;margin:10px 0}
+.mtab{padding:6px 12px;border-radius:20px;font-size:10px;font-weight:800;border:1px solid #1f2937;background:#111827;color:#6b7280}
+.mtab.on{background:#7c3aed;color:white;border-color:#7c3aed}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:120px;overflow-y:auto}
+.mi{padding:8px;border:1px solid #1f2937;border-radius:10px;background:#111827;font-size:10px;color:#9ca3af;text-align:center}
+.paste{border:1.5px dashed #2a1f4a;border-radius:16px;padding:14px;text-align:center;background:rgba(17,24,39,.5);cursor:pointer;margin:8px 0}
+.btnA{width:100%;padding:12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:white;border:0;border-radius:12px;font-weight:900;font-size:12px;letter-spacing:.02em}
 
-/* ANALYZING TEXT - like photo */
-.analyzing-text{position:absolute;bottom:100px;left:0;right:0;text-align:center;z-index:5}
-.analyzing-main{display:flex;align-items:center;justify-content:center;gap:8px;color:#a78bfa;font-size:13px;font-weight:500}
-.pulse-dot{width:8px;height:8px;background:#8b5cf6;border-radius:50%;animation:blink 1s infinite}
-.analyzing-sub{font-size:10px;color:#4b5563;margin-top:6px;letter-spacing:.05em}
-
-/* RESULT CARD - after analyzing, video style */
-.result-overlay{position:absolute;inset:0;background:linear-gradient(180deg,#1a1033 0%,#0f0b1e 100%);z-index:20;display:none;flex-direction:column;padding:16px;overflow-y:auto}
-.result-overlay.show{display:flex}
-.result-card-clone{background:linear-gradient(145deg,#1a1f2e,#111827);border:1px solid #2a2f45;border-radius:20px;overflow:hidden}
-.result-card-clone.CALL{border-color:#00ff88;box-shadow:0 0 30px rgba(0,255,136,.15)}
-.result-card-clone.PUT{border-color:#ff3b5c;box-shadow:0 0 30px rgba(255,59,92,.15)}
-.result-header-clone{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}
-.asset-pill{background:#0a0e1a;border:1px solid #1f2937;padding:4px 10px;border-radius:20px;font-size:10px;color:#6b7280}
-.high-badge{background:linear-gradient(90deg,#00ff88,#00d9ff);color:#001a0a;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:800}
-.signal-big{padding:20px 16px;text-align:center}
-.signal-label-clone{font-size:9px;letter-spacing:.15em;color:#6b7280;margin-bottom:8px}
-.signal-dir{font-size:44px;font-weight:900;letter-spacing:.02em;line-height:1}
-.signal-dir.CALL{color:#00ff88} .signal-dir.PUT{color:#ff3b5c} .signal-dir.NO{color:#ffa500;font-size:30px}
-.conf-circle-clone{width:90px;height:90px;border-radius:50%;margin:16px auto;position:relative;display:flex;align-items:center;justify-content:center;padding:3px}
-.conf-circle-clone.CALL{background:conic-gradient(#00ff88 calc(var(--p)*1%), #1f2937 0)}
-.conf-circle-clone.PUT{background:conic-gradient(#ff3b5c calc(var(--p)*1%), #1f2937 0)}
-.conf-circle-clone.NO{background:conic-gradient(#ffa500 calc(var(--p)*1%), #1f2937 0)}
-.conf-inner-clone{width:78px;height:78px;background:#111827;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.conf-num-clone{font-size:22px;font-weight:900;color:white}
-.conf-lbl-clone{font-size:8px;color:#6b7280;letter-spacing:.1em}
-.tags-clone{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0}
-.tag-clone{padding:5px 10px;border-radius:20px;font-size:10px;background:#0a0e1a;border:1px solid #1f2937;color:#6b7280}
-.tag-clone.hit{background:rgba(139,92,246,.15);border-color:#8b5cf6;color:#c4b5fd}
-
-/* BOTTOM NAV - exact like photo */
-.bottom-nav{height:72px;background:rgba(11,15,29,.95);border-top:1px solid rgba(139,92,246,.15);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:0 8px;backdrop-filter:blur(20px);z-index:10}
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:#4b5563;font-size:9px;cursor:pointer;transition:.2s;padding:8px 4px;border-radius:12px}
-.nav-item.active{color:#8b5cf6}
-.nav-item.center{background:#8b5cf6;color:white;width:52px;height:52px;border-radius:50%;margin:0 auto;box-shadow:0 4px 16px rgba(139,92,246,.4);font-size:20px;justify-content:center}
-.nav-icon{font-size:16px}
-.nav-item.center .nav-icon{font-size:22px}
-
-/* PAGES */
-.page-clone{display:none;flex:1;overflow-y:auto;padding:16px}
-.page-clone.active{display:block}
-.paste-zone-clone{border:2px dashed #2d3748;border-radius:20px;padding:32px 16px;text-align:center;background:rgba(17,24,39,.5);margin:16px 0;cursor:pointer}
-.btn-analyze-clone{width:100%;padding:16px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:white;border:0;border-radius:14px;font-weight:800;font-size:14px;margin:16px 0;box-shadow:0 8px 20px rgba(139,92,246,.3)}
+.result{position:absolute;inset:0;background:#0a0614;z-index:30;display:none;flex-direction:column;padding:12px;overflow-y:auto}
+.result.on{display:flex}
+.card{border-radius:18px;overflow:hidden;border:1px solid #1f2937;background:#111827}
+.card.CALL{border-color:#00ff88} .card.PUT{border-color:#ff3b5c}
+.card.NO{border-color:#f59e0b}
+.hrow{padding:10px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937;font-size:10px;color:#6b7280}
+.badgeH{background:linear-gradient(90deg,#00ff88,#00d9ff);color:#001a0a;padding:3px 8px;border-radius:12px;font-size:9px;font-weight:900}
+.sig{padding:16px;text-align:center}
+.dir{font-size:30px;font-weight:900} .dir.CALL{color:#00ff88} .dir.PUT{color:#ff3b5c} .dir.NO{color:#f59e0b;font-size:22px}
+.circ{width:68px;height:68px;border-radius:50%;margin:12px auto;padding:3px}
+.circ.CALL{background:conic-gradient(#00ff88 calc(var(--p)*1%),#1f2937 0)} .circ.PUT{background:conic-gradient(#ff3b5c calc(var(--p)*1%),#1f2937 0)} .circ.NO{background:conic-gradient(#f59e0b calc(var(--p)*1%),#1f2937 0)}
+.in{width:100%;height:100%;background:#111827;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.nm{font-size:17px;font-weight:900;color:#fff} .lb{font-size:7px;color:#6b7280}
 
 /* LOGIN */
-.login-screen{position:absolute;inset:0;background:linear-gradient(180deg,#1a1033 0%,#05030a 100%);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
-.login-box{width:100%;max-width:320px;background:#111827;border:1px solid #1f2937;border-radius:24px;padding:24px;text-align:center}
-.login-logo{width:64px;height:64px;background:linear-gradient(135deg,#8b5cf6,#6366f1);border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px}
-.login-input{width:100%;padding:12px 14px;background:#0a0e1a;border:1px solid #1f2937;border-radius:12px;color:white;margin:6px 0;font-size:14px}
-.btn-login{width:100%;padding:14px;background:#00d9ff;color:#00141a;border:0;border-radius:12px;font-weight:800;margin-top:12px}
-
-/* HIDDEN */
-.hidden{display:none!important}
+.login{position:absolute;inset:0;background:#0a0614;display:flex;align-items:center;justify-content:center;padding:18px;z-index:100}
+.lbBox{width:100%;max-width:300px;background:#111827;border:1px solid #1f2937;border-radius:22px;padding:20px;text-align:center}
+.ip{width:100%;padding:11px 12px;background:#0a0e1a;border:1px solid #1f2937;border-radius:12px;color:white;margin:5px 0;font-size:12px}
+.lbBtn{width:100%;padding:12px;background:#00d9ff;color:#00141a;border:0;border-radius:12px;font-weight:900;margin-top:10px}
+.hide{display:none!important}
 </style>
 </head>
 <body>
-<div class="phone" id="phoneApp">
+<div class="app" id="app">
 
-<div class="login-screen" id="loginScreen">
-<div class="login-box">
-<div class="login-logo">👻</div>
-<div style="font-size:18px;font-weight:800;color:white;margin-bottom:4px">GHOST TRADER</div>
-<div style="font-size:11px;color:#6b7280;margin-bottom:16px">Exact Clone • Purple Flow</div>
-<input class="login-input" id="email" placeholder="Email" type="email"/>
-<input class="login-input" id="password" placeholder="Password" type="password"/>
-<div id="loginMsg" style="font-size:11px;color:#ff3b5c;margin:8px 0;display:none"></div>
-<button class="btn-login" id="loginBtn">LOGIN</button>
+<div class="login" id="log">
+<div class="lbBox">
+<div style="width:52px;height:52px;background:linear-gradient(135deg,#7c3aed,#6366f1);border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;font-size:22px">👻</div>
+<div style="font-weight:900;color:white;font-size:15px">GHOST TRADER V3</div>
+<div style="font-size:10px;color:#8b5cf6;margin:4px 0 14px">cocobai • Otc Chart Analyzer • 92%</div>
+<input class="ip" id="em" placeholder="Email"/>
+<input class="ip" id="pw" placeholder="Password" type="password"/>
+<div id="msg" style="font-size:10px;color:#ff3b5c;margin:6px 0;display:none"></div>
+<button class="lbBtn" id="lb">LOGIN</button>
 </div>
 </div>
 
-<div class="status-bar"><span id="time">9:17</span><div class="status-right"><span>●●●</span><span>📶</span><span>52%</span></div></div>
+<div class="top"><div class="leftT"><div class="logo">👻</div><div><div class="q">Quotex</div><div class="q2">GHOST V3 • 92%</div></div></div><div class="pills"><div class="pill otc">◉ OTC</div><div class="pill real">Real</div></div></div>
 
-<div class="app-header">
-<div class="app-logo"><div class="logo-icon">👻</div><div><div class="app-name">GHOST TRADER V3</div><div style="font-size:9px;color:#8b5cf6">92% Accuracy • Video Style</div></div><span class="otc-badge">OTC</span></div>
-<div class="header-right"><div class="live-dot"></div><button onclick="logout()" style="background:#1f2937;border:0;color:#9ca3af;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700">Logout</button></div>
-</div>
+<div class="bbar"><div class="dots"><div class="d d1"></div><div class="d d2"></div><div class="d d3"></div></div><div class="btxt">cocobai - Otc Chart Analyzer</div><div style="color:#8b5cf6">V3</div></div>
 
-<div class="main">
-<!-- DASHBOARD PAGE -->
-<div class="page-clone" id="page-dashboard">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-<div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:14px"><div style="font-size:22px;font-weight:800;color:white" id="wins">0</div><div style="font-size:10px;color:#6b7280">Wins</div></div>
-<div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:14px"><div style="font-size:22px;font-weight:800;color:#ff3b5c" id="losses">0</div><div style="font-size:10px;color:#6b7280">Losses</div></div>
-</div>
-<div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:14px"><div style="font-size:12px;font-weight:700;color:white">Status</div><div style="font-size:11px;color:#6b7280;margin-top:6px" id="dashInfo">V3 Ready • Exact Clone</div></div>
-</div>
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
 
-<!-- ANALYZER PAGE - EXACT PHOTO CLONE -->
-<div class="page-clone active" id="page-analyzer">
-<div class="flow-container" id="flowContainer">
-<div class="flow-bg"></div>
-
-<div class="quotex-card">
-<div class="q-left"><div class="q-dots"><div class="q-dot red"></div><div class="q-dot yellow"></div><div class="q-dot green"></div></div><div class="q-text">market-qx.info/en/v3</div></div>
-<div class="q-right">GHOST AI • V3</div>
-</div>
-
-<div class="flowchart" id="flowchart">
-<svg class="svg-lines" viewBox="0 0 340 360" preserveAspectRatio="none">
-<path d="M 40 40 Q 100 30 150 35" class="active"/>
-<path d="M 200 35 Q 260 30 300 40" class="active"/>
-<path d="M 35 140 Q 90 120 130 130"/>
-<path d="M 210 130 Q 270 120 305 140"/>
-<path d="M 45 270 Q 100 250 140 240"/>
-<path d="M 200 240 Q 250 250 295 270"/>
+<!-- ANALYZER - EXACT CLONE OF YOUR PHOTO -->
+<div class="page on" id="pg-analyzer">
+<div class="flowBox">
+<div class="glow"></div>
+<div class="chart">
+<!-- SVG WITH ANIMATED FLOW - EXACT -->
+<svg class="svg" viewBox="0 0 360 340" preserveAspectRatio="none">
+<!-- Lines -->
+<path class="line" d="M 70 30 L 125 70"/>
+<path class="line" d="M 180 26 L 180 72"/>
+<path class="line" d="M 290 30 L 235 70"/>
+<path class="line" d="M 58 155 L 118 168"/>
+<path class="line" d="M 302 252 L 218 188"/>
+<path class="line" d="M 96 298 L 140 198"/>
+<!-- Junction dots -->
+<circle class="jdot" cx="125" cy="70" r="3.5"/>
+<circle class="jdot" cx="180" cy="72" r="3.5"/>
+<circle class="jdot" cx="235" cy="70" r="3.5"/>
+<circle class="jdot" cx="118" cy="168" r="3.5"/>
+<circle class="jdot" cx="218" cy="188" r="3.5"/>
+<circle class="jdot" cx="140" cy="198" r="3.5"/>
+<!-- Center connections -->
+<path class="line" d="M 125 70 L 170 150" stroke-dasharray="0" opacity=".5"/>
+<path class="line" d="M 180 72 L 180 145"/>
+<path class="line" d="M 235 70 L 190 150" opacity=".5"/>
+<path class="line" d="M 118 168 L 155 168"/>
+<path class="line" d="M 218 188 L 200 170"/>
+<path class="line" d="M 140 198 L 165 175"/>
+<!-- Moving dots -->
+<circle r="4" fill="#c4b5fd"><animateMotion dur="1.8s" repeatCount="indefinite" path="M 70 30 L 125 70"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/></circle>
+<circle r="3.5" fill="#00ff88"><animateMotion dur="2s" repeatCount="indefinite" begin=".3s" path="M 180 26 L 180 72"/><animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" begin=".3s"/></circle>
+<circle r="3.5" fill="#f59e0b"><animateMotion dur="1.7s" repeatCount="indefinite" begin=".6s" path="M 290 30 L 235 70"/><animate attributeName="opacity" values="0;1;0" dur="1.7s" repeatCount="indefinite" begin=".6s"/></circle>
+<circle r="3" fill="#38bdf8"><animateMotion dur="1.9s" repeatCount="indefinite" begin=".9s" path="M 58 155 L 118 168"/></circle>
+<circle r="3" fill="#facc15"><animateMotion dur="2.1s" repeatCount="indefinite" begin="1.2s" path="M 302 252 L 218 188"/></circle>
+<circle r="3" fill="#ec4899"><animateMotion dur="1.6s" repeatCount="indefinite" begin=".4s" path="M 96 298 L 140 198"/></circle>
+<!-- Center to brain -->
+<circle r="3" fill="white"><animateMotion dur="1.4s" repeatCount="indefinite" path="M 125 70 L 170 150"/></circle>
+<circle r="3" fill="white"><animateMotion dur="1.4s" repeatCount="indefinite" begin=".2s" path="M 180 72 L 180 145"/></circle>
 </svg>
-<div class="flow-node purple">📊</div>
-<div class="flow-node green">📈</div>
-<div class="flow-node orange">🎯</div>
-<div class="flow-node blue">💧</div>
-<div class="flow-node center">🧠</div>
-<div class="flow-node pink">⚡</div>
-<div class="flow-node yellow">🔒</div>
-<div class="flow-node dark">🔑</div>
+
+<div class="node n1">🔮</div>
+<div class="node n2">📊</div>
+<div class="node n3">🎯</div>
+<div class="node n4">💧</div>
+<div class="node n5">🧠</div>
+<div class="node n6">⚡</div>
+<div class="node n7">🔒</div>
 </div>
 
-<div class="analyzing-text">
-<div class="analyzing-main"><span class="pulse-dot"></span> Analyzing chart... Checking BOS, CHOCH, OB, FVG</div>
-<div class="analyzing-sub">SMC • 3+ Confluences • 92% Accuracy Filter</div>
+<div class="anal">
+<div class="anal-main"><span class="dotp"></span> Analyzing chart...</div>
+<div style="font-size:8px;color:#4b5563">BOS • CHOCH • OB • FVG • Liquidity • 92% AI</div>
+</div>
 </div>
 
-<div style="margin-top:20px">
-<div class="paste-zone-clone" id="pasteZone">
-<div style="font-size:28px">📸</div>
-<div style="font-size:13px;font-weight:700;color:white;margin-top:6px">Tap to upload chart</div>
-<div style="font-size:10px;color:#6b7280;margin-top:4px">Quotex screenshot • Auto detect</div>
+<div style="padding:10px 2px 0">
+<div class="marketRow"><div class="mtab on" data-m="otc">OTC Markets • 12</div><div class="mtab" data-m="real">Real Markets • 18</div></div>
+<div class="grid2" id="ml"></div>
+<div class="paste" id="paste"><div style="font-size:20px">📸</div><div style="font-size:11px;font-weight:800;color:white;margin-top:4px">Tap to upload chart</div><div style="font-size:9px;color:#6b7280">OTC • Real • Auto-detect</div></div>
+<input type="file" id="file" accept="image/*" hidden/>
+<img id="pv" style="width:100%;border-radius:12px;display:none;margin-top:6px"/>
+<button class="btnA" id="an">ANALYZE SCREENSHOT</button>
+<div id="st" style="font-size:10px;color:#6b7280;text-align:center;margin-top:6px"></div>
 </div>
-<input type="file" id="fileInput" accept="image/*" hidden/>
-<img id="preview" style="width:100%;border-radius:12px;display:none;margin-top:12px"/>
-<button class="btn-analyze-clone" id="analyzeBtn">ANALYZE SCREENSHOT</button>
-<div id="resultArea"></div>
-</div>
-
+<div class="result" id="res"></div>
 </div>
 
-<!-- RESULT OVERLAY -->
-<div class="result-overlay" id="resultOverlay"></div>
-
-</div>
-
-<div class="page-clone" id="page-live"><div style="text-align:center;padding:40px 20px;color:#6b7280"><div style="font-size:32px;margin-bottom:12px">📡</div><div style="font-weight:700;color:white">Live Scanner</div><div style="font-size:11px;margin-top:6px">18 Markets • Coming soon</div></div></div>
-<div class="page-clone" id="page-inject"><div style="text-align:center;padding:40px 20px;color:#6b7280"><div style="font-size:32px;margin-bottom:12px">💉</div><div style="font-weight:700;color:white">Inject Mode</div></div></div>
-<div class="page-clone" id="page-more"><div style="padding:16px"><div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:16px;margin-bottom:12px"><div style="font-weight:700;color:white">Create User</div><input id="newEmail" placeholder="new email" style="width:100%;padding:10px;background:#0a0e1a;border:1px solid #1f2937;border-radius:10px;color:white;margin:10px 0"/><button onclick="createUser()" style="width:100%;padding:12px;background:#00d9ff;border:0;border-radius:10px;font-weight:700">Create & Send Email</button></div><div id="adminUsers" style="color:#6b7280;font-size:12px">Loading users...</div></div></div>
+<div class="page" id="pg-dashboard"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:14px"><div id="w" style="font-size:20px;font-weight:900;color:white">0</div><div style="font-size:9px;color:#6b7280">WINS</div></div><div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:14px"><div id="l" style="font-size:20px;font-weight:900;color:#ff3b5c">0</div><div style="font-size:9px;color:#6b7280">LOSSES</div></div></div><div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:12px;margin-top:10px"><div style="font-size:11px;font-weight:800;color:white">GHOST V3 • Exact Clone</div><div id="dinfo" style="font-size:10px;color:#6b7280;margin-top:4px">OTC+Real • Animated • 92% Filter</div></div></div>
+<div class="page" id="pg-live"><div style="text-align:center;padding:40px 0;color:#4b5563"><div style="font-size:28px">📡</div><div style="font-size:11px;margin-top:8px">Live scan • OTC + Real</div></div></div>
+<div class="page" id="pg-inject"><div style="text-align:center;padding:40px 0;color:#4b5563"><div style="font-size:28px">💉</div><div style="font-size:11px;margin-top:8px">Inject</div></div></div>
+<div class="page" id="pg-more"><div style="padding:6px"><div style="background:#111827;border:1px solid #1f2937;border-radius:16px;padding:12px"><div style="font-size:11px;font-weight:800;color:white">Create User</div><input id="newE" placeholder="email" style="width:100%;padding:9px;background:#0a0e1a;border:1px solid #1f2937;border-radius:10px;color:white;margin:8px 0;font-size:11px"/><button onclick="createU()" style="width:100%;padding:11px;background:#00d9ff;border:0;border-radius:10px;font-weight:800">Create</button></div><div id="ul" style="margin-top:10px;font-size:10px;color:#6b7280">Loading...</div></div></div>
 
 </div>
 
-<div class="bottom-nav">
-<div class="nav-item" data-page="dashboard"><div class="nav-icon">⌂</div><div>Dashboard</div></div>
-<div class="nav-item" data-page="live"><div class="nav-icon">📡</div><div>Live</div></div>
-<div class="nav-item center" data-page="analyzer"><div class="nav-icon">◈</div></div>
-<div class="nav-item" data-page="inject"><div class="nav-icon">💉</div><div>Inject</div></div>
-<div class="nav-item" data-page="more"><div class="nav-icon">⋯</div><div>More</div></div>
+<div class="bnav">
+<div class="bi" data-p="dashboard"><div class="ic">⊞</div><div>Dashboard</div></div>
+<div class="bi" data-p="live"><div class="ic">📡</div><div>Live</div></div>
+<div class="bi center active" data-p="analyzer"><div class="ic">◎</div><div>Analyzer</div></div>
+<div class="bi" data-p="inject"><div class="ic">💉</div><div>Injector</div></div>
+<div class="bi" data-p="more"><div class="ic">☰</div><div>More</div></div>
 </div>
 
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
-let file=null;
+const MARKETS={otc:["EUR/USD OTC","GBP/USD OTC","USD/JPY OTC","AUD/USD OTC","EUR/GBP OTC","GBP/JPY OTC","AUD/JPY OTC","EUR/JPY OTC","USD/CHF OTC","GBP/CHF OTC","EUR/CHF OTC","AUD/CHF OTC"],real:["EUR/USD","GBP/USD","USD/JPY","AUD/USD","EUR/GBP","GBP/JPY","EUR/JPY","AUD/JPY","USD/CAD","AUD/CAD","EUR/CAD","GBP/CAD","USD/CHF","EUR/CHF","GBP/CHF","AUD/CHF","NZD/USD","EUR/AUD"]};
+let file=null, cur='otc';
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Failed');return d}
-function nav(p){document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===p));document.querySelectorAll('.page-clone').forEach(pg=>pg.classList.toggle('active',pg.id==='page-'+p)); if(p==='dashboard')loadDash(); if(p==='more')loadAdmin()}
-document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.page)nav(b.dataset.page)}));
+function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='more')lu()}
+document.querySelectorAll('.bi').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.p)));
 
-const pz=$('pasteZone'), fi=$('fileInput'), pv=$('preview');
+function renderM(){const ls=cur==='otc'?MARKETS.otc:MARKETS.real; $('ml').innerHTML=ls.map(m=>`<div class="mi">${m}</div>`).join('')}
+document.querySelectorAll('.mtab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.mtab').forEach(x=>x.classList.remove('on'));t.classList.add('on');cur=t.dataset.m;renderM()}));
+renderM();
+
+const pz=$('paste'), fi=$('file'), pv=$('pv');
 pz.addEventListener('click',()=>fi.click());
-fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)handleFile(f)});
-document.addEventListener('paste',e=>{const it=e.clipboardData?.items;if(!it)return;for(const i of it){if(i.kind==='file'){const f=i.getAsFile();if(f&&f.type.startsWith('image/')){handleFile(f);break}}}});
-function handleFile(f){file=f;const r=new FileReader();r.onload=e=>{pv.src=e.target.result;pv.style.display='block';pz.innerHTML=`<div style="color:#8b5cf6;font-weight:700">✓ ${esc(f.name)}</div><div style="font-size:10px;color:#6b7280">${Math.round(f.size/1024)}KB ready</div>`};r.readAsDataURL(f)}
+fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)h(f)});
+function h(f){file=f;const r=new FileReader();r.onload=e=>{pv.src=e.target.result;pv.style.display='block';pz.innerHTML=`<div style="color:#8b5cf6;font-size:11px;font-weight:800">✓ ${esc(f.name)}</div><div style="font-size:9px;color:#6b7280">${Math.round(f.size/1024)}KB</div>`};r.readAsDataURL(f)}
 
-$('analyzeBtn').addEventListener('click',async()=>{
- if(!file){alert('Upload chart first');return}
- const btn=$('analyzeBtn'), area=$('resultArea'), overlay=$('resultOverlay');
- btn.disabled=true; btn.textContent='ANALYZING...';
- // Show analyzing flow (already visible in this clone, just animate)
- area.innerHTML='<div style="text-align:center;color:#8b5cf6;font-size:12px;margin:12px 0">⏳ Analyzing with 92% accuracy...</div>';
+$('an').addEventListener('click',async()=>{
+ if(!file){alert('Chart upload koro');return}
+ const btn=$('an'), rs=$('res'), st=$('st');
+ btn.disabled=true; btn.textContent='ANALYZING...'; st.textContent='BOS, CHOCH, OB, FVG checking...';
  try{
-  const fd=new FormData();fd.append('image',file,file.name||'chart.png');
-  await new Promise(r=>setTimeout(r,1800));
+  await new Promise(r=>setTimeout(r,1200));
+  const fd=new FormData(); fd.append('image',file,file.name||'chart.png');
   const d=await api('/api/analyze-image',{method:'POST',body:fd});
-  const an=d.analysis; let dir=(an.direction||'NO TRADE').toUpperCase(); const conf=Number(an.confidence||0); const confs=an.confluences||[];
-  const cls=dir==='CALL'?'CALL':dir==='PUT'?'PUT':'NO';
-  const dirIcon=dir==='CALL'?'↗ CALL':dir==='PUT'?'↘ PUT':'NO TRADE';
-  
-  overlay.innerHTML=`
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:12px;color:white;font-weight:700">Analysis Result • V3</div><button onclick="document.getElementById('resultOverlay').classList.remove('show')" style="background:#1f2937;border:0;color:white;width:28px;height:28px;border-radius:50%">✕</button></div>
-  <div class="result-card-clone ${cls}">
-    <div class="result-header-clone"><div class="asset-pill">📊 ${esc(an.market_hint||'Chart')} • V3</div>${conf>=80?'<div class="high-badge">🔥 HIGH ACCURACY</div>':''}</div>
-    <div class="signal-big"><div class="signal-label-clone">GHOST TRADER V3 • PLACE OPTION</div><div class="signal-dir ${cls}">${dirIcon}</div><div class="conf-circle-clone ${cls}" style="--p:${conf}"><div class="conf-inner-clone"><div class="conf-num-clone">${conf}%</div><div class="conf-lbl-clone">CONFIDENCE</div></div></div><div class="tags-clone">${confs.map(c=>`<span class="tag-clone hit">✓ ${esc(c)}</span>`).join('')||'<span class="tag-clone">No confluence</span>'}</div></div>
-    ${an.summary?`<div style="padding:0 16px 16px;font-size:12px;color:#9ca3af;line-height:1.5">${esc(an.summary)}</div>`:''}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 12px">
-      <div style="background:#0a0e1a;border:1px solid #1f2937;border-radius:12px;padding:10px"><div style="font-size:9px;color:#6b7280">📈 TREND</div><div style="font-size:11px;color:#d1d5db;margin-top:4px">${esc(an.trend||'—')}</div></div>
-      <div style="background:#0a0e1a;border:1px solid #1f2937;border-radius:12px;padding:10px"><div style="font-size:9px;color:#6b7280">🏗️ STRUCTURE</div><div style="font-size:11px;color:#d1d5db;margin-top:4px">${esc(an.structure||'—')}</div></div>
-    </div>
+  const a=d.analysis; let dir=(a.direction||'NO TRADE').toUpperCase(); const conf=Number(a.confidence||0); const confl=a.confluences||[];
+  const cls=dir==='CALL'?'CALL':dir==='PUT'?'PUT':'NO'; const ico=dir==='CALL'?'↗ CALL':dir==='PUT'?'↘ PUT':'NO TRADE';
+  rs.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-size:11px;font-weight:800;color:white">Result • ${cur.toUpperCase()} • V3</div><button onclick="document.getElementById('res').classList.remove('on')" style="background:#1f2937;border:0;color:white;width:26px;height:26px;border-radius:50%">✕</button></div>
+  <div class="card ${cls}">
+    <div class="hrow"><div>📊 ${esc(a.market_hint||'Chart')} • ${cur.toUpperCase()}</div>${conf>=80?'<div class="badgeH">🔥 HIGH 92%</div>':''}</div>
+    <div class="sig"><div style="font-size:8px;letter-spacing:.14em;color:#6b7280;margin-bottom:6px">GHOST • ${cur.toUpperCase()} • COCOBAI STYLE</div><div class="dir ${cls}">${ico}</div><div class="circ ${cls}" style="--p:${conf}"><div class="in"><div class="nm">${conf}%</div><div class="lb">CONF</div></div></div><div style="display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:12px 0">${confl.map(c=>`<span style="padding:4px 9px;border-radius:20px;font-size:9px;background:rgba(124,58,237,.14);border:1px solid #7c3aed;color:#c4b5fd">✓ ${esc(c)}</span>`).join('')||'<span style="font-size:9px;color:#6b7280">No confluence</span>'}</div></div>
+    ${a.summary?`<div style="padding:0 12px 14px;font-size:11px;color:#9ca3af;line-height:1.5">${esc(a.summary)}</div>`:''}
   </div>
-  <button onclick="document.getElementById('resultOverlay').classList.remove('show')" style="width:100%;padding:14px;background:#1f2937;border:1px solid #2a2f45;border-radius:12px;color:white;margin-top:12px;font-weight:700">← Back to Analyzer</button>
-  `;
-  overlay.classList.add('show');
-  area.innerHTML='';
- }catch(e){area.innerHTML=`<div style="background:#1f2937;border-radius:12px;padding:12px;color:#ff3b5c;font-size:12px">Error: ${esc(e.message)}</div>`}finally{btn.disabled=false;btn.textContent='ANALYZE SCREENSHOT'}
+  <button onclick="document.getElementById('res').classList.remove('on')" style="width:100%;padding:11px;background:#1f2937;border:1px solid #2a2f45;border-radius:12px;color:white;margin-top:10px">← Back to Analyzer</button>`;
+  rs.classList.add('on'); st.textContent='';
+ }catch(e){st.textContent='Error: '+e.message}finally{btn.disabled=false;btn.textContent='ANALYZE SCREENSHOT'}
 });
 
-async function loadDash(){try{const d=await api('/api/stats');$('wins').textContent=d.wins||0;$('losses').textContent=d.losses||0;$('dashInfo').textContent=`V3: ${d.wins||0}W / ${d.losses||0}L • Exact Clone Active`}catch(e){}}
-async function loadAdmin(){const b=$('adminUsers');b.textContent='Loading...';try{const d=await api('/api/auth/admin/users');b.innerHTML=(d.users||[]).map(u=>`<div style="padding:8px 0;border-bottom:1px solid #1f2937"><div style="font-weight:600;color:white">${esc(u.email)} ${u.is_admin?'• ADMIN':''}</div><div style="font-size:10px;color:#6b7280">${u.email_verified?'Verified':'Not'} • ${u.access_enabled?'Enabled':'Disabled'}</div></div>`).join('')}catch(e){b.textContent=e.message}}
-async function createUser(){const em=$('newEmail').value.trim();if(!em)return;try{const d=await api('/api/auth/admin/users',{method:'POST',body:{email:em}});alert(d.message||'Created');$('newEmail').value='';loadAdmin()}catch(e){alert(e.message)}}
-function showApp(){ $('loginScreen').classList.add('hidden'); loadDash(); nav('analyzer')}
-function showLogin(){ $('loginScreen').classList.remove('hidden')}
-async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch(e){} showLogin()}
+async function ld(){try{const d=await api('/api/stats'); $('w').textContent=d.wins||0; $('l').textContent=d.losses||0; $('dinfo').textContent=`V3 Exact Clone • ${d.wins||0}W/${d.losses||0}L • ${cur.toUpperCase()}`}catch{}}
+async function lu(){const b=$('ul'); b.textContent='Loading...'; try{const d=await api('/api/auth/admin/users'); b.innerHTML=(d.users||[]).map(u=>`<div style="padding:6px 0;border-bottom:1px solid #1f2937"><div style="color:white;font-weight:700">${esc(u.email)} ${u.is_admin?'• ADMIN':''}</div><div style="font-size:9px">${u.email_verified?'✓':'○'} ${u.access_enabled?'Enabled':'Disabled'}</div></div>`).join('')}catch(e){b.textContent=e.message}}
+async function createU(){const em=$('newE').value.trim();if(!em)return; try{const d=await api('/api/auth/admin/users',{method:'POST',body:{email:em}});alert(d.message||'Created');$('newE').value='';lu()}catch(e){alert(e.message)}}
+window.createU=createU;
+function showApp(){ $('log').classList.add('hide'); ld(); nav('analyzer')}
+function showLog(){ $('log').classList.remove('hide')}
+async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch{} showLog()}
 window.logout=logout;
-$('loginBtn').addEventListener('click',async()=>{const em=$('email').value.trim(), pw=$('password').value, msg=$('loginMsg'); if(!em||!pw){msg.style.display='block';msg.textContent='Email/password needed';return} msg.style.display='block';msg.textContent='Checking...'; try{const d=await api('/api/auth/login',{method:'POST',body:{email:em,password:pw}}); msg.style.display='none'; showApp()}catch(e){msg.textContent=e.message}});
-(async()=>{try{const d=await api('/api/auth/me');if(d.authenticated)showApp();else showLogin()}catch(e){showLogin()}})();
-setInterval(()=>{const n=new Date();$('time').textContent=n.getHours()+':'+String(n.getMinutes()).padStart(2,'0')},60000);
+$('lb').addEventListener('click',async()=>{const em=$('em').value.trim(), pw=$('pw').value, m=$('msg'); if(!em||!pw){m.style.display='block';m.textContent='Email/pass lagbe';return} m.style.display='block';m.textContent='...'; try{await api('/api/auth/login',{method:'POST',body:{email:em,password:pw}}); m.style.display='none'; showApp()}catch(e){m.textContent=e.message}});
+(async()=>{try{const d=await api('/api/auth/me'); if(d.authenticated)showApp(); else showLog()}catch{showLog()}})();
 </script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
