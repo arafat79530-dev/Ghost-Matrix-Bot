@@ -78,8 +78,11 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .nm{font-size:16px;font-weight:900;color:#fff} .lb{font-size:7px;color:#6b7280}
 .tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:8px 0}
 .tg{padding:3px 7px;border-radius:10px;font-size:8px;background:rgba(124,58,237,.14);border:1px solid #7c3aed;color:#c4b5fd}
-.mItem{background:linear-gradient(135deg,rgba(28,20,75,.9),rgba(18,14,55,.9));border:1px solid rgba(124,58,237,.12);border-radius:13px;padding:11px 12px;display:flex;align-items:center;gap:11px;margin-bottom:7px}
-.mIc{width:32px;height:32px;border-radius:9px;background:rgba(124,58,237,.14);display:grid;place-items:center;font-size:15px}
+.mItem{background:linear-gradient(135deg,rgba(28,20,75,.92),rgba(18,14,55,.92));border:1px solid rgba(124,58,237,.14);border-radius:14px;padding:11px 12px;display:flex;align-items:center;gap:12px;margin-bottom:8px;transition:.15s}
+.mItem:active{transform:scale(.98)}
+.mIc{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.14);box-shadow:0 4px 12px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.18);backdrop-filter:blur(8px)}
+.mIc svg{width:20px;height:20px;stroke:white;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.mIc.live1{background:linear-gradient(135deg,#4f46e5,#818cf8)} .mIc.live2{background:linear-gradient(135deg,#7c3aed,#a78bfa)} .mIc.live3{background:linear-gradient(135deg,#059669,#34d399)} .mIc.live4{background:linear-gradient(135deg,#b45309,#fbbf24)} .mIc.premium{background:linear-gradient(135deg,#dc2626,#f87171)}
 .mTx{flex:1} .mTi{font-size:11px;font-weight:800;color:white} .mSu{font-size:8px;color:#8b8ba7;margin-top:1px}
 .adminBox{background:linear-gradient(135deg,rgba(28,20,75,.9),rgba(18,14,55,.9));border:1px solid rgba(124,58,237,.18);border-radius:13px;padding:11px;margin-bottom:10px}
 .adminBox input{width:100%;padding:9px;background:#0a0e1a;border:1px solid #1f2937;border-radius:10px;color:white;font-size:11px;margin-top:8px}
@@ -212,20 +215,19 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-more">
-<div class="ucard"><div class="av"></div><div><div class="un">Arafat Hossain</div><div class="um">arafathossain5710@gmail.com</div></div><div class="free">FREE</div></div>
 
 <div class="adminBox">
-<div style="font-size:10px;font-weight:900;color:white">👥 Add User</div>
+<div style="font-size:10px;font-weight:900;color:white;display:flex;align-items:center;gap:8px"><div class="mIc live2" style="width:28px;height:28px;border-radius:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="white"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none"/></svg></div> Add User</div>
 <div style="display:flex;gap:6px;margin-top:6px">
 <input id="newE" placeholder="email"/>
 <button onclick="createU()" style="padding:9px 12px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:0;border-radius:10px;font-weight:900;color:white;font-size:10px">Add</button>
 </div>
 </div>
 
-<div class="mItem" onclick="nav('live')"><div class="mIc">📡</div><div class="mTx"><div class="mTi">Live</div><div class="mSu">OTC • Real</div></div><div style="color:#4b5563">›</div></div>
-<div class="mItem" onclick="showBox('news')"><div class="mIc">📰</div><div class="mTx"><div class="mTi">News</div><div class="mSu">Economic</div></div><div style="color:#4b5563">›</div></div>
-<div class="mItem" onclick="showBox('mgmt')"><div class="mIc">📊</div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Plan</div></div><div style="color:#4b5563">›</div></div>
-<div class="mItem" onclick="logout()"><div class="mIc">🚪</div><div class="mTx"><div class="mTi">Logout</div></div><div style="color:#4b5563">›</div></div>
+<div class="mItem" onclick="nav('live')"><div class="mIc live1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="white"/><path d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.5 4.5l2.2 2.2 M17.3 17.3l2.2 2.2 M17.3 6.7l2.2-2.2 M4.5 19.5l2.2-2.2"/></svg></div><div class="mTx"><div class="mTi">Live</div><div class="mSu">OTC • Real</div></div><div style="color:#6b7280">›</div></div>
+<div class="mItem" onclick="showBox('news')"><div class="mIc live2"><svg viewBox="0 0 24 24"><path d="M4 4h12v16H4z" fill="white" opacity=".9"/><path d="M16 8h4v12H8" fill="none"/><path d="M7 8h6 M7 12h6 M7 16h4" stroke="#4f46e5" stroke-width="1.2"/></svg></div><div class="mTx"><div class="mTi">News</div><div class="mSu">Economic</div></div><div style="color:#6b7280">›</div></div>
+<div class="mItem" onclick="showBox('mgmt')"><div class="mIc live3"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1" fill="white"/><rect x="10" y="8" width="4" height="13" rx="1" fill="white" opacity=".7"/><rect x="17" y="4" width="4" height="17" rx="1" fill="white" opacity=".4"/></svg></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Plan</div></div><div style="color:#6b7280">›</div></div>
+<div class="mItem" onclick="logout()"><div class="mIc premium"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none"/><polyline points="16,17 21,12 16,7" fill="none"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div><div class="mTx"><div class="mTi">Logout</div></div><div style="color:#6b7280">›</div></div>
 
 <div id="newsBox" style="display:none;margin-top:10px;background:rgba(28,20,75,.9);border:1px solid rgba(124,58,237,.15);border-radius:14px;padding:16px;text-align:center"><div style="font-size:12px;font-weight:800;color:white">Locked</div></div>
 <div id="mgmtBox" style="display:none;margin-top:10px;background:rgba(28,20,75,.9);border:1px solid rgba(124,58,237,.15);border-radius:14px;padding:14px"><div style="font-size:10px;font-weight:800;color:white">Plan</div></div>
