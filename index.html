@@ -128,12 +128,22 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="flow" id="flowLive"><div class="flowBg"></div>
 <div class="chart">
 <svg class="svg" viewBox="0 0 360 360" preserveAspectRatio="none">
-<path class="line" d="M 40 20 L 140 70"/><path class="line" d="M 180 14 L 180 62"/><path class="line" d="M 320 20 L 220 70"/>
-<path class="line" d="M 38 130 L 130 155"/><path class="line" d="M 322 130 L 230 155"/>
-<path class="line" d="M 56 275 L 140 200"/><path class="line" d="M 304 275 L 220 200"/>
-<circle class="dot" r="3.8"><animateMotion dur="1.6s" repeatCount="indefinite" path="M 40 20 L 140 70"/><animate attributeName="opacity" values="0;1;0" dur="1.6s" repeatCount="indefinite"/></circle>
-<circle class="dot" r="3.8"><animateMotion dur="1.9s" repeatCount="indefinite" path="M 180 14 L 180 62"/><animate attributeName="opacity" values="0;1;0" dur="1.9s" repeatCount="indefinite"/></circle>
-<circle class="dot" r="3.8"><animateMotion dur="2.1s" repeatCount="indefinite" path="M 320 20 L 220 70"/><animate attributeName="opacity" values="0;1;0" dur="2.1s" repeatCount="indefinite"/></circle>
+<!-- All lines converge to center 180,165 -->
+<path class="line" d="M 52 42 L 180 165"/>
+<path class="line" d="M 180 28 L 180 165"/>
+<path class="line" d="M 308 42 L 180 165"/>
+<path class="line" d="M 50 156 L 180 165"/>
+<path class="line" d="M 310 156 L 180 165"/>
+<path class="line" d="M 72 292 L 180 165"/>
+<path class="line" d="M 288 292 L 180 165"/>
+<!-- Moving dots on each line -->
+<circle class="dot" r="3.8"><animateMotion dur="1.7s" repeatCount="indefinite" path="M 52 42 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="1.7s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.0s" repeatCount="indefinite" path="M 180 28 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.0s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="1.9s" repeatCount="indefinite" path="M 308 42 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="1.9s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.2s" repeatCount="indefinite" path="M 50 156 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.2s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.3s" repeatCount="indefinite" path="M 310 156 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.3s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="1.8s" repeatCount="indefinite" path="M 72 292 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.1s" repeatCount="indefinite" path="M 288 292 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.1s" repeatCount="indefinite"/></circle>
 </svg>
 <div class="node p1" style="left:6%;top:3%"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1.2" fill="white"/><rect x="10" y="8" width="4" height="13" rx="1.2" fill="white" opacity=".7"/><rect x="17" y="4" width="4" height="17" rx="1.2" fill="white" opacity=".4"/></svg></div>
 <div class="node p2" style="left:50%;top:0%;transform:translateX(-50%)"><svg viewBox="0 0 24 24"><polyline points="3,17 9,11 13,15 21,7"/><polyline points="15,7 21,7 21,13"/></svg></div>
@@ -164,10 +174,22 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="flow" id="flowShot"><div class="flowBg"></div>
 <div class="chart">
 <svg class="svg" viewBox="0 0 360 360" preserveAspectRatio="none">
-<path class="line" d="M 40 20 L 140 70"/><path class="line" d="M 180 14 L 180 62"/><path class="line" d="M 320 20 L 220 70"/>
-<path class="line" d="M 38 130 L 130 155"/><path class="line" d="M 322 130 L 230 155"/>
-<path class="line" d="M 56 275 L 140 200"/><path class="line" d="M 304 275 L 220 200"/>
-<circle class="dot" r="3.8"><animateMotion dur="1.6s" repeatCount="indefinite" path="M 40 20 L 140 70"/></circle>
+<!-- All lines converge to center 180,165 -->
+<path class="line" d="M 52 42 L 180 165"/>
+<path class="line" d="M 180 28 L 180 165"/>
+<path class="line" d="M 308 42 L 180 165"/>
+<path class="line" d="M 50 156 L 180 165"/>
+<path class="line" d="M 310 156 L 180 165"/>
+<path class="line" d="M 72 292 L 180 165"/>
+<path class="line" d="M 288 292 L 180 165"/>
+<!-- Moving dots on each line -->
+<circle class="dot" r="3.8"><animateMotion dur="1.7s" repeatCount="indefinite" path="M 52 42 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="1.7s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.0s" repeatCount="indefinite" path="M 180 28 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.0s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="1.9s" repeatCount="indefinite" path="M 308 42 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="1.9s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.2s" repeatCount="indefinite" path="M 50 156 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.2s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.3s" repeatCount="indefinite" path="M 310 156 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.3s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="1.8s" repeatCount="indefinite" path="M 72 292 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/></circle>
+<circle class="dot" r="3.8"><animateMotion dur="2.1s" repeatCount="indefinite" path="M 288 292 L 180 165"/><animate attributeName="opacity" values="0;1;0" dur="2.1s" repeatCount="indefinite"/></circle>
 </svg>
 <div class="node p1" style="left:6%;top:3%"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1.2" fill="white"/><rect x="10" y="8" width="4" height="13" rx="1.2" fill="white" opacity=".7"/><rect x="17" y="4" width="4" height="17" rx="1.2" fill="white" opacity=".4"/></svg></div>
 <div class="node p2" style="left:50%;top:0%;transform:translateX(-50%)"><svg viewBox="0 0 24 24"><polyline points="3,17 9,11 13,15 21,7"/><polyline points="15,7 21,7 21,13"/></svg></div>
