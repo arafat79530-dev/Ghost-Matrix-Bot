@@ -1,283 +1,2243 @@
-"""GHOST AI - minimal complete project. Single file.
-Backend + HTML + CSS + JS in one file.
-No fake live prices, no fabricated OTC candles, no Quotex connection.
+"""GHOST MATRIX V2.0 — cautious Telegram market-analysis bot.
+
+Uses Twelve Data candles as an EXTERNAL data source. It does not connect to or
+verify prices against Quotex. No trade outcome or win rate is fabricated.
 """
-import base64, json, os, re, secrets, threading, time
-from datetime import datetime, timezone, timedelta
-import requests
-from flask import Flask, jsonify, request, session
-from werkzeug.security import generate_password_hash, check_password_hash
+from __future__ import annotations
+
+import base64
+import json
+import io
+from contextlib import contextmanager
+import logging
+import os
+import re
+import threading
+import secrets
+import hashlib
+import smtplib
+from email.message import EmailMessage
 from functools import wraps
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from werkzeug.security import generate_password_hash, check_password_hash
+import time
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
+from typing import Any, Optional
 
-TWELVE_KEY = os.getenv("TWELVE_DATA_API_KEY", "").strip()
-AI_KEY = os.getenv("AI_API_KEY", "").strip()
+import requests
+from flask import Flask, jsonify, request, send_from_directory, session
+from PIL import Image, ImageDraw, ImageFont
+
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+except Exception:  # Database support is optional at import time; status explains if absent.
+    psycopg2 = None
+    RealDictCursor = None
+
+# --------------------------- Configuration ---------------------------
+BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+CHAT_ID = os.getenv("CHAT_ID", "").strip()
+TWELVE_DATA_API_KEY = os.getenv("TWELVE_DATA_API_KEY", "").strip()
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "").strip()
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip().lower()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+APP_BASE_URL = os.getenv("APP_BASE_URL", "").strip().rstrip("/")
+SMTP_HOST = os.getenv("SMTP_HOST", "").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
+AI_API_KEY = os.getenv("AI_API_KEY", "").strip()  # Optional Groq-compatible key
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
-GROQ_VISION = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b").strip()
-DEMO_EMAIL = os.getenv("DEMO_EMAIL", "demo@ghost.ai").strip().lower()
-DEMO_PASS = os.getenv("DEMO_PASSWORD", "ghost1234")
-DEMO_NAME = os.getenv("DEMO_NAME", "Arafat Hossain")
-APP_BASE = os.getenv("APP_BASE_URL", "").strip()
+GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b").strip()
+# Optional comma-separated Twelve Data symbols for non-FX Quotex assets.
+# Example format depends on Twelve Data's own symbol catalog; these are NOT
+# proof that the same instrument exists on Quotex.
+DEFAULT_REAL_MARKETS = [
+    "AUD/USD", "AUD/CHF", "AUD/JPY", "AUD/CAD", "CAD/JPY", "CHF/JPY",
+    "EUR/AUD", "EUR/CHF", "EUR/JPY", "EUR/GBP", "EUR/CAD", "EUR/USD",
+    "GBP/AUD", "GBP/CAD", "GBP/CHF", "GBP/USD", "GBP/JPY", "USD/JPY",
+]
+REAL_MARKET_SYMBOLS = ",".join(DEFAULT_REAL_MARKETS)  # Fixed allowlist: exactly the 18 user-selected pairs
+BANGLADESH_TZ = ZoneInfo("Asia/Dhaka")
 
-app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "").strip() or secrets.token_urlsafe(48)
-app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
-                  SESSION_COOKIE_SECURE=APP_BASE.startswith("https://"),
-                  PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
+# The account's reported Twelve Data limit is 8 credits/minute and 800/day.
+# Automatic signal delivery is intentionally OFF. /future scans the allowlist
+# manually, pacing requests so it does not exceed 8 requests/minute.
+DAILY_CREDIT_BUDGET = max(100, min(int(os.getenv("DAILY_CREDIT_BUDGET", "700")), 780))
+SCAN_INTERVAL_SECONDS = max(60, int(os.getenv("SCAN_INTERVAL_SECONDS", "90")))  # legacy setting; scanner is disabled
+HISTORY_OUTPUTSIZE = 5000  # Twelve Data's documented per-request maximum is plan-dependent.
+MAX_SIGNAL_AGE_SECONDS = 180
 
-http = requests.Session()
-http.headers.update({"User-Agent": "GHOST-AI/1.0"})
 TWELVE_BASE = "https://api.twelvedata.com"
+TELEGRAM_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}" if BOT_TOKEN else ""
 GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions"
 
-REAL = ["AUD/USD","AUD/CAD","AUD/CHF","AUD/JPY","AUD/NZD","CAD/CHF","CAD/JPY","CHF/JPY",
-        "EUR/AUD","EUR/CAD","EUR/CHF","EUR/GBP","EUR/JPY","EUR/NZD","EUR/USD",
-        "GBP/AUD","GBP/CAD","GBP/CHF","GBP/JPY","GBP/NZD","GBP/USD",
-        "NZD/CAD","NZD/CHF","NZD/JPY","USD/CAD","USD/CHF","USD/JPY"]
-OTC = ["AUD/CAD OTC","AUD/CHF OTC","AUD/JPY OTC","AUD/NZD OTC","AUD/USD OTC","CAD/CHF OTC",
-       "CAD/JPY OTC","CHF/JPY OTC","EUR/AUD OTC","EUR/CAD OTC","EUR/CHF OTC","EUR/GBP OTC",
-       "EUR/JPY OTC","EUR/NZD OTC","EUR/USD OTC","GBP/AUD OTC","GBP/CAD OTC","GBP/CHF OTC",
-       "GBP/JPY OTC","GBP/NZD OTC","GBP/USD OTC","NZD/CAD OTC","NZD/CHF OTC","NZD/JPY OTC",
-       "USD/ARS OTC","USD/BDT OTC","USD/BRL OTC","USD/CAD OTC","USD/CHF OTC","USD/COP OTC",
-       "USD/IDR OTC","USD/INR OTC","USD/JPY OTC","USD/MXN OTC","USD/PHP OTC","USD/PKR OTC","USD/ZAR OTC"]
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+log = logging.getLogger("ghost-matrix")
+app = Flask(__name__)
 
-_users = {}
-if DEMO_EMAIL:
-    _users[DEMO_EMAIL] = {"id": 1, "email": DEMO_EMAIL, "name": DEMO_NAME,
-                          "password_hash": generate_password_hash(DEMO_PASS),
-                          "is_admin": False, "plan": "FREE"}
-_signals = []
-_next_id = [1]
-_buckets = {}
-_lock = threading.Lock()
-_last_scan = [0.0]
+@app.after_request
+def disable_auth_page_caching(response):
+    if request.path.startswith("/api/auth/") or request.path in ("/app", "/app/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
-def login_required(fn):
-    @wraps(fn)
-    def w(*a, **k):
-        if not session.get("user_id"):
-            return jsonify({"error": "Login required."}), 401
-        return fn(*a, **k)
-    return w
+@app.route("/manifest.json")
+def serve_manifest():
+    return send_from_directory(
+        os.path.dirname(os.path.abspath(__file__)),
+        "manifest.json",
+        mimetype="application/manifest+json"
+    )
 
-def _allowed(bucket, limit, window=60):
-    now = time.monotonic()
-    key = f"{request.remote_addr or 'x'}:{bucket}"
-    with _lock:
-        lst = [s for s in _buckets.get(key, []) if now - s < window]
-        if len(lst) >= limit:
-            _buckets[key] = lst
-            return False
-        lst.append(now)
-        _buckets[key] = lst
-        return True
 
-def get_catalog():
-    c = [{"symbol": s, "group": "Real Market", "otc": False, "scannable": True} for s in REAL]
-    c += [{"symbol": s, "group": "OTC Market", "otc": True, "scannable": False} for s in OTC]
-    return c
+@app.route("/icons/<path:filename>")
+def serve_icons(filename):
+    icon_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "icons"
+    )
+    return send_from_directory(icon_dir, filename)
+app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
+_auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
 
-def ema(vals, p):
-    out = [None] * len(vals)
-    if len(vals) < p:
-        return out
-    m = 2.0 / (p + 1)
-    cur = sum(vals[:p]) / p
-    out[p - 1] = cur
-    for i in range(p, len(vals)):
-        cur = (vals[i] - cur) * m + cur
-        out[i] = cur
-    return out
+http_session = requests.Session()
+http_session.headers.update({"User-Agent": "GHOST-MATRIX-V2/2.0"})
+state_lock = threading.Lock()
+state = {
+    "last_scan_utc": None,
+    "last_error": None,
+    "catalog_count": 0,
+    "next_symbol_index": 0,
+    "memory_api_calls": {},
+    "memory_results": {"win": 0, "loss": 0},
+    "memory_signals": [],
+    "next_memory_signal_id": 1,
+    "auto_scanner_enabled": False,
+    # Fallback learning progress when PostgreSQL/Supabase is unavailable.
+    "learn_progress": {},
+}
 
-def rsi(vals, p=14):
-    out = [None] * len(vals)
-    if len(vals) <= p:
-        return out
-    gains, losses = [], []
-    for i in range(1, p + 1):
-        ch = vals[i] - vals[i - 1]
-        gains.append(max(ch, 0))
-        losses.append(max(-ch, 0))
-    ag, al = sum(gains) / p, sum(losses) / p
-    out[p] = 100.0 if al == 0 else 100 - 100 / (1 + ag / al)
-    for i in range(p + 1, len(vals)):
-        ch = vals[i] - vals[i - 1]
-        ag = (ag * (p - 1) + max(ch, 0)) / p
-        al = (al * (p - 1) + max(-ch, 0)) / p
-        out[i] = 100.0 if al == 0 else 100 - 100 / (1 + ag / al)
-    return out
+# ------------------------------ Database -----------------------------
+def db_connect():
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not configured")
+    if psycopg2 is None:
+        raise RuntimeError("psycopg2-binary is missing; add it to existing requirements.txt")
+    return psycopg2.connect(DATABASE_URL, connect_timeout=8, sslmode="require")
 
-def analyze_candles(symbol, candles):
+
+
+@contextmanager
+def db_connection():
+    conn = db_connect()
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def init_database() -> tuple[bool, str]:
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_signals (
+                        id BIGSERIAL PRIMARY KEY,
+                        symbol TEXT NOT NULL,
+                        direction TEXT NOT NULL,
+                        candle_time TIMESTAMPTZ,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        entry_price DOUBLE PRECISION,
+                        reason TEXT NOT NULL,
+                        source TEXT NOT NULL DEFAULT 'Twelve Data external feed',
+                        verified_quotex BOOLEAN NOT NULL DEFAULT FALSE,
+                        status TEXT NOT NULL DEFAULT 'PENDING'
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_trade_results (
+                        id BIGSERIAL PRIMARY KEY,
+                        result TEXT NOT NULL CHECK (result IN ('WIN','LOSS')),
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_api_usage (
+                        id BIGSERIAL PRIMARY KEY,
+                        usage_day DATE NOT NULL,
+                        calls INTEGER NOT NULL DEFAULT 0,
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        UNIQUE (usage_day)
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_market_catalog (
+                        id BIGSERIAL PRIMARY KEY,
+                        symbol TEXT NOT NULL UNIQUE,
+                        currency_group TEXT,
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_learning_progress (
+                        chat_id TEXT PRIMARY KEY,
+                        next_lesson INTEGER NOT NULL DEFAULT 0 CHECK (next_lesson >= 0),
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    )
+                """)
+                cur.execute("ALTER TABLE gm_signals ADD COLUMN IF NOT EXISTS result_updated_at TIMESTAMPTZ")
+                cur.execute("CREATE INDEX IF NOT EXISTS gm_signals_created_idx ON gm_signals(created_at DESC)")
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS gm_users (
+                        id BIGSERIAL PRIMARY KEY,
+                        email TEXT NOT NULL UNIQUE,
+                        password_hash TEXT NOT NULL,
+                        is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+                        email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        verified_at TIMESTAMPTZ,
+                        access_enabled BOOLEAN NOT NULL DEFAULT TRUE
+                    )
+                """)
+                cur.execute("ALTER TABLE gm_users ADD COLUMN IF NOT EXISTS access_enabled BOOLEAN NOT NULL DEFAULT TRUE")
+                cur.execute("CREATE INDEX IF NOT EXISTS gm_users_email_idx ON gm_users(LOWER(email))")
+        return True, "Supabase/PostgreSQL connected"
+    except Exception as exc:
+        log.warning("Database init failed: %s", exc)
+        return False, str(exc)
+
+
+def db_api_calls_today() -> int:
+    today = datetime.now(timezone.utc).date()
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT calls FROM gm_api_usage WHERE usage_day=%s", (today,))
+                row = cur.fetchone()
+                return int(row[0]) if row else 0
+    except Exception:
+        return int(state["memory_api_calls"].get(str(today), 0))
+
+
+def record_api_call() -> None:
+    today = datetime.now(timezone.utc).date()
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO gm_api_usage (usage_day, calls, updated_at)
+                    VALUES (%s, 1, NOW())
+                    ON CONFLICT (usage_day)
+                    DO UPDATE SET calls = gm_api_usage.calls + 1, updated_at = NOW()
+                """, (today,))
+    except Exception:
+        key = str(today)
+        state["memory_api_calls"][key] = int(state["memory_api_calls"].get(key, 0)) + 1
+
+
+def save_signal(symbol: str, direction: str, candle_time: datetime, price: float, reason: str) -> Optional[int]:
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO gm_signals
+                    (symbol, direction, candle_time, entry_price, reason, source, verified_quotex)
+                    VALUES (%s, %s, %s, %s, %s, %s, FALSE) RETURNING id
+                """, (symbol, direction, candle_time, price, reason, "Twelve Data external feed"))
+                row = cur.fetchone()
+                return int(row[0]) if row else None
+    except Exception as exc:
+        log.warning("Could not save signal to database: %s", exc)
+        with state_lock:
+            signal_id = state["next_memory_signal_id"]
+            state["next_memory_signal_id"] += 1
+            state["memory_signals"].append({
+                "id": signal_id, "symbol": symbol, "direction": direction,
+                "candle_time": candle_time, "created_at": datetime.now(timezone.utc),
+                "time": candle_time.isoformat(), "entry_price": price, "price": price,
+                "reason": reason, "source": "Twelve Data external feed",
+                "verified_quotex": False, "status": "PENDING",
+            })
+            state["memory_signals"] = state["memory_signals"][-100:]
+            return signal_id
+
+
+def fetch_recent_signals(limit: int = 10) -> list[dict[str, Any]]:
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id, symbol, direction, candle_time, created_at, entry_price, reason,
+                           source, verified_quotex, status
+                    FROM gm_signals ORDER BY created_at DESC LIMIT %s
+                """, (limit,))
+                return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        with state_lock:
+            return list(reversed(state["memory_signals"][-limit:]))
+
+
+def update_signal_result(result: str, signal_id: Optional[int] = None) -> tuple[bool, Optional[dict[str, Any]]]:
+    """Attach a manually confirmed WIN/LOSS to a specific or latest pending signal."""
+    result = result.upper()
+    if result not in ("WIN", "LOSS"):
+        return False, None
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                if signal_id is not None:
+                    cur.execute("""
+                        UPDATE gm_signals SET status=%s, result_updated_at=NOW()
+                        WHERE id=%s AND status='PENDING'
+                        RETURNING id, symbol, direction, status
+                    """, (result, signal_id))
+                else:
+                    cur.execute("""
+                        UPDATE gm_signals SET status=%s, result_updated_at=NOW()
+                        WHERE id=(SELECT id FROM gm_signals WHERE status='PENDING' ORDER BY created_at DESC LIMIT 1)
+                        RETURNING id, symbol, direction, status
+                    """, (result,))
+                row = cur.fetchone()
+                return (True, dict(row)) if row else (False, None)
+    except Exception as exc:
+        log.warning("Could not update signal result in database: %s", exc)
+        with state_lock:
+            pending = [x for x in state["memory_signals"] if x.get("status", "PENDING") == "PENDING"]
+            target = next((x for x in reversed(pending) if signal_id is None or x.get("id") == signal_id), None)
+            if not target:
+                return False, None
+            target["status"] = result
+            return True, {"id": target["id"], "symbol": target["symbol"], "direction": target["direction"], "status": result}
+
+
+def get_stats() -> tuple[int, int, int]:
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT COUNT(*) FILTER (WHERE status='WIN'),
+                           COUNT(*) FILTER (WHERE status='LOSS'),
+                           COUNT(*) FILTER (WHERE status IN ('WIN','LOSS'))
+                    FROM gm_signals
+                """)
+                row = cur.fetchone()
+                return int(row[0] or 0), int(row[1] or 0), int(row[2] or 0)
+    except Exception:
+        with state_lock:
+            wins = sum(1 for x in state["memory_signals"] if x.get("status") == "WIN")
+            losses = sum(1 for x in state["memory_signals"] if x.get("status") == "LOSS")
+            return wins, losses, wins + losses
+
+
+def get_symbol_stats(symbol: str) -> tuple[int, int, int]:
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT COUNT(*) FILTER (WHERE status='WIN'),
+                           COUNT(*) FILTER (WHERE status='LOSS'),
+                           COUNT(*) FILTER (WHERE status IN ('WIN','LOSS'))
+                    FROM gm_signals WHERE symbol=%s
+                """, (symbol,))
+                row = cur.fetchone()
+                return int(row[0] or 0), int(row[1] or 0), int(row[2] or 0)
+    except Exception:
+        with state_lock:
+            matching = [x for x in state["memory_signals"] if x.get("symbol") == symbol]
+            wins = sum(1 for x in matching if x.get("status") == "WIN")
+            losses = sum(1 for x in matching if x.get("status") == "LOSS")
+            return wins, losses, wins + losses
+
+# ---------------------------- Telegram API ---------------------------
+def telegram_call(method: str, payload: Optional[dict] = None, timeout: int = 20):
+    if not TELEGRAM_BASE:
+        raise RuntimeError("BOT_TOKEN is not configured")
+    response = http_session.post(f"{TELEGRAM_BASE}/{method}", json=payload or {}, timeout=timeout)
+    response.raise_for_status()
+    data = response.json()
+    if not data.get("ok"):
+        raise RuntimeError(str(data))
+    return data.get("result")
+
+
+def send_message(
+    text: str,
+    chat_id: Optional[str] = None,
+    parse_mode: Optional[str] = None,
+) -> None:
+    """Send a Telegram text message; HTML formatting is optional per message."""
+    target = str(chat_id or CHAT_ID).strip()
+    if not target or not BOT_TOKEN:
+        log.info("Telegram message skipped: BOT_TOKEN/CHAT_ID missing")
+        return
+
+    # Keep messages under Telegram's 4096-character limit. HTML-formatted
+    # news cards are short enough to send in one piece without splitting tags.
+    if len(text) > 3900 and parse_mode:
+        log.error("Refusing to split a formatted Telegram message; message too long")
+        return
+
+    chunks = [text] if parse_mode else [text[i:i + 3900] for i in range(0, len(text), 3900)]
+    for chunk in chunks:
+        payload = {
+            "chat_id": target,
+            "text": chunk,
+            "disable_web_page_preview": True,
+        }
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
+        try:
+            telegram_call("sendMessage", payload, timeout=20)
+        except Exception as exc:
+            log.error("Telegram send failed: %s", exc)
+            break
+
+
+def is_allowed_chat(chat_id: Any) -> bool:
+    return not CHAT_ID or str(chat_id) == str(CHAT_ID)
+
+# --------------------------- Twelve Data -----------------------------
+def twelve_get(endpoint: str, params: dict, count_credit: bool = True) -> dict:
+    if not TWELVE_DATA_API_KEY:
+        raise RuntimeError("TWELVE_DATA_API_KEY is not configured")
+    if count_credit and db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+        raise RuntimeError(f"Daily safety budget reached ({DAILY_CREDIT_BUDGET} API credits).")
+    query = dict(params)
+    query["apikey"] = TWELVE_DATA_API_KEY
+    response = http_session.get(f"{TWELVE_BASE}/{endpoint.lstrip('/')}", params=query, timeout=25)
+    if count_credit:
+        record_api_call()
+    response.raise_for_status()
+    data = response.json()
+    if data.get("status") == "error" or data.get("code"):
+        raise RuntimeError(data.get("message", str(data)))
+    return data
+
+
+def get_catalog(force: bool = False) -> list[dict[str, str]]:
+    """Return only the user's explicitly selected REAL-market candidates; never all 1399 symbols."""
+    symbols = [x.strip().upper() for x in REAL_MARKET_SYMBOLS.split(",") if x.strip()]
+    # Stable unique list while preserving user order.
+    symbols = list(dict.fromkeys(symbols))
+    catalog = [{"symbol": symbol, "group": "User-selected Quotex REAL-market candidate"} for symbol in symbols]
+    state["catalog_count"] = len(catalog)
+    return catalog
+
+
+def merge_custom_symbols(catalog: list[dict[str, str]]) -> list[dict[str, str]]:
+    # Kept for compatibility with older code paths; the allowlist is authoritative.
+    return get_catalog()
+
+
+def parse_candles(data: dict) -> list[dict[str, Any]]:
+    values = data.get("values") or []
+    candles = []
+    for item in values:
+        try:
+            stamp = datetime.strptime(item["datetime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            candles.append({
+                "time": stamp,
+                "open": float(item["open"]),
+                "high": float(item["high"]),
+                "low": float(item["low"]),
+                "close": float(item["close"]),
+            })
+        except (KeyError, TypeError, ValueError):
+            continue
+    candles.sort(key=lambda c: c["time"])
+    return candles
+
+
+def ema(values: list[float], period: int) -> list[Optional[float]]:
+    result: list[Optional[float]] = [None] * len(values)
+    if len(values) < period:
+        return result
+    multiplier = 2.0 / (period + 1)
+    current = sum(values[:period]) / period
+    result[period - 1] = current
+    for i in range(period, len(values)):
+        current = (values[i] - current) * multiplier + current
+        result[i] = current
+    return result
+
+
+def rsi(values: list[float], period: int = 14) -> list[Optional[float]]:
+    result: list[Optional[float]] = [None] * len(values)
+    if len(values) <= period:
+        return result
+    gains = []
+    losses = []
+    for i in range(1, period + 1):
+        change = values[i] - values[i - 1]
+        gains.append(max(change, 0.0))
+        losses.append(max(-change, 0.0))
+    avg_gain = sum(gains) / period
+    avg_loss = sum(losses) / period
+    result[period] = 100.0 if avg_loss == 0 else 100 - 100 / (1 + avg_gain / avg_loss)
+    for i in range(period + 1, len(values)):
+        change = values[i] - values[i - 1]
+        avg_gain = (avg_gain * (period - 1) + max(change, 0.0)) / period
+        avg_loss = (avg_loss * (period - 1) + max(-change, 0.0)) / period
+        result[i] = 100.0 if avg_loss == 0 else 100 - 100 / (1 + avg_gain / avg_loss)
+    return result
+
+
+
+def analyze_candles(symbol: str, candles: list[dict[str, Any]]) -> dict[str, Any]:
     if len(candles) < 60:
-        return {"symbol": symbol, "direction": "NO TRADE",
-                "reason": f"Only {len(candles)} candles; at least 60 needed.", "candle_count": len(candles)}
-    closes = [c["close"] for c in candles]
-    f, s, t, rs = ema(closes, 9), ema(closes, 21), ema(closes, 50), rsi(closes, 14)
-    idx = len(candles) - 1
-    latest, prev = candles[idx], candles[idx - 1]
-    age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
-    if age < -120 or age > 180:
-        return {"symbol": symbol, "direction": "NO TRADE",
-                "reason": f"Latest M1 candle is not fresh ({int(age)}s).", "candle": latest}
-    if any(x[idx] is None for x in (f, s, t, rs)):
-        return {"symbol": symbol, "direction": "NO TRADE", "reason": "Indicator data incomplete.", "candle": latest}
-    recent = candles[max(0, idx - 20):idx]
-    sup = min(c["low"] for c in recent)
-    res = max(c["high"] for c in recent)
-    close, op, hi, lo = latest["close"], latest["open"], latest["high"], latest["low"]
-    rng = hi - lo
-    if close <= 0 or rng <= 0:
-        return {"symbol": symbol, "direction": "NO TRADE", "reason": "Candle range / price is not valid.", "candle": latest}
-    body = abs(close - op) / rng
-    bull = close > op and close > prev["close"]
-    bear = close < op and close < prev["close"]
-    if body < 0.25:
-        d, reason = "NO TRADE", "Candle body is weak; no clear momentum."
-    elif f[idx] > s[idx] > t[idx] and 52 <= rs[idx] <= 68 and bull and close < res and (res - close) > rng * 0.15:
-        d = "CALL"
-        reason = f"Trend bullish: EMA9 > EMA21 > EMA50; RSI {rs[idx]:.1f}; bullish momentum, not pressed against resistance. Possible setup - not a guaranteed outcome."
-    elif f[idx] < s[idx] < t[idx] and 32 <= rs[idx] <= 48 and bear and close > sup and (close - sup) > rng * 0.15:
-        d = "PUT"
-        reason = f"Trend bearish: EMA9 < EMA21 < EMA50; RSI {rs[idx]:.1f}; bearish momentum, not pressed against support. Possible setup - not a guaranteed outcome."
-    else:
-        d = "NO TRADE"
-        reason = f"Not all filters agree. EMA9={f[idx]:.5f}, EMA21={s[idx]:.5f}, EMA50={t[idx]:.5f}, RSI={rs[idx]:.1f}; waiting is better."
-    return {"symbol": symbol, "direction": d, "reason": reason, "price": close, "candle": latest,
-            "candle_count": len(candles), "rsi": rs[idx], "ema9": f[idx], "ema21": s[idx],
-            "ema50": t[idx], "support": sup, "resistance": res, "verified_quotex": False}
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": f"শুধু {len(candles)}টি candle; বিশ্লেষণের জন্য অন্তত 60টি দরকার।",
+            "candle_count": len(candles),
+        }
 
-def backtest(candles):
+    closes = [c["close"] for c in candles]
+    fast = ema(closes, 9)
+    slow = ema(closes, 21)
+    trend = ema(closes, 50)
+    rsis = rsi(closes, 14)
+
+    idx = len(candles) - 1
+    latest = candles[idx]
+    previous = candles[idx - 1]
+
+    age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
+    if age < -120 or age > MAX_SIGNAL_AGE_SECONDS:
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": f"সর্বশেষ M1 candle-এর সময় যাচাই করা যাচ্ছে না ({int(age)} sec)।",
+            "candle": latest,
+        }
+
+    if any(x[idx] is None for x in (fast, slow, trend, rsis)):
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": "Indicator data incomplete.",
+            "candle": latest,
+        }
+
+    # সাম্প্রতিক 20টি আগের candle দিয়ে support/resistance-এর আনুমানিক স্তর
+    recent = candles[max(0, idx - 20):idx]
+    support = min(c["low"] for c in recent)
+    resistance = max(c["high"] for c in recent)
+
+    close = latest["close"]
+    open_price = latest["open"]
+    high = latest["high"]
+    low = latest["low"]
+    candle_range = high - low
+
+    if close <= 0 or candle_range <= 0:
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": "Candle range বা price বৈধ নয়।",
+            "candle": latest,
+        }
+
+    body_ratio = abs(close - open_price) / candle_range
+    bullish = close > open_price and close > previous["close"]
+    bearish = close < open_price and close < previous["close"]
+
+    # খুব ছোট body হলে দিক পরিষ্কার নয়
+    if body_ratio < 0.25:
+        direction = "NO TRADE"
+        reason = "Candle body দুর্বল; পরিষ্কার momentum পাওয়া যায়নি।"
+
+    # Trend + momentum + RSI + support/resistance filter
+    elif (
+        fast[idx] > slow[idx] > trend[idx]
+        and 52 <= rsis[idx] <= 68
+        and bullish
+        and close < resistance
+        and (resistance - close) > candle_range * 0.15
+    ):
+        direction = "CALL"
+        reason = (
+            f"Trend bullish: EMA9 > EMA21 > EMA50; RSI {rsis[idx]:.1f}; "
+            "শেষ candle bullish momentum দেখিয়েছে এবং resistance-এর খুব কাছে নয়। "
+            "এটি সম্ভাব্য setup, নিশ্চিত ফল নয়।"
+        )
+
+    elif (
+        fast[idx] < slow[idx] < trend[idx]
+        and 32 <= rsis[idx] <= 48
+        and bearish
+        and close > support
+        and (close - support) > candle_range * 0.15
+    ):
+        direction = "PUT"
+        reason = (
+            f"Trend bearish: EMA9 < EMA21 < EMA50; RSI {rsis[idx]:.1f}; "
+            "শেষ candle bearish momentum দেখিয়েছে এবং support-এর খুব কাছে নয়। "
+            "এটি সম্ভাব্য setup, নিশ্চিত ফল নয়।"
+        )
+
+    else:
+        direction = "NO TRADE"
+        reason = (
+            f"সব filter একমত নয়। EMA9={fast[idx]:.5f}, "
+            f"EMA21={slow[idx]:.5f}, EMA50={trend[idx]:.5f}, "
+            f"RSI={rsis[idx]:.1f}; অপেক্ষা করাই ভালো।"
+        )
+
+    return {
+        "symbol": symbol,
+        "direction": direction,
+        "reason": reason,
+        "price": close,
+        "candle": latest,
+        "candle_count": len(candles),
+        "first_candle": candles[0]["time"],
+        "last_candle": latest["time"],
+        "rsi": rsis[idx],
+        "ema9": fast[idx],
+        "ema21": slow[idx],
+        "ema50": trend[idx],
+        "support": support,
+        "resistance": resistance,
+        "verified_quotex": False,
+    }
+
+
+def backtest_ema(candles: list[dict[str, Any]]) -> dict[str, Any]:
+    """Small historical sanity check; not a prediction or guaranteed profitability."""
     if len(candles) < 60:
         return {"trades": 0, "wins": 0, "losses": 0, "note": "Not enough candles for backtest."}
     closes = [c["close"] for c in candles]
-    f, s = ema(closes, 9), ema(closes, 21)
-    w = l = tr = 0
+    fast = ema(closes, 9)
+    slow = ema(closes, 21)
+    wins = losses = trades = 0
+    # Evaluate the next candle after a trend-aligned EMA crossover. One-candle horizon.
     for i in range(22, len(candles) - 1):
-        if None in (f[i-1], s[i-1], f[i], s[i]):
+        if fast[i - 1] is None or slow[i - 1] is None or fast[i] is None or slow[i] is None:
             continue
-        call = f[i-1] <= s[i-1] and f[i] > s[i]
-        put = f[i-1] >= s[i-1] and f[i] < s[i]
+        call = fast[i - 1] <= slow[i - 1] and fast[i] > slow[i]
+        put = fast[i - 1] >= slow[i - 1] and fast[i] < slow[i]
         if not (call or put):
             continue
-        tr += 1
-        if (call and closes[i+1] > closes[i]) or (put and closes[i+1] < closes[i]):
-            w += 1
+        trades += 1
+        next_move = candles[i + 1]["close"] - candles[i + 1]["open"]
+        won = next_move > 0 if call else next_move < 0
+        if won:
+            wins += 1
         else:
-            l += 1
-    return {"trades": tr, "wins": w, "losses": l, "note": "One-candle historical check only; not a prediction."}
+            losses += 1
+    return {"trades": trades, "wins": wins, "losses": losses,
+            "win_rate_pct": round(100 * wins / trades, 1) if trades else None,
+            "note": "Historical candle simulation only; not Quotex-verified and not a guarantee."}
 
-def scan_one(symbol):
-    if not TWELVE_KEY:
-        raise RuntimeError("TWELVE_DATA_API_KEY is not configured")
-    r = http.get(f"{TWELVE_BASE}/time_series",
-                 params={"symbol": symbol, "interval": "1min", "outputsize": 5000,
-                         "order": "desc", "format": "JSON", "timezone": "UTC", "apikey": TWELVE_KEY}, timeout=25)
-    r.raise_for_status()
-    data = r.json()
-    if isinstance(data, dict) and data.get("status") == "error":
-        raise RuntimeError(str(data.get("message", "Twelve Data error"))[:240])
-    candles = []
-    for it in (data.get("values") or []):
-        try:
-            stamp = datetime.strptime(it["datetime"], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-            candles.append({"time": stamp, "open": float(it["open"]), "high": float(it["high"]),
-                            "low": float(it["low"]), "close": float(it["close"])})
-        except Exception:
+# --------------------------- Scanner logic ---------------------------
+def bd_time(value: Any) -> str:
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(BANGLADESH_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    return str(value or "সময় পাওয়া যায়নি")
+
+
+def scan_one_symbol(symbol: str) -> dict[str, Any]:
+    payload = twelve_get("time_series", {
+        "symbol": symbol, "interval": "1min", "outputsize": HISTORY_OUTPUTSIZE,
+        "order": "desc", "format": "JSON", "timezone": "UTC",
+    })
+    candles = parse_candles(payload)
+    result = analyze_candles(symbol, candles)
+    result["backtest"] = backtest_ema(candles)
+    result["source"] = "Twelve Data external feed"
+    result["verified_quotex"] = False
+    if result.get("direction") in ("CALL", "PUT") and result.get("candle"):
+        result["signal_id"] = save_signal(symbol, result["direction"], result["candle"]["time"], result["price"], result["reason"])
+    return result
+
+
+def format_signal(result: dict[str, Any]) -> str:
+    candle = result.get("candle") or {}
+    candle_time = bd_time(candle.get("time"))
+    generated = bd_time(datetime.now(timezone.utc))
+    direction = result.get("direction", "NO TRADE")
+    icon = "🟢" if direction == "CALL" else "🔴"
+    meaning = "CALL মানে সম্ভাব্য ঊর্ধ্বমুখী দিক" if direction == "CALL" else "PUT মানে সম্ভাব্য নিম্নমুখী দিক"
+    return (
+        "👻 GHOST MATRIX V2.0\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"{icon} সম্ভাব্য সিগনাল: {direction}\n"
+        f"💱 মার্কেট: {result.get('symbol', 'Unknown')}\n"
+        f"💵 বাইরের ফিডের দাম: {result.get('price', 'N/A')}\n"
+        f"🕯️ Candle time (বাংলাদেশ): {candle_time} UTC+6\n"
+        f"📨 সিগনাল তৈরি: {generated} UTC+6\n"
+        f"🧾 Signal ID: {result.get('signal_id', 'N/A')}\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"📘 সহজ ব্যাখ্যা: {result.get('reason', '')}\n"
+        f"➡️ এর মানে: {meaning}; নিশ্চিত ফল নয়।\n\n"
+        "⚠️ ডেটা: Twelve Data (external), Quotex-verified নয়।\n"
+        f"ফল জানাতে: /win {result.get('signal_id', '')} অথবা /loss {result.get('signal_id', '')}"
+    )
+
+
+def format_future_batch(results: list[dict[str, Any]], scanned: int) -> str:
+    signals = [r for r in results if r.get("direction") in ("CALL", "PUT")]
+    now_text = bd_time(datetime.now(timezone.utc))
+    lines = [
+        "👻 GHOST MATRIX V2.0 — MANUAL SCAN",
+        f"🕒 বাংলাদেশ সময়: {now_text} UTC+6",
+        f"🔎 স্ক্যান: {scanned}টি নির্বাচিত pair",
+        "━━━━━━━━━━━━━━━━━━",
+    ]
+    if not signals:
+        lines.append("📭 এই স্ক্যানে কোনো সেটআপের শর্ত মেলেনি — NO TRADE।")
+        lines.append("জোর করে CALL/PUT তৈরি করা হয়নি। পরে আবার /future দিতে পারো।")
+    else:
+        lines.append(f"📋 সম্ভাব্য সেটআপ: {len(signals)}টি\n")
+        for n, r in enumerate(signals, 1):
+            direction = r.get("direction")
+            icon = "🟢 CALL" if direction == "CALL" else "🔴 PUT"
+            candle = (r.get("candle") or {}).get("time")
+            lines.append(
+                f"{n}. {r.get('symbol')} — {icon}\n"
+                f"   💵 বাইরের দাম: {r.get('price', 'N/A')}\n"
+                f"   🕯️ Candle (BD): {bd_time(candle)} UTC+6\n"
+                f"   🧾 ID: {r.get('signal_id', 'N/A')}\n"
+                f"   📘 কেন: {r.get('reason', '')}\n"
+                f"   ফল দিতে: /win {r.get('signal_id', '')} বা /loss {r.get('signal_id', '')}"
+            )
+    lines += [
+        "━━━━━━━━━━━━━━━━━━",
+        "⚠️ Twelve Data external feed; Quotex-verified নয়। Quotex-এর একই pair ও candle মিলিয়ে দেখো।",
+        "📌 /signals = আগের সেটআপ | /stats = তোমার দেওয়া WIN/LOSS হিসাব | /learn = শেখার গাইড",
+    ]
+    return "\n".join(lines)
+
+
+def scanner_loop() -> None:
+    """Disabled by design: signals are generated only when the user sends /future."""
+    while True:
+        time.sleep(3600)
+
+# ----------------------------- AI helpers ----------------------------
+def ai_answer(prompt: str) -> str:
+    if not AI_API_KEY:
+        return "AI_API_KEY সেট করা নেই। সাধারণ bot command ব্যবহার করতে পারো; AI উত্তর বন্ধ আছে।"
+    try:
+        response = http_session.post(GROQ_BASE,
+            headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
+            json={"model": GROQ_MODEL, "messages": [
+                {"role": "system", "content": "Answer clearly in Bengali when the user writes Bengali. Never invent current news, live prices, trade outcomes, or guaranteed trading advice."},
+                {"role": "user", "content": prompt}], "temperature": 0.2, "max_tokens": 700}, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"].strip()
+    except Exception as exc:
+        log.warning("AI request failed: %s", exc)
+        return "AI service এখন কাজ করছে না। API key/model/limit Render Logs-এ যাচাই করো।"
+
+
+
+def analyze_chart_image(file_id: str) -> str:
+    """Describe visible chart context; never claim certainty or verified broker data."""
+    if not AI_API_KEY:
+        return "AI_API_KEY সেট করা নেই, তাই chart image analysis চালু নেই।"
+
+    try:
+        file_url = get_photo_file_url(file_id)
+        if not file_url:
+            return "Telegram থেকে ছবিটি আনতে পারিনি। আবার পাঠাও।"
+
+        photo = http_session.get(file_url, timeout=25)
+        photo.raise_for_status()
+
+        if len(photo.content) > 15 * 1024 * 1024:
+            return "ছবিটি অনেক বড়। ছোট/কম রেজোলিউশনের screenshot পাঠাও।"
+
+        mime = photo.headers.get("Content-Type", "image/jpeg").split(";")[0]
+        if mime not in ("image/jpeg", "image/png", "image/webp"):
+            mime = "image/jpeg"
+
+        encoded = base64.b64encode(photo.content).decode("ascii")
+
+        payload = {
+            "model": GROQ_VISION_MODEL,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "Analyze only what is visible in this trading chart screenshot. "
+                        "Reply in Bengali. Mention uncertainty and missing timeframe/asset labels. "
+                        "Do not invent price values, predict with certainty, claim Quotex verification, "
+                        "or promise profit. If unclear, say NO TRADE / insufficient evidence."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "এই chart screenshot-এ দৃশ্যমান trend, candle structure এবং অনিশ্চয়তা ব্যাখ্যা করো। নিশ্চিত CALL/PUT দাবি করবে না।",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime};base64,{encoded}"
+                            },
+                        },
+                    ],
+                },
+            ],
+            "temperature": 0.1,
+            "max_completion_tokens": 700,
+        }
+
+        response = http_session.post(
+            GROQ_BASE,
+            headers={
+                "Authorization": f"Bearer {AI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=45,
+        )
+        response.raise_for_status()
+
+        return (
+            response.json()["choices"][0]["message"]["content"].strip()
+            + "\n\n⚠️ Screenshot analysis only; not a verified Quotex signal."
+        )
+
+    except Exception as exc:
+        log.exception("Chart image analysis failed")
+        return f"Chart analysis error: {type(exc).__name__}: {str(exc)[:300]}"
+        
+               
+def get_photo_file_url(file_id: str) -> Optional[str]:
+    try:
+        result = telegram_call("getFile", {"file_id": file_id})
+        path = result.get("file_path")
+        return f"https://api.telegram.org/file/bot{BOT_TOKEN}/{path}" if path else None
+    except Exception as exc:
+        log.warning("Could not retrieve Telegram photo: %s", exc)
+        return None
+
+
+# ---------------------- Price Action Learning Charts -------------------
+# These are schematic educational examples generated locally with Pillow.
+# They are NOT live Quotex charts and do not generate trade signals.
+PA_LESSONS = [
+    {
+        "key": "support_resistance",
+        "title": "1/7 — Support & Resistance",
+        "caption": (
+            "📘 SUPPORT ও RESISTANCE\n\n"
+            "Support = এমন price area যেখানে আগে কয়েকবার দাম নেমে এসে থেমেছে/উঠেছে; "
+            "এখানে buyers আগ্রহী হতে পারে। Resistance = এমন area যেখানে দাম উঠে এসে "
+            "বারবার থেমেছে/নেমেছে; sellers সক্রিয় হতে পারে। এগুলো একদম সরু line নয়—zone হিসেবে দেখো।\n\n"
+            "উদাহরণ: দাম 1.1000 এলাকার কাছে 3 বার নেমে bounce করলে ওই অঞ্চল support হতে পারে। "
+            "কিন্তু 4র্থ বারেও bounce হবেই—এমন নিশ্চয়তা নেই।\n\n"
+            "কী দেখবে: আগের swing highs/lows, একাধিক reaction, candle close, rejection এবং market trend। "
+            "শুধু level touch হলেই entry নয়; rejection/structure confirmation অপেক্ষা করো। "
+            "Level ভেঙে গেলে সেটি পরে role reversal করতে পারে।"
+        ),
+        "prices": [45,35,43,52,48,37,44,57,51,39,46,58,53,47,55,63],
+        "levels": [(39,"SUPPORT"),(57,"RESISTANCE")],
+        "notes": ["Repeated reaction zones"]
+    },
+    {
+        "key": "trend_structure",
+        "title": "2/7 — Trend & Market Structure",
+        "caption": (
+            "📘 TREND ও MARKET STRUCTURE\n\n"
+            "Uptrend: Higher High (HH) + Higher Low (HL) ধারাবাহিকভাবে তৈরি হয়। "
+            "Downtrend: Lower Low (LL) + Lower High (LH)। Sideways market-এ দাম একটি range-এর মধ্যে ঘোরে।\n\n"
+            "উদাহরণ: আগের high 1.1050, পরের high 1.1080 এবং pullback low আগের low-এর উপরে থাকলে "
+            "buyers শক্তিশালী হতে পারে। কিন্তু একটি wick level ভাঙলেই structure break নিশ্চিত নয়—candle close ও context দেখো।\n\n"
+            "কী দেখবে: অন্তত 2টি swing high ও 2টি swing low, candle close, pullback এবং বড় timeframe-এর দিক। "
+            "Trend-এর বিপরীতে শুধু একটি বড় candle দেখে entry নিও না। Structure অস্পষ্ট হলে NO TRADE।"
+        ),
+        "prices": [24,30,27,35,31,40,35,44,39,49,43,54,48,59,53,65],
+        "levels": [],
+        "notes": ["HH", "HL", "HH", "HL"]
+    },
+    {
+        "key": "breakout_retest",
+        "title": "3/7 — Breakout & Retest",
+        "caption": (
+            "📘 BREAKOUT ও RETEST\n\n"
+            "Breakout = price কোনো range/support/resistance zone-এর বাইরে শক্তভাবে close করে। "
+            "Retest = ভাঙা level-এ দাম ফিরে এসে সেটিকে নতুন support/resistance হিসেবে পরীক্ষা করে।\n\n"
+            "উদাহরণ: Resistance zone-এর উপরে candle close → দাম পুরোনো resistance-এ ফিরে আসে → "
+            "সেখানে bullish rejection/confirmation দেখা যায়। তখন সম্ভাব্য bullish setup তৈরি হতে পারে; নিশ্চিত নয়।\n\n"
+            "ভুল breakout এড়াতে: শুধু wick-এর বাইরে যাওয়া যথেষ্ট নয়। candle close, momentum, retest reaction "
+            "এবং বাজারের structure মিলিয়ে দেখো। Retest না হলে জোর করে entry নয়। M1-এ noise বেশি; "
+            "news spike ও spread-ও ফল বদলাতে পারে।"
+        ),
+        "prices": [35,39,34,38,36,40,37,39,42,48,55,62,57,51,54,59],
+        "levels": [(41,"OLD RESISTANCE")],
+        "notes": ["Breakout", "Retest", "Reaction"]
+    },
+    {
+        "key": "pin_bar",
+        "title": "4/7 — Pin Bar",
+        "caption": (
+            "📘 PIN BAR / REJECTION CANDLE\n\n"
+            "Pin bar-এ body তুলনামূলক ছোট এবং একটি wick লম্বা হয়। নিচের লম্বা wick support-এর কাছে হলে "
+            "দাম নিচে reject হয়েছে বোঝাতে পারে; উপরের লম্বা wick resistance-এর কাছে হলে উপরে reject হয়েছে বোঝাতে পারে।\n\n"
+            "উদাহরণ: support zone-এ long lower wick + candle close উপরের দিকে = সম্ভাব্য bullish rejection। "
+            "কিন্তু মাঝামাঝি random জায়গায় একই candle দুর্বল signal হতে পারে।\n\n"
+            "Confirmation: level/structure-এর সঙ্গে মিল, candle close, পরের candle-এর follow-through। "
+            "শুধু pin bar দেখেই CALL/PUT নয়। wick-এর দিক, body ও location—তিনটিই দেখো।"
+        ),
+        "prices": [53,48,44,41,39,46,49,47,52,55,51,57,60,58,62,65],
+        "levels": [(41,"SUPPORT ZONE")],
+        "notes": ["Long lower wick", "Bullish rejection"]
+    },
+    {
+        "key": "engulfing",
+        "title": "5/7 — Engulfing",
+        "caption": (
+            "📘 BULLISH ও BEARISH ENGULFING\n\n"
+            "Bullish engulfing: একটি bearish candle-এর পরে বড় bullish body আগের body-কে ঢেকে দেয়। "
+            "Bearish engulfing: bullish candle-এর পরে বড় bearish body আগের body-কে ঢেকে দেয়। "
+            "এটি momentum shift-এর ইঙ্গিত হতে পারে, নিশ্চয়তা নয়।\n\n"
+            "উদাহরণ: support/পরিষ্কার pullback-এর শেষে bearish candle, তারপর বড় bullish body—এটি bullish engulfing "
+            "হতে পারে। Resistance-এ উল্টো pattern bearish হতে পারে।\n\n"
+            "Confirmation: গুরুত্বপূর্ণ zone, trend/structure এবং candle close মিলিয়ে দেখো। "
+            "Body engulf করেছে কি না দেখো; শুধু wick বড় হলেই engulfing নয়। Range-এর মাঝখানে pattern-এর মান কম হতে পারে।"
+        ),
+        "prices": [60,56,51,47,50,46,43,52,57,54,59,63,60,66,70,68],
+        "levels": [(44,"SUPPORT ZONE")],
+        "notes": ["Bearish body", "Bullish engulfing"]
+    },
+    {
+        "key": "liquidity_sweep",
+        "title": "6/7 — Liquidity Sweep",
+        "caption": (
+            "📘 LIQUIDITY SWEEP\n\n"
+            "দাম আগের swing high/low-এর একটু বাইরে wick তৈরি করে আবার level-এর ভেতরে close করলে "
+            "সেটি সম্ভাব্য liquidity sweep হতে পারে। অনেক trader stop-loss ওই high/low-এর আশেপাশে রাখে—"
+            "তাই level-এর বাইরে দ্রুত move-এর পর reversal দেখা যেতে পারে।\n\n"
+            "উদাহরণ: আগের low ভেঙে wick নিচে যায়, কিন্তু candle আবার low-এর উপরে close করে এবং bullish structure তৈরি করে। "
+            "এটি possible bullish sweep; প্রতিবার reversal হবে না।\n\n"
+            "Confirmation: sweep-এর পর candle close back inside, rejection এবং structure shift দেখো। "
+            "শুধু wick দেখে entry নয়। Strong breakout যদি level-এর বাইরে close ও hold করে, সেটি sweep নাও হতে পারে।"
+        ),
+        "prices": [52,47,44,48,43,39,32,42,47,45,52,57,54,61,65,63],
+        "levels": [(39,"PRIOR SWING LOW")],
+        "notes": ["Sweep below low", "Close back above"]
+    },
+    {
+        "key": "entry_confirmation",
+        "title": "7/7 — Entry Confirmation Checklist",
+        "caption": (
+            "📘 ENTRY-এর আগে CONFIRMATION\n\n"
+            "১) Market trend/structure পরিষ্কার? ২) দাম গুরুত্বপূর্ণ support/resistance zone-এ? "
+            "৩) Pin bar/engulfing বা breakout-retest-এর মতো price-action evidence আছে? "
+            "৪) Candle close হয়েছে, নাকি শুধু চলমান candle? ৫) News/অস্বাভাবিক volatility আছে? "
+            "৬) Quotex-এ একই REAL pair, timeframe ও candle মিলছে?\n\n"
+            "উদাহরণ: uptrend + support retest + bullish rejection close = সম্ভাব্য bullish context। "
+            "কোনো একটি শর্ত অনুপস্থিত বা চার্ট অস্পষ্ট হলে trade বাদ দেওয়াও একটি সিদ্ধান্ত।\n\n"
+            "M1-এ false signal বেশি। Fixed expiry-তে candle close, payout, spread/price difference ও timing গুরুত্বপূর্ণ। "
+            "Martingale করে loss recover করার চেষ্টা কোরো না। Demo-তে নোট রেখে বহু উদাহরণ পরীক্ষা করো। "
+            "এটি শিক্ষা, লাভের নিশ্চয়তা নয়।"
+        ),
+        "prices": [28,35,31,40,36,45,40,49,44,53,47,56,52,61,57,66],
+        "levels": [(44,"KEY ZONE")],
+        "notes": ["Trend", "Zone", "Rejection close"]
+    },
+]
+
+
+def _chart_font(size: int):
+    try:
+        return ImageFont.truetype("DejaVuSans.ttf", size)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def make_price_action_chart(lesson: dict) -> bytes:
+    """Render an illustrative candlestick chart in memory; no external image assets."""
+    width, height = 1000, 560
+    img = Image.new("RGB", (width, height), "#101827")
+    draw = ImageDraw.Draw(img)
+    title_font = _chart_font(28)
+    label_font = _chart_font(18)
+    small_font = _chart_font(15)
+    draw.text((34, 22), lesson["title"], font=title_font, fill="#F4F7FB")
+    draw.text((36, 62), "ILLUSTRATIVE PRICE ACTION EXAMPLE — NOT LIVE MARKET DATA",
+              font=small_font, fill="#9CAEC4")
+
+    left, top, right, bottom = 70, 115, 950, 475
+    # Grid
+    for i in range(7):
+        y = top + i * (bottom-top) // 6
+        draw.line((left, y, right, y), fill="#26354A", width=1)
+    for i in range(13):
+        x = left + i * (right-left) // 12
+        draw.line((x, top, x, bottom), fill="#1C2A3D", width=1)
+
+    vals = lesson["prices"]
+    lo, hi = min(vals)-9, max(vals)+9
+    def py(v):
+        return int(bottom - (v-lo)/(hi-lo)*(bottom-top))
+    candle_w = 23
+    step = (right-left)//len(vals)
+    prev = vals[0]
+    ohlc = []
+    for idx, close in enumerate(vals):
+        open_v = prev + ((-1)**idx) * (2 + (idx % 3))
+        high_v = max(open_v, close) + (2 + idx % 4)
+        low_v = min(open_v, close) - (2 + (idx+1) % 4)
+        ohlc.append((open_v, high_v, low_v, close))
+        prev = close
+
+    # Special recognizable candles for Pin Bar, Engulfing and sweep examples.
+    if lesson["key"] == "pin_bar":
+        o,h,l,c = ohlc[5]
+        ohlc[5] = (o, max(o,c)+2, lo+2, c)
+    elif lesson["key"] == "engulfing":
+        ohlc[7] = (vals[7]+5, vals[7]+7, vals[7]-2, vals[7]-1)
+        ohlc[8] = (vals[8]-7, vals[8]+2, vals[8]-9, vals[8]+8)
+    elif lesson["key"] == "liquidity_sweep":
+        o,h,l,c = ohlc[6]
+        ohlc[6] = (o, h, lo+1, max(o,c)+1)
+
+    centers = []
+    for idx, (o,h,l,c) in enumerate(ohlc):
+        x = left + idx*step + step//2
+        centers.append((x, py(c)))
+        color = "#2ED6A1" if c >= o else "#FF647C"
+        draw.line((x, py(h), x, py(l)), fill=color, width=3)
+        y1, y2 = py(o), py(c)
+        if abs(y2-y1) < 5:
+            y2 = y1 + (5 if y2 >= y1 else -5)
+        draw.rectangle((x-candle_w//2, min(y1,y2), x+candle_w//2, max(y1,y2)),
+                       fill=color, outline=color)
+
+    # Key horizontal zones.
+    for level, label in lesson.get("levels", []):
+        y = py(level)
+        draw.line((left, y, right, y), fill="#F7C85B", width=3)
+        draw.rectangle((left+8, y-24, left+8+len(label)*10+18, y-2), fill="#F7C85B")
+        draw.text((left+16, y-22), label, font=small_font, fill="#172033")
+
+    key = lesson["key"]
+    if key == "trend_structure":
+        pts = [centers[i] for i in [1,3,5,7,9,11,13,15]]
+        draw.line(pts, fill="#66B7FF", width=3)
+        draw.text((760, 130), "HH / HL", font=label_font, fill="#66B7FF")
+    elif key == "breakout_retest":
+        draw.text((610, 125), "BREAKOUT", font=label_font, fill="#2ED6A1")
+        draw.text((720, 300), "RETEST", font=label_font, fill="#F7C85B")
+    elif key == "pin_bar":
+        x, y = centers[5]
+        draw.ellipse((x-11, y-11, x+11, y+11), outline="#F7C85B", width=3)
+        draw.text((x+18, py(lo+4)), "LONG LOWER WICK", font=small_font, fill="#F7C85B")
+    elif key == "engulfing":
+        x, y = centers[8]
+        draw.ellipse((x-18, y-26, x+18, y+26), outline="#F7C85B", width=3)
+        draw.text((x+22, y-32), "ENGULF", font=small_font, fill="#F7C85B")
+    elif key == "liquidity_sweep":
+        x, y = centers[6]
+        draw.ellipse((x-12, py(lo+1)-8, x+12, py(lo+1)+8), outline="#F7C85B", width=3)
+        draw.text((x+18, py(lo+7)), "SWEEP", font=small_font, fill="#F7C85B")
+    elif key == "entry_confirmation":
+        checklist = ["1. Trend / structure", "2. Key zone", "3. Candle close", "4. Confirmation"]
+        for j, item in enumerate(checklist):
+            draw.rounded_rectangle((730, 132+j*44, 930, 166+j*44), radius=7,
+                                   fill="#20334A", outline="#66B7FF", width=1)
+            draw.text((742, 140+j*44), item, font=small_font, fill="#F4F7FB")
+
+    draw.text((35, 510), "Green = bullish candle   |   Red = bearish candle   |   Yellow = key level",
+              font=small_font, fill="#B9C7D8")
+    output = io.BytesIO()
+    img.save(output, format="PNG", optimize=True)
+    return output.getvalue()
+
+
+def send_photo_bytes(photo_bytes: bytes, caption: str, chat_id: Optional[str] = None) -> bool:
+    """Upload a generated educational PNG to Telegram without storing it on disk."""
+    target = str(chat_id or CHAT_ID).strip()
+    if not target or not BOT_TOKEN:
+        log.info("Telegram photo skipped: BOT_TOKEN/CHAT_ID missing")
+        return False
+    try:
+        response = http_session.post(
+            f"{TELEGRAM_BASE}/sendPhoto",
+            data={"chat_id": target, "caption": caption[:1024]},
+            files={"photo": ("price_action_example.png", photo_bytes, "image/png")},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        if not data.get("ok"):
+            raise RuntimeError(str(data))
+        return True
+    except Exception as exc:
+        log.error("Telegram educational photo send failed: %s", exc)
+        return False
+
+
+def get_learning_progress(chat_id: str) -> int:
+    """Return the zero-based index of the next lesson for this Telegram chat."""
+    chat_key = str(chat_id).strip()
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT next_lesson FROM gm_learning_progress WHERE chat_id=%s",
+                    (chat_key,),
+                )
+                row = cur.fetchone()
+                if row:
+                    return max(0, min(int(row[0]), len(PA_LESSONS)))
+                return 0
+    except Exception:
+        with state_lock:
+            return max(0, min(int(state["learn_progress"].get(chat_key, 0)), len(PA_LESSONS)))
+
+
+def save_learning_progress(chat_id: str, next_lesson: int) -> bool:
+    """Persist learning progress; use in-memory fallback if DB is unavailable."""
+    chat_key = str(chat_id).strip()
+    progress = max(0, min(int(next_lesson), len(PA_LESSONS)))
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO gm_learning_progress (chat_id, next_lesson, updated_at)
+                       VALUES (%s, %s, NOW())
+                       ON CONFLICT (chat_id) DO UPDATE
+                       SET next_lesson=EXCLUDED.next_lesson, updated_at=NOW()""",
+                    (chat_key, progress),
+                )
+        with state_lock:
+            state["learn_progress"].pop(chat_key, None)
+        return True
+    except Exception as exc:
+        log.info("Learning progress using memory fallback: %s", exc)
+        with state_lock:
+            state["learn_progress"][chat_key] = progress
+        return False
+
+
+def send_price_action_course(chat_id: str, reset: bool = False) -> None:
+    """Send exactly one illustrated lesson per /learn command."""
+    chat_key = str(chat_id).strip()
+    if reset:
+        save_learning_progress(chat_key, 0)
+        lesson_index = 0
+    else:
+        lesson_index = get_learning_progress(chat_key)
+
+    if lesson_index >= len(PA_LESSONS):
+        send_message(
+            "✅ তুমি Price Action-এর ৭টি Lesson শেষ করেছ!\n\n"
+            "আবার Lesson 1 থেকে শুরু করতে: /learn reset\n"
+            "নিরাপদ অনুশীলন: Demo account-এ chart দেখে নিজের নোট রাখো।\n\n"
+            "⚠️ Lesson শেষ করা লাভের নিশ্চয়তা নয়। Twelve Data-এর price Quotex-verified নয়।",
+            chat_key,
+        )
+        return
+
+    lesson = PA_LESSONS[lesson_index]
+    number = lesson_index + 1
+    send_message(
+        "👻 GHOST MATRIX — PRICE ACTION LEARNING\n"
+        f"📘 Lesson {number}/{len(PA_LESSONS)}\n\n"
+        "এই /learn কমান্ডে শুধু একটি Lesson পাঠানো হবে।\n"
+        "পরের Lesson পেতে আবার /learn লিখো।\n"
+        "সব ছবি শিক্ষামূলক schematic chart—live Quotex chart নয়।",
+        chat_key,
+    )
+
+    try:
+        photo = make_price_action_chart(lesson)
+    except Exception as exc:
+        log.exception("Could not generate learning chart for lesson %s", number)
+        send_message(
+            f"❌ Lesson {number}-এর chart তৈরি হয়নি। Logs পরীক্ষা করে একই /learn আবার দাও।",
+            chat_key,
+        )
+        return
+
+    # Advance only when Telegram confirms the image was sent, so a failed upload
+    # does not silently skip the lesson.
+    if send_photo_bytes(photo, lesson["caption"], chat_key):
+        save_learning_progress(chat_key, number)
+        if number == len(PA_LESSONS):
+            send_message(
+                "🎉 ৭/৭ Lesson পাঠানো হয়েছে!\n"
+                "পরের /learn কমান্ডে course completion দেখাবে।\n"
+                "আবার শুরু করতে /learn reset লিখো।\n\n"
+                "⚠️ কোনো pattern নিশ্চিত ফল দেয় না; আগে Demo-তে পরীক্ষা করো।",
+                chat_key,
+            )
+    else:
+        send_message(
+            f"⚠️ Lesson {number} skip করা হয়নি। ছবি পাঠানো যায়নি; সমস্যা ঠিক করে আবার /learn দাও।",
+            chat_key,
+        )
+
+
+# ------------------------ Economic News Analyzer ---------------------
+FINANCE_CALENDAR_BASE = "https://www.financecalendar.com/wp-json/fc/v1"
+NEWS_OWNER = "@ghostsupportbd"
+NEWS_SOURCE_URL = "https://www.financecalendar.com/api/"
+
+
+def _extract_number(value: Any) -> Optional[float]:
+    """Parse common economic values such as 4.7%, 220K, or -0.2."""
+    if value is None:
+        return None
+    raw = str(value).strip().replace("−", "-")
+    if not raw or raw.lower() in {"n/a", "na", "none", "null", "—", "-"}:
+        return None
+    import re
+    match = re.search(r"[-+]?\d+(?:[.,]\d+)?\s*[KMBkmb]?", raw)
+    if not match:
+        return None
+    token = match.group(0).replace(" ", "")
+    # A single comma with three trailing digits is treated as a thousands separator.
+    if "," in token and "." not in token:
+        left, right = token.split(",", 1)
+        token = left + right if len(right.rstrip("KMBkmb")) == 3 else left + "." + right
+    suffix = token[-1:].upper() if token[-1:].upper() in {"K", "M", "B"} else ""
+    number_text = token[:-1] if suffix else token
+    try:
+        number = float(number_text)
+    except ValueError:
+        return None
+    return number * {"": 1.0, "K": 1_000.0, "M": 1_000_000.0, "B": 1_000_000_000.0}[suffix]
+
+
+def parse_manual_news_input(text: str) -> Optional[dict]:
+    """Accept a currency/event line followed by Actual, Forecast and Previous."""
+    import re
+    clean = (text or "").strip()
+    if not clean or clean.startswith("/"):
+        return None
+    patterns = {
+        "actual": r"(?im)^\s*(?:act|actual)\s*[-:=]\s*([^\n]+)",
+        "forecast": r"(?im)^\s*(?:for|forecast|fcst)\s*[-:=]\s*([^\n]+)",
+        "previous": r"(?im)^\s*(?:pre|previous|prev)\s*[-:=]\s*([^\n]+)",
+    }
+    values = {}
+    for key, pattern in patterns.items():
+        match = re.search(pattern, clean)
+        if not match:
+            return None
+        values[key] = match.group(1).strip()
+    first_line = clean.splitlines()[0].strip()
+    currency_match = re.match(r"^([A-Za-z]{3})\b(?:\s*[-:|—]?\s*(.*))?$", first_line)
+    if not currency_match:
+        return None
+    currency = currency_match.group(1).upper()
+    event = (currency_match.group(2) or "").strip(" -:|—")
+    return {
+        "currency": currency,
+        "event": event or "Economic event not specified",
+        "actual_text": values["actual"],
+        "forecast_text": values["forecast"],
+        "previous_text": values["previous"],
+        "actual": _extract_number(values["actual"]),
+        "forecast": _extract_number(values["forecast"]),
+        "previous": _extract_number(values["previous"]),
+    }
+
+
+def analyze_manual_news(data: dict) -> tuple[str, str, str]:
+    """Return direction, explanation and confidence note; heuristic, not a trade guarantee."""
+    actual, forecast, previous = data.get("actual"), data.get("forecast"), data.get("previous")
+    if actual is None or forecast is None:
+        return "UNCLEAR", "Actual বা Forecast-এর মান বুঝতে পারিনি—সংখ্যা ও unit আবার দাও।", "ডেটা অসম্পূর্ণ"
+    event = str(data.get("event", "")).lower()
+    # For some indicators, a lower number is usually better for the currency.
+    lower_is_better_terms = (
+        "unemployment rate", "jobless claims", "initial claims", "continuing claims",
+        "claims", "unemployment", "job losses", "layoffs", "bad loans",
+    )
+    lower_is_better = any(term in event for term in lower_is_better_terms)
+    if actual == forecast:
+        if previous is not None and actual != previous:
+            explanation = "Actual Forecast-এর সমান; তাই surprise নেই। Previous-এর তুলনায় পরিবর্তন একা নির্ভরযোগ্য দিক নির্ধারণ করে না।"
+        else:
+            explanation = "Actual ও Forecast সমান—স্পষ্ট surprise নেই।"
+        return "UNCLEAR", explanation, "দিক অনিশ্চিত"
+    if lower_is_better:
+        up = actual < forecast
+        reason = "এই indicator-এ সাধারণত কম মান মুদ্রার জন্য ভালো।" if up else "এই indicator-এ সাধারণত বেশি মান মুদ্রার জন্য নেতিবাচক।"
+    else:
+        up = actual > forecast
+        reason = "Actual, Forecast-এর চেয়ে বেশি।" if up else "Actual, Forecast-এর চেয়ে কম।"
+        if data.get("event") == "Economic event not specified":
+            reason += " নিউজের নাম দেওয়া হয়নি, তাই সাধারণ surprise rule ব্যবহার করা হয়েছে।"
+    direction = "UP ⬆️" if up else "DOWN ⬇️"
+    delta = actual - forecast
+    diff = f"Forecast থেকে পার্থক্য: {delta:+g} (একই unit ধরে)।"
+    if previous is not None:
+        prev_note = "Actual Previous-এর চেয়ে বেশি।" if actual > previous else "Actual Previous-এর চেয়ে কম।" if actual < previous else "Actual Previous-এর সমান।"
+    else:
+        prev_note = "Previous-এর মান তুলনা করা যায়নি।"
+    return direction, f"{reason}\n{diff}\n{prev_note}", "সম্ভাব্য প্রভাব; নিশ্চিত Quotex M1 signal নয়"
+
+
+def format_news_analysis(data: dict) -> str:
+    """Format news analysis as copyable Telegram HTML text, never as a photo."""
+    import html
+
+    direction, explanation, note = analyze_manual_news(data)
+    result_icon = (
+        "🟢" if direction.startswith("UP")
+        else "🔴" if direction.startswith("DOWN")
+        else "🟡"
+    )
+    currency = html.escape(str(data.get("currency", "—")))
+    event = html.escape(str(data.get("event", "Economic event")))
+    actual = html.escape(str(data.get("actual_text", "N/A")))
+    forecast = html.escape(str(data.get("forecast_text", "N/A")))
+    previous = html.escape(str(data.get("previous_text", "N/A")))
+    reason = html.escape(explanation)
+    safe_note = html.escape(note)
+
+    return (
+        "👻 <b>GHOST MATRIX</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        "📰 <b>NEWS ANALYZER</b>      🔵 <b>PAID</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"🌐 <b>{currency} • {event}</b>\n\n"
+        "┌─────────────────────┐\n"
+        f"│ <b>ACTUAL:</b> {actual}\n"
+        f"│ <b>FORECAST:</b> {forecast}\n"
+        f"│ <b>PREVIOUS:</b> {previous}\n"
+        "└─────────────────────┘\n\n"
+        f"{result_icon} <b>RESULT: {direction}</b>\n"
+        f"🧠 <b>ANALYSIS:</b>\n{reason}\n\n"
+        f"⚠️ <i>{safe_note}</i>\n"
+        "━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 <b>OWNER: {html.escape(NEWS_OWNER)}</b>"
+    )
+
+
+def render_news_analysis_card(data: dict) -> bytes:
+    """Render the approved GHOST MATRIX news card as a Telegram-ready PNG."""
+    direction, explanation, note = analyze_manual_news(data)
+    width, height = 1080, 760
+    bg = "#080D1A"
+    img = Image.new("RGB", (width, height), bg)
+    draw = ImageDraw.Draw(img)
+    font = _chart_font
+    # Header panel
+    draw.rounded_rectangle((28, 24, width - 28, 142), radius=28, fill="#101D35", outline="#254B83", width=2)
+    draw.ellipse((52, 50, 116, 114), fill="#173B78", outline="#62B8FF", width=2)
+    draw.text((67, 62), "G", font=font(38), fill="#8AD0FF")
+    draw.text((140, 43), "GHOST MATRIX", font=font(38), fill="#F1F6FF")
+    draw.text((142, 91), "NEWS ANALYZER", font=font(21), fill="#8CA6C8")
+    draw.rounded_rectangle((855, 53, 1020, 108), radius=16, fill="#173B78", outline="#2876C9", width=2)
+    draw.text((890, 67), "PAID", font=font(28), fill="#69BDFF")
+
+    event_label = f"{data['currency']}  •  {data['event']}"
+    draw.text((48, 174), event_label[:52], font=font(28), fill="#B9D7FF")
+    labels = [("ACTUAL", data["actual_text"]), ("FORECAST", data["forecast_text"]), ("PREVIOUS", data["previous_text"])]
+    x_positions = [38, 373, 708]
+    for x, (label, value) in zip(x_positions, labels):
+        draw.rounded_rectangle((x, 226, x + 320, 344), radius=20, fill="#111D30", outline="#263B56", width=2)
+        draw.text((x + 22, 246), label, font=font(20), fill="#90A7C5")
+        draw.text((x + 22, 282), str(value)[:18], font=font(34), fill="#FFFFFF")
+
+    if direction.startswith("UP"):
+        panel, accent, arrow = "#103D30", "#5AE2AF", "UP  ↑"
+    elif direction.startswith("DOWN"):
+        panel, accent, arrow = "#421D2A", "#FF7D8B", "DOWN  ↓"
+    else:
+        panel, accent, arrow = "#3B3217", "#F3D477", "UNCLEAR"
+    draw.rounded_rectangle((38, 372, width - 38, 512), radius=22, fill=panel, outline=accent, width=2)
+    draw.text((72, 392), arrow, font=font(46), fill=accent)
+    # Use English on the PNG because the runtime may not have a Bengali-capable font.
+    event_lower = str(data.get("event", "")).lower()
+    lower_is_better = any(term in event_lower for term in (
+        "unemployment rate", "jobless claims", "initial claims", "continuing claims",
+        "claims", "unemployment", "job losses", "layoffs", "bad loans",
+    ))
+    if direction.startswith("UP"):
+        short_reason = "Lower than forecast may support currency." if lower_is_better else "Actual is above forecast."
+    elif direction.startswith("DOWN"):
+        short_reason = "Actual is below forecast." if not lower_is_better else "Higher than forecast may weigh on currency."
+    else:
+        short_reason = "No clear surprise versus forecast."
+    draw.text((74, 458), short_reason, font=font(20), fill="#E6F0FA")
+
+    draw.line((44, 550, width - 44, 550), fill="#20324C", width=2)
+    draw.text((48, 574), "NEWS-BASED ANALYSIS", font=font(19), fill="#91A5C0")
+    draw.text((48, 606), "Not a confirmed Quotex M1 signal", font=font(22), fill="#D5DFEC")
+    draw.text((48, 674), f"OWNER: {NEWS_OWNER}", font=font(23), fill="#B9D7FF")
+    draw.text((width - 350, 681), "GHOST MATRIX  •  NEWS", font=font(15), fill="#7186A5")
+
+    output = io.BytesIO()
+    img.save(output, format="PNG", optimize=True)
+    return output.getvalue()
+
+
+def _event_datetime(event: dict) -> Optional[datetime]:
+    for key in ("time_utc", "datetime", "date_time", "release_time"):
+        raw = event.get(key)
+        if not raw:
             continue
-    candles.sort(key=lambda c: c["time"])
-    res = analyze_candles(symbol, candles)
-    res["backtest"] = backtest(candles)
-    res["source"] = "Twelve Data external feed"
-    res["verified_quotex"] = False
-    if res.get("direction") in ("CALL", "PUT") and res.get("candle"):
-        with _lock:
-            sid = _next_id[0]; _next_id[0] += 1
-            _signals.append({"id": sid, "symbol": symbol, "direction": res["direction"],
-                             "candle_time": res["candle"]["time"], "entry_price": res["price"],
-                             "reason": res["reason"], "source": "Twelve Data external feed",
-                             "verified_quotex": False, "status": "PENDING"})
-            _signals[:] = _signals[-100:]
-        res["signal_id"] = sid
-    return res
+        try:
+            dt = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(BANGLADESH_TZ)
+        except (TypeError, ValueError):
+            continue
+    raw_date = event.get("date")
+    if raw_date:
+        try:
+            dt = datetime.fromisoformat(str(raw_date))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(BANGLADESH_TZ)
+        except (TypeError, ValueError):
+            return None
+    return None
 
-def ai_answer(prompt):
-    if not AI_KEY:
-        return "AI_API_KEY is not set. Use the lessons and screenshot checklist instead."
+
+def get_economic_calendar(days: int = 7) -> list[dict]:
+    """Fetch high-impact calendar events from the no-key Finance Calendar API."""
+    today = datetime.now(BANGLADESH_TZ).date()
+    end = today + timedelta(days=max(1, min(int(days), 14)))
+    response = http_session.get(
+        f"{FINANCE_CALENDAR_BASE}/calendar",
+        params={"from": today.isoformat(), "to": end.isoformat(), "impact": "high", "limit": 100},
+        timeout=20,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    events = payload.get("events", []) if isinstance(payload, dict) else payload
+    if not isinstance(events, list):
+        raise RuntimeError("Calendar API returned an unexpected response format")
+    result = []
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        impact = str(event.get("impact", "")).lower()
+        if impact and impact not in {"high", "3", "high impact"}:
+            continue
+        dt = _event_datetime(event)
+        name = str(event.get("title") or event.get("name") or event.get("event") or "Economic event")
+        currency = str(event.get("currency") or event.get("country_code") or event.get("country") or "—")
+        # Prefer explicitly supplied currency; otherwise use country label as available.
+        currency_aliases = {
+            "us": "USD", "usa": "USD", "united states": "USD",
+            "gb": "GBP", "uk": "GBP", "united kingdom": "GBP",
+            "eu": "EUR", "euro area": "EUR", "eurozone": "EUR",
+            "au": "AUD", "australia": "AUD", "ca": "CAD", "canada": "CAD",
+            "jp": "JPY", "japan": "JPY", "ch": "CHF", "switzerland": "CHF",
+            "nz": "NZD", "new zealand": "NZD", "cn": "CNY", "china": "CNY",
+        }
+        if currency.lower() in currency_aliases:
+            currency = currency_aliases[currency.lower()]
+        result.append({
+            "datetime": dt,
+            "name": name,
+            "currency": currency,
+            "impact": impact or "high",
+            "forecast": event.get("consensus", event.get("forecast")),
+            "previous": event.get("prior", event.get("previous")),
+            "actual": event.get("actual"),
+            "url": event.get("url"),
+        })
+    result.sort(key=lambda item: item["datetime"] or datetime.max.replace(tzinfo=BANGLADESH_TZ))
+    return result
+
+
+def format_economic_calendar(events: list[dict], days: int = 7) -> str:
+    lines = [
+        "👻 GHOST MATRIX",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "📰 ECONOMIC NEWS CALENDAR        🔵 PAID",
+        f"📅 High-impact events • Next {days} days • Bangladesh time",
+        "━━━━━━━━━━━━━━━━━━━━",
+    ]
+    if not events:
+        lines.append("এই সময়সীমায় কোনো high-impact event পাওয়া যায়নি।")
+    else:
+        for event in events[:12]:
+            dt = event.get("datetime")
+            date_time = dt.strftime("%d %b • %I:%M %p") if dt else "সময় যাচাই করা যায়নি"
+            lines.append(
+                f"\n🔴 {event['currency']} • {event['name']}\n"
+                f"🕒 {date_time} (UTC+6)\n"
+                f"⚠️ Impact: HIGH"
+            )
+            if event.get("url"):
+                lines.append(f"🔗 {event['url']}")
+    lines.extend([
+        "\nℹ️ Actual release-এর পরে পাওয়া গেলে আবার Actual/Forecast/Previous পাঠিয়ে Analyzer চালাও।",
+        f"Source: {NEWS_SOURCE_URL}",
+        f"👤 OWNER: {NEWS_OWNER}",
+    ])
+    return "\n".join(lines)
+
+
+# ------------------------------ Commands -----------------------------
+def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None) -> None:
+    clean = (text or "").strip()
+    command = clean.split()[0].lower() if clean else ""
+    args = clean.split(maxsplit=1)[1] if len(clean.split(maxsplit=1)) > 1 else ""
+
+    if photo_file_id:
+        send_message("📷 Chart screenshot analysis\n\n" + analyze_chart_image(photo_file_id), chat_id)
+        return
+
+    manual_news = parse_manual_news_input(clean)
+    if manual_news:
+        full_analysis = format_news_analysis(manual_news)
+        send_message(full_analysis, chat_id, parse_mode="HTML")
+        return
+
+    if command in ("/start", "/help"):
+        send_message(
+            "👻 GHOST MATRIX V2.0\n\n"
+            "Commands:\n"
+            "/status — bot/API/database status\n"
+            "/markets — cached market catalog count\n"
+            "/signals — recent logged setups\n"
+            "/future — manually scan all 18 selected pairs; sends one combined list\n"
+            "/stats — manually logged WIN/LOSS only\n"
+            "/win [ID] — mark a signal WIN\n"
+            "/loss [ID] — mark a signal LOSS\n"
+            "/risk — risk reminder\n"
+            "/learn — পরের Price Action Lesson ও ছবি (একবারে ১টি)\n"
+            "/learn reset — Lesson 1 থেকে আবার শুরু\n"
+            "/news — আগামী ৭ দিনের high-impact economic news\n"
+            "News input: AUD CPI\nAct-4.7%\nFor-4.6%\nPre-4.7% — auto analyzer\n"
+            "/ask your question — optional AI answer\n\n"
+            "Automatic signal messages are OFF. Use /future to scan manually. External data is not Quotex-verified.", chat_id)
+    elif command == "/status":
+        db_ok, db_msg = init_database()
+        msg = (
+            "🛠 GHOST MATRIX STATUS\n"
+            f"Bot token: {'configured' if BOT_TOKEN else 'MISSING'}\n"
+            f"Chat ID: {'configured' if CHAT_ID else 'MISSING'}\n"
+            f"Twelve Data key: {'configured' if TWELVE_DATA_API_KEY else 'MISSING'}\n"
+            f"Database: {'OK' if db_ok else 'NOT READY'} — {db_msg}\n"
+            f"API credits used today (tracked): {db_api_calls_today()}/{DAILY_CREDIT_BUDGET}\n"
+            f"Catalog symbols: {state['catalog_count']}\n"
+            f"Last scan UTC: {state['last_scan_utc'] or 'not yet'}\n"
+            f"Last scan Bangladesh time: {bd_time(datetime.fromisoformat(state['last_scan_utc'])) + ' UTC+6' if state['last_scan_utc'] else 'not yet'}\n"
+            "Automatic signals: OFF (manual /future only)\n"
+            f"Last scanner error: {state['last_error'] or 'none'}\n"
+            "Data source is external; Quotex verification: NO"
+        )
+        send_message(msg, chat_id)
+    elif command == "/markets":
+        catalog = get_catalog()
+        send_message(
+            f"🎯 GHOST MATRIX — SELECTED MARKETS ({len(catalog)})\n" +
+            "\n".join(f"{i}. {x['symbol']}" for i, x in enumerate(catalog, 1)) +
+            "\n\nএই তালিকা তোমার নির্বাচিত pair; Quotex-এ REAL tab-এ availability নিজে মিলিয়ে দেখো.", chat_id)
+    elif command == "/signals":
+        signals = fetch_recent_signals(10)
+        if not signals:
+            send_message("📋 এখনো কোনো সিগনাল লগ নেই। /future দিয়ে ম্যানুয়াল স্ক্যান করো।", chat_id)
+        else:
+            lines = ["📋 GHOST MATRIX — RECENT SIGNALS", "ফল জানাতে /win ID বা /loss ID ব্যবহার করো।", ""]
+            for sig in signals:
+                sid = sig.get("id", "?")
+                sym = sig.get("symbol", "?")
+                direc = sig.get("direction", "?")
+                price = sig.get("entry_price", "N/A")
+                ctime = bd_time(sig.get("candle_time"))
+                status = sig.get("status", "PENDING")
+                lines.append(f"ID {sid} | {sym} | {direc} | {status}\nদাম: {price} | Candle BD: {ctime} UTC+6\n/win {sid} অথবা /loss {sid}")
+            send_message("\n\n".join(lines), chat_id)
+    elif command == "/future":
+        try:
+            catalog = get_catalog()
+            if not catalog:
+                raise RuntimeError("REAL_MARKET_SYMBOLS list is empty")
+            send_message(
+                f"🔎 Manual scan শুরু হলো: {len(catalog)}টি pair.\n"
+                "API limit বজায় রাখতে অনুরোধগুলো ধীরে করা হবে; শেষ হলে সব সম্ভাব্য setup একসাথে পাঠাব।\n"
+                "Automatic signals OFF — এই স্ক্যানটি শুধু তোমার /future command-এর জন্য।", chat_id)  
+        # Scan only 5 pairs per request to reduce stale signals.
+            results = []
+            selected = catalog[:5]
+            last_request_at = 0.0
+
+            for item in selected:
+                if last_request_at:
+                    wait = 8.0 - (time.monotonic() - last_request_at)
+                    if wait > 0:
+                        time.sleep(wait)
+
+                if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+                    results.append({
+                        "symbol": item["symbol"],
+                        "direction": "NO TRADE",
+                        "reason": "দৈনিক API safety budget শেষ; এই pair স্ক্যান হয়নি।"
+                    })
+                    continue
+
+                try:
+                    last_request_at = time.monotonic()
+                    result = scan_one_symbol(item["symbol"])
+                    results.append(result)
+                except Exception as scan_exc:
+                    log.warning(
+                        "Manual scan failed for %s: %s",
+                        item["symbol"], scan_exc
+                    )
+                    results.append({
+                        "symbol": item["symbol"],
+                        "direction": "NO TRADE",
+                        "reason": "এই pair-এর ডেটা পাওয়া যায়নি।"
+                    })
+
+            state["last_scan_utc"] = datetime.now(timezone.utc).isoformat()
+            state["last_error"] = None
+            send_message(format_future_batch(results, len(selected)), chat_id) 
+        except Exception as exc:
+            send_message(f"❌ Manual scan failed: {exc}", chat_id)
+    elif command == "/stats":
+        wins, losses, total = get_stats()
+        rate = round(wins * 100 / total, 1) if total else None
+        send_message(
+            f"📊 MANUALLY LOGGED RESULTS\nWIN: {wins}\nLOSS: {losses}\nTotal: {total}\n"
+            f"Win rate: {str(rate) + '%' if rate is not None else 'N/A (no results)'}\n"
+            "This is only based on /win and /loss entries, not an automatic broker result.", chat_id)
+    elif command in ("/win", "/loss"):
+        signal_id = None
+        if args:
+            try:
+                signal_id = int(args.strip().split()[0])
+            except ValueError:
+                send_message(f"ব্যবহার: {command} অথবা {command} SIGNAL_ID (যেমন {command} 12)", chat_id)
+                return
+        outcome = "WIN" if command == "/win" else "LOSS"
+        updated, signal = update_signal_result(outcome, signal_id)
+        if not updated or not signal:
+            send_message("কোনো PENDING signal পাওয়া যায়নি। /signals দেখে সঠিক ID ব্যবহার করো।", chat_id)
+            return
+        wins, losses, total = get_stats()
+        rate = round(wins * 100 / total, 1) if total else 0.0
+        sw, sl, st = get_symbol_stats(str(signal.get("symbol", "")))
+        sr = round(sw * 100 / st, 1) if st else 0.0
+        send_message(
+            f"{'🟢' if outcome == 'WIN' else '🔴'} RESULT SAVED\n"
+            f"Signal ID: {signal.get('id')}\nAsset: {signal.get('symbol')} | Signal: {signal.get('direction')}\n"
+            f"Result: {outcome}\n\n"
+            f"📊 এই pair-এর হিসাব ({signal.get('symbol')}): {st}টি ফল\nWIN: {sw} | LOSS: {sl}\n"
+            f"Pair win rate: {sr}% | pair loss rate: {round(sl * 100 / st, 1) if st else 0.0}%\n\n"
+            f"🌐 সব pair মিলিয়ে: {total}টি ফল\nWIN: {wins} | LOSS: {losses}\n"
+            f"Overall win rate: {rate}% | overall loss rate: {round(losses * 100 / total, 1) if total else 0.0}%\n"
+            "এটি তোমার হাতে দেওয়া ফলাফলের হিসাব; Quotex থেকে auto-result যাচাই নয়।", chat_id)
+    elif command == "/risk":
+        send_message(
+            "⚠️ Risk reminder\n"
+            "• কোনো সিগন্যাল নিশ্চিত নয়।\n• হারানো টাকা ফেরত পেতে stake বাড়িও না।\n"
+            "• Demo/backtest আগে ব্যবহার করো।\n• এক ট্রেডে সামর্থ্যের বাইরে ঝুঁকি নিও না।\n"
+            "• Quotex-এর candle/asset নিজে মিলিয়ে দেখো; বাইরের feed আলাদা হতে পারে.", chat_id)
+    elif command == "/learn":
+        if args.strip().lower() == "reset":
+            send_price_action_course(chat_id, reset=True)
+        elif not args.strip():
+            send_price_action_course(chat_id)
+        else:
+            send_message(
+                "ব্যবহার:\n"
+                "/learn — পরের Lesson ও ছবি\n"
+                "/learn reset — Lesson 1 থেকে আবার শুরু",
+                chat_id,
+            )
+    elif command == "/news":
+        days = 7
+        if args.strip().lower() == "today":
+            days = 1
+        elif args.strip().lower() == "week":
+            days = 7
+        try:
+            events = get_economic_calendar(days)
+            send_message(format_economic_calendar(events, days), chat_id)
+        except Exception as exc:
+            log.warning("Economic calendar request failed: %s", exc)
+            send_message(
+                "👻 GHOST MATRIX — NEWS CALENDAR\n"
+                "🔵 PAID\n\n"
+                "লাইভ economic calendar এখন পাওয়া যায়নি। কিছুক্ষণ পরে /news আবার চেষ্টা করো।\n"
+                f"Source: {NEWS_SOURCE_URL}\n"
+                f"👤 OWNER: {NEWS_OWNER}", chat_id)
+    elif command.startswith("/ask"):
+        if not args:
+            send_message("ব্যবহার: /ask তোমার প্রশ্ন লিখো", chat_id)
+        else:
+            send_message(ai_answer(args), chat_id)
+    elif clean.startswith("/"):
+        send_message("Command বুঝতে পারিনি। /help লিখে available commands দেখো.", chat_id)
+    elif clean:
+        send_message(
+            "সাধারণ প্রশ্নের জন্য /ask তোমার প্রশ্ন লিখো ব্যবহার করো।\n\n"
+            "📰 News Analyzer format:\n"
+            "AUD CPI\nAct-4.7%\nFor-4.6%\nPre-4.7%\n\n"
+            "Actual, Forecast, Previous তিনটি মান দিলেই auto-analysis হবে।", chat_id)
+
+
+def telegram_poll_loop() -> None:
+    offset = None
+    while True:
+        if not BOT_TOKEN:
+            log.error("BOT_TOKEN missing; Telegram polling paused")
+            time.sleep(30)
+            continue
+        try:
+            params = {"timeout": 25}
+            if offset is not None:
+                params["offset"] = offset
+            response = http_session.get(f"{TELEGRAM_BASE}/getUpdates", params=params, timeout=35)
+            response.raise_for_status()
+            payload = response.json()
+            if not payload.get("ok"):
+                raise RuntimeError(str(payload))
+            for update in payload.get("result", []):
+                offset = update["update_id"] + 1
+                message = update.get("message") or update.get("edited_message")
+                if not message:
+                    continue
+                chat = message.get("chat", {})
+                chat_id = str(chat.get("id", ""))
+                if not is_allowed_chat(chat_id):
+                    continue
+                text_in = message.get("text") or message.get("caption") or ""
+                # Accept JSON commands from Telegram Web App keyboard buttons.
+                # Telegram Main Mini App launch mode may not support sendData().
+                web_app_data = message.get("web_app_data")
+                if web_app_data:
+                    try:
+                        web_payload = json.loads(web_app_data.get("data", "{}"))
+                        if isinstance(web_payload, dict):
+                            web_command = web_payload.get("command", "")
+                            if isinstance(web_command, str) and web_command.startswith("/"):
+                                text_in = web_command
+                    except (json.JSONDecodeError, TypeError, ValueError):
+                        log.warning("Ignoring invalid Telegram Mini App data")
+                photos = message.get("photo") or []
+                photo_id = photos[-1].get("file_id") if photos else None
+                handle_command(text_in, chat_id, photo_id)
+        except Exception as exc:
+            log.warning("Telegram polling error: %s", exc)
+            time.sleep(5)
+
+# ------------------------ Authentication -----------------------------
+def _auth_db_ready() -> bool:
+    return bool(DATABASE_URL and psycopg2 is not None)
+
+
+def _user_by_email(email: str):
+    if not _auth_db_ready():
+        raise RuntimeError("Authentication requires a working DATABASE_URL/PostgreSQL database.")
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id, email, password_hash, is_admin, email_verified, access_enabled FROM gm_users WHERE LOWER(email)=LOWER(%s)", (email,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def _send_password_setup_email(email: str, token: str) -> None:
+    """Send a one-time password setup link; never email a password."""
+    if not all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, APP_BASE_URL]):
+        raise RuntimeError("Email is not configured. Check SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, and APP_BASE_URL.")
+    link = f"{APP_BASE_URL}/api/auth/set-password?token={token}"
+    msg = EmailMessage()
+    msg["Subject"] = "Set up your GHOST TRADER account"
+    msg["From"] = SMTP_FROM
+    msg["To"] = email
+    msg.set_content(
+        "Welcome to GHOST TRADER!\n\n"
+        "An administrator created an account for this email address. "
+        "Use the secure link below to choose your password. The link expires in 30 minutes and can only be used while your account is awaiting setup.\n\n"
+        f"Set your password: {link}\n\n"
+        "If you were not expecting this email, you can ignore it."
+    )
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
+
+
+
+def _bootstrap_admin() -> None:
+    if not (ADMIN_EMAIL and ADMIN_PASSWORD):
+        log.warning(
+            "ADMIN_EMAIL/ADMIN_PASSWORD not configured; "
+            "no initial admin account created"
+        )
+        return
+
+    if len(ADMIN_PASSWORD) < 12:
+        log.error(
+            "ADMIN_PASSWORD must be at least 12 characters; "
+            "initial admin not bootstrapped"
+        )
+        return
+
     try:
-        r = http.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_KEY}", "Content-Type": "application/json"},
-                      json={"model": GROQ_MODEL,
-                            "messages": [{"role": "system", "content": "Answer clearly. Never invent current news, live prices, trade outcomes, or guaranteed trading advice."},
-                                         {"role": "user", "content": prompt}],
-                            "temperature": 0.2, "max_tokens": 700}, timeout=30)
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"].strip()
-    except Exception:
-        return "AI service is unavailable right now. Try again later."
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO gm_users (
+                        email, password_hash, is_admin,
+                        email_verified, verified_at
+                    )
+                    VALUES (%s, %s, TRUE, TRUE, NOW())
+                    ON CONFLICT (email) DO UPDATE SET
+                        password_hash = EXCLUDED.password_hash,
+                        is_admin = TRUE,
+                        email_verified = TRUE,
+                        verified_at = COALESCE(
+                            gm_users.verified_at, NOW()
+                        )
+                    """,
+                    (
+                        ADMIN_EMAIL,
+                        generate_password_hash(ADMIN_PASSWORD),
+                    ),
+                )
 
-def bd_time(dt):
-    if dt is None:
-        return "-"
-    try:
-        if isinstance(dt, str):
-            dt = datetime.fromisoformat(dt)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        from zoneinfo import ZoneInfo
-        return dt.astimezone(ZoneInfo("Asia/Dhaka")).strftime("%d %b %Y, %I:%M %p")
-    except Exception:
-        return str(dt)
+        log.info(
+            "Admin account bootstrap completed for configured ADMIN_EMAIL"
+        )
 
-# ---------------- Pages ----------------
+    except Exception:
+        log.exception("Admin bootstrap failed")
+
+
+
+def login_required(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        uid = session.get("user_id")
+        if not uid:
+            return jsonify({"error": "Login required", "auth_required": True}), 401
+        try:
+            with db_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT id,email,is_admin,email_verified,access_enabled FROM gm_users WHERE id=%s", (uid,))
+                    user = cur.fetchone()
+            if not user or not user["email_verified"] or not user.get("access_enabled", True):
+                session.clear()
+                return jsonify({"error": "Please verify your email and log in again.", "auth_required": True}), 401
+            request.auth_user = dict(user)
+        except Exception as exc:
+            log.error("Auth session check failed: %s", exc)
+            return jsonify({"error": "Authentication database unavailable"}), 503
+        return fn(*args, **kwargs)
+    return wrapped
+
+
+def admin_required(fn):
+    @wraps(fn)
+    @login_required
+    def wrapped(*args, **kwargs):
+        if not request.auth_user.get("is_admin"):
+            return jsonify({"error": "Admin access required"}), 403
+        return fn(*args, **kwargs)
+    return wrapped
+
+
+# -------------------------------- Flask ------------------------------
 @app.get("/")
+def home():
+    return "GHOST TRADER is running. Data source: external Twelve Data; Quotex verification: disabled.", 200
+
 @app.get("/app")
 @app.get("/app/")
-def home():
-    return INDEX_HTML
+def mini_app():
+    # Keep index.html in the same repository folder as main.py.
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "running", "twelve_data_key_configured": bool(TWELVE_KEY),
-                    "ai_api_key_configured": bool(AI_KEY), "catalog_count": len(get_catalog()),
-                    "quotex_verified": False}), 200
+    return jsonify({
+        "status": "running",
+        "bot_token_configured": bool(BOT_TOKEN),
+        "chat_id_configured": bool(CHAT_ID),
+        "twelve_data_key_configured": bool(TWELVE_DATA_API_KEY),
+        "ai_api_key_configured": bool(AI_API_KEY),
+        "database_url_configured": bool(DATABASE_URL),
+        "catalog_count": state["catalog_count"],
+        "last_scan_utc": state["last_scan_utc"],
+        "last_error": state["last_error"],
+        "quotex_verified": False,
+    }), 200
 
-# ---------------- Auth ----------------
+@app.get("/status")
+def status_route():
+    db_ok, db_msg = init_database()
+    return jsonify({
+        "running": True,
+        "database_ok": db_ok,
+        "database_message": db_msg,
+        "api_calls_today": db_api_calls_today(),
+        "daily_budget": DAILY_CREDIT_BUDGET,
+        "catalog_count": state["catalog_count"],
+        "last_scan_utc": state["last_scan_utc"],
+        "last_error": state["last_error"],
+        "quotex_verified": False,
+    }), 200
+
+
+
 @app.post("/api/auth/login")
 def auth_login():
-    b = request.get_json(silent=True) or {}
-    email = str(b.get("email", "")).strip().lower()
-    pw = str(b.get("password", ""))
-    u = _users.get(email)
-    if not u or not check_password_hash(u["password_hash"], pw):
+    if not FLASK_SECRET_KEY:
+        return jsonify({"error": "FLASK_SECRET_KEY is not configured in Render."}), 503
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email", "")).strip().lower()
+    password = str(body.get("password", ""))
+    if not email or not password or len(email) > 254 or len(password) > 1024:
+        return jsonify({"error": "Email and password are required."}), 400
+    try:
+        user = _user_by_email(email)
+    except Exception as exc:
+        log.error("Login database error: %s", exc)
+        return jsonify({"error": "Authentication database unavailable. Check DATABASE_URL and database connection."}), 503
+    
+    
+    if not user:
+        log.warning("Login debug: no account found for submitted email")
         return jsonify({"error": "Email or password is incorrect."}), 401
-    session.clear(); session.permanent = True; session["user_id"] = int(u["id"])
-    return jsonify({"ok": True, "user": {"email": u["email"], "name": u["name"], "is_admin": False, "plan": u["plan"]}})
+
+    if not check_password_hash(user["password_hash"], password):
+        log.warning("Login debug: account found, password mismatch")
+        return jsonify({"error": "Email or password is incorrect."}), 401
+
+
+    if not user.get("access_enabled", True):
+        return jsonify({"error": "This account is disabled. Contact the administrator."}), 403
+    if not user["email_verified"]:
+        return jsonify({"error": "Email is not verified yet. Open the verification link sent to your email."}), 403
+    session.clear()
+    session.permanent = True
+    session["user_id"] = int(user["id"])
+    return jsonify({"ok": True, "user": {"email": user["email"], "is_admin": bool(user["is_admin"]), "access_enabled": bool(user.get("access_enabled", True))}})
+
 
 @app.get("/api/auth/me")
 def auth_me():
     uid = session.get("user_id")
     if not uid:
         return jsonify({"authenticated": False}), 200
-    for u in _users.values():
-        if int(u["id"]) == int(uid):
-            return jsonify({"authenticated": True, "user": {"email": u["email"], "name": u["name"], "is_admin": False, "plan": u["plan"]}})
-    session.clear()
-    return jsonify({"authenticated": False}), 200
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id,email,is_admin,email_verified,access_enabled FROM gm_users WHERE id=%s", (uid,))
+                user = cur.fetchone()
+        if not user or not user["email_verified"] or not user.get("access_enabled", True):
+            session.clear()
+            return jsonify({"authenticated": False}), 200
+        return jsonify({"authenticated": True, "user": {"email": user["email"], "is_admin": bool(user["is_admin"]), "access_enabled": bool(user.get("access_enabled", True))}})
+    except Exception as exc:
+        log.error("Auth status error: %s", exc)
+        return jsonify({"authenticated": False, "error": "Authentication database unavailable"}), 503
+
 
 @app.post("/api/auth/logout")
 def auth_logout():
     session.clear()
-    return jsonify({"ok": True, "authenticated": False})
+    response = jsonify({"ok": True, "authenticated": False})
+    response.delete_cookie(
+        app.config.get("SESSION_COOKIE_NAME", "session"),
+        path=app.config.get("SESSION_COOKIE_PATH", "/"),
+        domain=app.config.get("SESSION_COOKIE_DOMAIN"),
+        secure=app.config.get("SESSION_COOKIE_SECURE", False),
+        httponly=app.config.get("SESSION_COOKIE_HTTPONLY", True),
+        samesite=app.config.get("SESSION_COOKIE_SAMESITE", "Lax"),
+    )
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
-# ---------------- API ----------------
+
+@app.get("/api/auth/verify")
+def auth_verify():
+    token = request.args.get("token", "")
+    if not token:
+        return "Verification token missing. Please use the full link from your email.", 400
+    try:
+        payload = _auth_serializer.loads(token, max_age=86400)
+        email = str(payload.get("email", "")).lower()
+    except SignatureExpired:
+        return "Verification link expired. Ask your admin to create a new account and verification email.", 400
+    except (BadSignature, AttributeError, TypeError):
+        return "Invalid verification link.", 400
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE gm_users SET email_verified=TRUE, verified_at=NOW() WHERE LOWER(email)=LOWER(%s)", (email,))
+                if cur.rowcount != 1:
+                    return "Account not found. Contact your GHOST TRADER admin.", 404
+        return "Email verified successfully. Return to GHOST TRADER and log in.", 200
+    except Exception as exc:
+        log.error("Email verification database error: %s", exc)
+        return "Verification could not be completed because the database is unavailable.", 503
+
+
+@app.get("/api/auth/set-password")
+def auth_set_password_page():
+    token = request.args.get("token", "")
+    if not token:
+        return "Password setup link is missing. Please ask your administrator to resend the setup email.", 400
+    try:
+        payload = _auth_serializer.loads(token, max_age=1800)
+        if payload.get("purpose") != "password_setup":
+            return "Invalid password setup link.", 400
+        email = str(payload.get("email", "")).strip().lower()
+        if not email:
+            return "Invalid password setup link.", 400
+    except SignatureExpired:
+        return "This password setup link has expired. Please ask your administrator to resend the email.", 400
+    except (BadSignature, AttributeError, TypeError):
+        return "Invalid password setup link.", 400
+    # Keep the page self-contained so it works even if the frontend is separate.
+    return f'''<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><meta charset="utf-8"><title>GHOST TRADER — Set Password</title><body style="margin:0;background:#0b1020;color:#f4f7ff;font:16px Arial,sans-serif;display:grid;min-height:100vh;place-items:center"><main style="width:min(420px,88vw);padding:26px;border:1px solid #293451;border-radius:18px;background:#111a2e"><h2 style="margin-top:0">GHOST TRADER</h2><p>Set a secure password for your account</p><form method="post" action="/api/auth/set-password"><input type="hidden" name="token" value="{token}"><label>New password (at least 12 characters)</label><input name="password" type="password" minlength="12" maxlength="1024" required autocomplete="new-password" style="box-sizing:border-box;width:100%;padding:13px;margin:10px 0 18px;border-radius:9px;border:1px solid #394765;background:#080d19;color:white"><button style="width:100%;padding:13px;border:0;border-radius:9px;background:#67e8c0;color:#07111c;font-weight:bold">Set password</button></form><p style="color:#aab5cb;font-size:13px">The setup link expires after 30 minutes.</p></main></body></html>''', 200, {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"}
+
+
+@app.post("/api/auth/set-password")
+def auth_set_password_submit():
+    token = request.form.get("token", "")
+    password = request.form.get("password", "")
+    if len(password) < 12 or len(password) > 1024:
+        return "Password must be at least 12 characters long. Go back and try again.", 400
+    try:
+        payload = _auth_serializer.loads(token, max_age=1800)
+        if payload.get("purpose") != "password_setup":
+            return "Invalid password setup link.", 400
+        email = str(payload.get("email", "")).strip().lower()
+        if not email:
+            return "Invalid password setup link.", 400
+    except SignatureExpired:
+        return "This password setup link has expired. Please ask your administrator to resend the email.", 400
+    except (BadSignature, AttributeError, TypeError):
+        return "Invalid password setup link.", 400
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE gm_users SET password_hash=%s, email_verified=TRUE, verified_at=NOW() WHERE LOWER(email)=LOWER(%s) AND is_admin=FALSE AND email_verified=FALSE", (generate_password_hash(password), email))
+                if cur.rowcount != 1:
+                    return "This account is already set up or could not be found. Please contact your administrator.", 409
+        return "<html><meta name=viewport content='width=device-width,initial-scale=1'><body style='font:16px Arial;background:#0b1020;color:#f4f7ff;padding:40px;text-align:center'><h2>GHOST TRADER</h2><h3>Password set successfully</h3><p>Your email is verified. You can now return to the app and log in.</p></body></html>", 200, {"Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store"}
+    except Exception as exc:
+        log.error("Password setup database error: %s", exc)
+        return "Password could not be saved because the database is unavailable. Please try again later.", 503
+
+
+@app.post("/api/auth/admin/users")
+@admin_required
+def auth_admin_create_user():
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email", "")).strip().lower()
+    if not email or "@" not in email or len(email) > 254:
+        return jsonify({"error": "Enter a valid email address."}), 400
+    # A random unusable initial password is stored until the user sets their own.
+    initial_password = secrets.token_urlsafe(32)
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("INSERT INTO gm_users (email,password_hash,is_admin,email_verified) VALUES (%s,%s,FALSE,FALSE)",
+                            (email, generate_password_hash(initial_password)))
+    except Exception as exc:
+        if "unique" in str(exc).lower() or "duplicate" in str(exc).lower():
+            return jsonify({"error": "An account with this email already exists."}), 409
+        log.error("Create user database error: %s", exc)
+        return jsonify({"error": "Could not create account. Check database connection."}), 503
+    token = _auth_serializer.dumps({"email": email, "purpose": "password_setup"})
+    try:
+        _send_password_setup_email(email, token)
+    except Exception as exc:
+        log.error("Password setup email send failed: %s", exc)
+        # Do not claim email delivery. Admin should fix SMTP and remove/recreate this account.
+        return jsonify({"ok": False, "account_created": True, "email_sent": False, "error": "Account was created, but the setup email could not be sent. Check Gmail SMTP settings in Render, then use Resend Email for this account."}), 502
+    return jsonify({"ok": True, "account_created": True, "email_sent": True, "message": "Account created. Password setup email sent; the user must set a password before logging in."}), 201
+
+
+@app.get("/api/auth/admin/users")
+@admin_required
+def auth_admin_list_users():
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id,email,is_admin,email_verified,access_enabled,created_at FROM gm_users ORDER BY created_at DESC LIMIT 200")
+                rows = cur.fetchall()
+        return jsonify({"users": [dict(r) for r in rows]})
+    except Exception as exc:
+        log.error("Admin user list error: %s", exc)
+        return jsonify({"error": "Could not load users."}), 503
+
+
+@app.patch("/api/auth/admin/users/<int:user_id>/access")
+@admin_required
+def auth_admin_set_user_access(user_id: int):
+    body = request.get_json(silent=True) or {}
+    enabled = body.get("enabled")
+    if not isinstance(enabled, bool):
+        return jsonify({"error": "enabled must be true or false."}), 400
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id,is_admin FROM gm_users WHERE id=%s", (user_id,))
+                target = cur.fetchone()
+                if not target:
+                    return jsonify({"error": "User not found."}), 404
+                if target["is_admin"]:
+                    return jsonify({"error": "Admin accounts cannot be disabled from this screen."}), 403
+                cur.execute("UPDATE gm_users SET access_enabled=%s WHERE id=%s", (enabled, user_id))
+        return jsonify({"ok": True, "user_id": user_id, "access_enabled": enabled})
+    except Exception as exc:
+        log.error("Admin access update error: %s", exc)
+        return jsonify({"error": "Could not update account access."}), 503
+
+
+@app.post("/api/auth/admin/users/<int:user_id>/resend")
+@admin_required
+def auth_admin_resend_setup_email(user_id: int):
+    """Send a fresh password-setup link to an existing unverified non-admin user."""
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id,email,is_admin,email_verified FROM gm_users WHERE id=%s", (user_id,))
+                user = cur.fetchone()
+        if not user:
+            return jsonify({"error": "User not found."}), 404
+        if user.get("is_admin"):
+            return jsonify({"error": "Resend setup email is only for non-admin users."}), 403
+        if user.get("email_verified"):
+            return jsonify({"error": "This account is already verified."}), 409
+        token = _auth_serializer.dumps({"email": user["email"], "purpose": "password_setup"})
+        _send_password_setup_email(user["email"], token)
+        log.info("Admin resent password setup email for user_id=%s", user_id)
+        return jsonify({"ok": True, "email_sent": True, "message": "Setup email sent again. Ask the user to check Inbox and Spam."})
+    except Exception as exc:
+        log.error("Resend setup email failed for user_id=%s: %s", user_id, exc)
+        return jsonify({"error": "Could not send email. Check SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM and APP_BASE_URL in Render."}), 502
+
+
+@app.delete("/api/auth/admin/users/<int:user_id>")
+@admin_required
+def auth_admin_delete_user(user_id: int):
+    """Permanently delete one non-admin user. Admin records are protected."""
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id,email,is_admin FROM gm_users WHERE id=%s", (user_id,))
+                target = cur.fetchone()
+                if not target:
+                    return jsonify({"error": "User not found."}), 404
+                if target.get("is_admin"):
+                    return jsonify({"error": "Admin accounts cannot be deleted from this screen."}), 403
+                cur.execute("DELETE FROM gm_users WHERE id=%s AND is_admin=FALSE", (user_id,))
+        log.info("Admin deleted user_id=%s", user_id)
+        return jsonify({"ok": True, "deleted": True, "user_id": user_id})
+    except Exception as exc:
+        log.error("Admin delete user failed for user_id=%s: %s", user_id, exc)
+        return jsonify({"error": "Could not delete account. Check database logs."}), 503
+
+
 @app.get("/api/dashboard")
 @login_required
 def api_dashboard():
-    w = sum(1 for x in _signals if x.get("status") == "WIN")
-    l = sum(1 for x in _signals if x.get("status") == "LOSS")
-    return jsonify({"app": "GHOST AI", "status": "running", "data_source": "Twelve Data external feed",
-                    "quotex_verified": False, "twelve_data_key_configured": bool(TWELVE_KEY),
-                    "ai_api_key_configured": bool(AI_KEY), "catalog_count": len(get_catalog()),
-                    "signals": list(reversed(_signals[-20:])),
-                    "stats": {"wins": w, "losses": l, "total": w + l}}), 200
+    """Fast dashboard summary: avoid running schema migrations on every request."""
+    today = datetime.now(timezone.utc).date()
+    db_ok = False
+    db_msg = "Database status unavailable"
+    signals = []
+    wins = losses = total = api_calls = 0
+    try:
+        # One database connection for dashboard data. init_database() runs at startup;
+        # calling it on every dashboard request caused unnecessary latency/timeouts.
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id, symbol, direction, candle_time, created_at, entry_price, reason, source, verified_quotex, status FROM gm_signals ORDER BY created_at DESC LIMIT 50")
+                signals = [dict(r) for r in cur.fetchall()]
+                cur.execute("SELECT COUNT(*) FILTER (WHERE status='WIN') AS wins, COUNT(*) FILTER (WHERE status='LOSS') AS losses, COUNT(*) FILTER (WHERE status IN ('WIN','LOSS')) AS total FROM gm_signals")
+                stats_row = cur.fetchone() or {}
+                wins, losses, total = int(stats_row.get("wins") or 0), int(stats_row.get("losses") or 0), int(stats_row.get("total") or 0)
+                cur.execute("SELECT calls FROM gm_api_usage WHERE usage_day=%s", (today,))
+                usage_row = cur.fetchone()
+                api_calls = int(usage_row["calls"] if usage_row and usage_row.get("calls") is not None else 0)
+        db_ok, db_msg = True, "Supabase/PostgreSQL connected"
+    except Exception as exc:
+        log.warning("Dashboard database query failed: %s", exc)
+        db_msg = "Database unavailable; showing temporary in-memory data"
+        with state_lock:
+            signals = list(reversed(state.get("memory_signals", [])[-50:]))
+            wins = sum(1 for x in state.get("memory_signals", []) if x.get("status") == "WIN")
+            losses = sum(1 for x in state.get("memory_signals", []) if x.get("status") == "LOSS")
+            total = wins + losses
+            api_calls = int(state.get("memory_api_calls", {}).get(str(today), 0))
+    return jsonify({
+        "app": "GHOST MATRIX", "status": "running",
+        "data_source": "Twelve Data external feed", "quotex_verified": False,
+        "twelve_data_key_configured": bool(TWELVE_DATA_API_KEY),
+        "bot_token_configured": bool(BOT_TOKEN), "chat_id_configured": bool(CHAT_ID),
+        "database_ok": db_ok, "database_message": db_msg,
+        "catalog_count": len(get_catalog()), "last_scan_utc": state.get("last_scan_utc"),
+        "last_error": state.get("last_error"), "api_calls_today": api_calls,
+        "daily_budget": DAILY_CREDIT_BUDGET, "signals": signals,
+        "stats": {"wins": wins, "losses": losses, "total": total}
+    }), 200
+
+@app.get("/api/signals")
+@login_required
+def api_signals():
+    try:
+        limit = max(1, min(100, int(request.args.get("limit", "20"))))
+    except (TypeError, ValueError):
+        limit = 20
+    return jsonify({"signals": fetch_recent_signals(limit), "source": "Twelve Data external feed", "quotex_verified": False}), 200
+
+@app.get("/api/stats")
+@login_required
+def api_stats():
+    wins, losses, total = get_stats()
+    return jsonify({"wins": wins, "losses": losses, "total": total, "quotex_verified": False,
+                    "note": "Only manually recorded outcomes are counted; this is not a guaranteed win rate."}), 200
+
+# ----------------------- Mini App API endpoints -----------------------
+# Lightweight in-process rate limits protect paid/external API usage. For a
+# public deployment, enable Telegram initData validation or an app access token.
+_api_buckets: dict[str, list[float]] = {}
+_api_buckets_lock = threading.Lock()
+_last_app_scan = 0.0
+
+def _api_allowed(bucket: str, limit: int, window: int = 60) -> bool:
+    now = time.monotonic()
+    key = f"{request.remote_addr or 'unknown'}:{bucket}"
+    with _api_buckets_lock:
+        recent = [stamp for stamp in _api_buckets.get(key, []) if now - stamp < window]
+        if len(recent) >= limit:
+            _api_buckets[key] = recent
+            return False
+        recent.append(now)
+        _api_buckets[key] = recent
+        return True
 
 @app.get("/api/markets")
 @login_required
@@ -286,333 +2246,189 @@ def api_markets():
 
 @app.post("/api/scan")
 @login_required
-def api_scan():
-    if not _allowed("scan", 4, 60):
-        return jsonify({"error": "Scan limit reached. Try again in a minute."}), 429
-    b = request.get_json(silent=True) or {}
-    symbol = str(b.get("symbol", "")).strip().upper()
-    by = {x["symbol"]: x for x in get_catalog()}
-    if not symbol or symbol not in by:
-        return jsonify({"error": "Choose a valid market from the list."}), 400
-    if by[symbol].get("otc"):
-        return jsonify({"error": "OTC is in the catalog, but no live OTC candle feed is configured. Use Screenshot Analyzer for OTC; no OTC price / signal is fabricated."}), 503
-    with _lock:
+def api_scan_one():
+    global _last_app_scan
+    if not _api_allowed("scan", 4, 60):
+        return jsonify({"error": "Scan limit reached. এক মিনিট পরে আবার চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
+    symbol = str(body.get("symbol", "")).strip().upper()
+    allowed = {str(item.get("symbol", "")).upper() for item in get_catalog()}
+    if not symbol or symbol not in allowed:
+        return jsonify({"error": "তালিকা থেকে একটি valid market নির্বাচন করো।"}), 400
+    with _api_buckets_lock:
         now = time.monotonic()
-        if now - _last_scan[0] < 8:
-            return jsonify({"error": "Wait 8 seconds between scans to respect the API limit."}), 429
-        _last_scan[0] = now
-    if not TWELVE_KEY:
-        return jsonify({"error": "TWELVE_DATA_API_KEY is not set in Render Environment."}), 503
+        if now - _last_app_scan < 8:
+            return jsonify({"error": "API limit বজায় রাখতে ৮ সেকেন্ড অপেক্ষা করো।"}), 429
+        _last_app_scan = now
+    if not TWELVE_DATA_API_KEY:
+        return jsonify({"error": "TWELVE_DATA_API_KEY Render Environment-এ সেট নেই।"}), 503
+    if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+        return jsonify({"error": "দৈনিক API safety budget শেষ হয়েছে।"}), 429
     try:
-        res = scan_one(symbol)
-        candle = res.get("candle") or {}
-        return jsonify({"result": {k: v for k, v in res.items() if k not in ("candle", "backtest")},
-                        "candle_time": bd_time(candle.get("time")),
-                        "backtest": res.get("backtest", {}),
-                        "source": "Twelve Data external feed", "quotex_verified": False})
+        result = scan_one_symbol(symbol)
+        candle = result.get("candle") or {}
+        return jsonify({
+            "result": {k: v for k, v in result.items() if k not in ("candle", "backtest")},
+            "candle_time": bd_time(candle.get("time")),
+            "backtest": result.get("backtest", {}),
+            "source": "Twelve Data external feed", "quotex_verified": False
+        })
     except Exception as exc:
-        return jsonify({"error": f"Market data unavailable: {str(exc)[:180]}"}), 502
+        log.warning("Mini App scan failed for %s: %s", symbol, exc)
+        state["last_error"] = str(exc)[:240]
+        return jsonify({"error": f"Market data পাওয়া যায়নি: {str(exc)[:180]}"}), 502
 
 @app.post("/api/ask")
 @login_required
 def api_ask():
-    if not _allowed("ask", 8, 60):
-        return jsonify({"error": "Too many requests. Try again in a minute."}), 429
-    b = request.get_json(silent=True) or {}
-    q = str(b.get("question", "")).strip()
-    if not q:
-        return jsonify({"error": "Write a question."}), 400
-    return jsonify({"answer": ai_answer(q), "provider": "configured AI service" if AI_KEY else "AI not configured"})
+    if not _api_allowed("ask", 8, 60):
+        return jsonify({"error": "অনেক request হয়েছে। এক মিনিট পরে চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
+    question = str(body.get("question", "")).strip()
+    if not question:
+        return jsonify({"error": "প্রশ্ন লিখো।"}), 400
+    if len(question) > 3000:
+        return jsonify({"error": "প্রশ্ন ৩০০০ অক্ষরের মধ্যে রাখো।"}), 400
+    return jsonify({"answer": ai_answer(question), "provider": "configured AI service" if AI_API_KEY else "AI not configured"})
 
 @app.post("/api/analyze-image")
 @login_required
-def api_image():
-    if not _allowed("vision", 4, 60):
-        return jsonify({"error": "Max 4 screenshot analyses per minute."}), 429
-    up = request.files.get("image")
-    if up is None or not up.filename:
-        return jsonify({"error": "Upload a chart screenshot."}), 400
-    if not AI_KEY:
-        return jsonify({"error": "AI_API_KEY is not set in Render Environment; screenshot analysis is off."}), 503
-    raw = up.read(12 * 1024 * 1024 + 1)
+def api_analyze_image():
+    if not _api_allowed("vision", 4, 60):
+        return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৪টি screenshot analysis। পরে আবার চেষ্টা করো।"}), 429
+    upload = request.files.get("image")
+    if upload is None or not upload.filename:
+        return jsonify({"error": "একটি chart screenshot upload করো।"}), 400
+    if not AI_API_KEY:
+        return jsonify({"error": "AI_API_KEY Render Environment-এ সেট নেই; screenshot analysis চালু নয়।"}), 503
+    raw = upload.read(12 * 1024 * 1024 + 1)
     if not raw or len(raw) > 12 * 1024 * 1024:
-        return jsonify({"error": "Image is empty or over 12 MB."}), 413
+        return jsonify({"error": "ছবি খালি অথবা ১২ MB-এর বেশি। ছোট screenshot upload করো।"}), 413
     try:
-        mime = up.mimetype if up.mimetype in ("image/jpeg", "image/png", "image/webp") else "image/jpeg"
-        enc = base64.b64encode(raw).decode("ascii")
-        sys_p = ("You are a careful technical-analysis assistant reading a trading-chart screenshot. "
-                 "Only report evidence actually visible in the image; never invent asset, timeframe, price, indicator values, candles, or levels. "
-                 "Do not promise profit, do not say the broker verified the chart, and do not imply confidence is win probability. "
-                 "If evidence is mixed, cropped/blurry, or context is missing, choose NO TRADE. "
-                 "Return ONLY valid JSON with keys: direction (CALL, PUT, or NO TRADE), confidence (0-100, clarity of evidence, not win probability), "
-                 "summary, trend, structure, zones, reasoning, confirmation, invalidation, confidence_note.")
-        payload = {"model": GROQ_VISION,
-                   "messages": [{"role": "system", "content": sys_p},
-                                {"role": "user", "content": [{"type": "text", "text": "Analyse this chart screenshot. If asset/timeframe is visible, name it; if not, do not guess. JSON only."},
-                                                             {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{enc}"}}]}],
-                   "temperature": 0.1, "max_completion_tokens": 1100}
-        r = http.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_KEY}", "Content-Type": "application/json"}, json=payload, timeout=50)
-        r.raise_for_status()
-        content = r.json()["choices"][0]["message"]["content"].strip()
+        im = Image.open(io.BytesIO(raw))
+        im.verify()
+        mime = upload.mimetype if upload.mimetype in ("image/jpeg", "image/png", "image/webp") else "image/jpeg"
+        encoded = base64.b64encode(raw).decode("ascii")
+        system_prompt = '''You are a careful technical-analysis assistant reading a trading-chart screenshot. Answer in Bengali. Only report evidence actually visible in the image; never invent asset, timeframe, price, indicator values, candles, or levels. Inspect trend/swing structure, candle momentum, visible support/resistance, possible liquidity sweep/BOS/CHoCH only when clearly supported, and ambiguity. Do not promise profit, do not say the broker verified the chart, and do not imply a confidence score is the probability of winning. If evidence is mixed, image is cropped/blurry, or timeframe/context is missing, choose NO TRADE. Return ONLY valid JSON with these keys: direction (CALL, PUT, or NO TRADE), confidence (integer 0-100 representing confidence in the quality/clarity of setup evidence, not win probability), summary (short Bengali), trend (Bengali), structure (Bengali), zones (Bengali; say not clearly visible if so), reasoning (Bengali; evidence for and against), confirmation (Bengali; what price action should confirm before entry), invalidation (Bengali; what would invalidate the idea and key risks), confidence_note (Bengali; explicitly explain confidence is not win probability). Do not create a trade direction solely to satisfy the user.'''
+        user_prompt = "এই chart screenshot-টি বিশ্লেষণ করো। asset/timeframe দেখা গেলে শনাক্ত করো; না দেখা গেলে অনুমান কোরো না। CALL, PUT অথবা NO TRADE নির্বাচন করো। দুই দিকের প্রমাণ যাচাই করো এবং entry নেওয়ার আগে কী confirmation দরকার বলো। JSON ছাড়া অন্য কিছু দেবে না।"
+        payload = {"model": GROQ_VISION_MODEL, "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": [
+                {"type": "text", "text": user_prompt},
+                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
+            ]}
+        ], "temperature": 0.1, "max_completion_tokens": 1100}
+        response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=50)
+        response.raise_for_status()
+        content = response.json()["choices"][0]["message"]["content"].strip()
         cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", content, flags=re.I).strip()
         try:
-            a = json.loads(cleaned)
-            if not isinstance(a, dict):
-                raise ValueError("not object")
-            d = str(a.get("direction", "NO TRADE")).upper()
-            a["direction"] = d if d in ("CALL", "PUT", "NO TRADE") else "NO TRADE"
+            analysis = json.loads(cleaned)
+            if not isinstance(analysis, dict):
+                raise ValueError("analysis JSON is not an object")
+            direction = str(analysis.get("direction", "NO TRADE")).upper()
+            analysis["direction"] = direction if direction in ("CALL", "PUT", "NO TRADE") else "NO TRADE"
             try:
-                a["confidence"] = max(0, min(100, int(float(a.get("confidence", 0)))))
-            except Exception:
-                a["confidence"] = 0
-            for k in ("summary", "trend", "structure", "zones", "reasoning", "confirmation", "invalidation", "confidence_note"):
-                if not isinstance(a.get(k), str):
-                    a[k] = "Not clearly visible in the image."
-        except Exception:
-            a = {"direction": "NO TRADE", "confidence": 0, "summary": content, "trend": "Structured result unavailable",
-                 "structure": "Structured result unavailable", "zones": "Structured result unavailable", "reasoning": content,
-                 "confirmation": "Do not enter without clear price confirmation.", "invalidation": "Setup is not confirmed.",
-                 "confidence_note": "Confidence could not be reliably extracted; it is not a win probability."}
-        return jsonify({"analysis": a, "warning": "Screenshot-based educational analysis only; confidence is not a win probability and this is not a Quotex-verified signal."})
-    except Exception:
-        return jsonify({"error": "Could not analyse the image. Check image format, AI_API_KEY, vision model and provider limits."}), 502
+                analysis["confidence"] = max(0, min(100, int(float(analysis.get("confidence", 0)))))
+            except (TypeError, ValueError):
+                analysis["confidence"] = 0
+            for key in ("summary", "trend", "structure", "zones", "reasoning", "confirmation", "invalidation", "confidence_note"):
+                if not isinstance(analysis.get(key), str):
+                    analysis[key] = "ছবিতে পরিষ্কারভাবে শনাক্ত করা যায়নি।"
+        except (json.JSONDecodeError, ValueError):
+            analysis = {"direction": "NO TRADE", "confidence": 0, "summary": content,
+                        "trend": "Structured result unavailable", "structure": "Structured result unavailable",
+                        "zones": "Structured result unavailable", "reasoning": content,
+                        "confirmation": "Clear price confirmation ছাড়া entry নিও না।",
+                        "invalidation": "সেটআপ নিশ্চিত নয়।", "confidence_note": "Confidence নির্ভরযোগ্যভাবে বের করা যায়নি; এটি win probability নয়।"}
+        return jsonify({"analysis": analysis, "warning": "Screenshot-based educational analysis only; confidence is not a win probability and this is not a Quotex-verified signal."})
+    except Exception as exc:
+        log.warning("Mini App screenshot analysis failed: %s", exc)
+        return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। image format, AI_API_KEY, vision model ও provider limit পরীক্ষা করো।"}), 502
 
 @app.get("/api/news")
 @login_required
 def api_news():
-    if not _allowed("news", 10, 60):
-        return jsonify({"error": "Try again shortly."}), 429
+    if not _api_allowed("news", 10, 60):
+        return jsonify({"error": "একটু পরে আবার চেষ্টা করো।"}), 429
     try:
         days = max(1, min(14, int(request.args.get("days", "7"))))
-        from zoneinfo import ZoneInfo
-        tz = ZoneInfo("Asia/Dhaka")
-        today = datetime.now(tz).date()
-        end = today + timedelta(days=days)
-        r = http.get("https://www.financecalendar.com/api/calendar",
-                     params={"from": today.isoformat(), "to": end.isoformat(), "impact": "high", "limit": 100}, timeout=20)
-        r.raise_for_status()
-        payload = r.json()
-        events = payload.get("events", []) if isinstance(payload, dict) else payload
-        if not isinstance(events, list):
-            raise RuntimeError("Calendar format unexpected")
+        events = get_economic_calendar(days)
         clean = []
-        alias = {"us": "USD", "usa": "USD", "gb": "GBP", "uk": "GBP", "eu": "EUR", "au": "AUD", "ca": "CAD", "jp": "JPY", "ch": "CHF", "nz": "NZD"}
-        for ev in events[:50]:
-            if not isinstance(ev, dict):
-                continue
-            cur = str(ev.get("currency") or ev.get("country_code") or ev.get("country") or "-")
-            if cur.lower() in alias:
-                cur = alias[cur.lower()]
-            dt_raw = ev.get("datetime") or ev.get("date") or ev.get("time")
-            dt = None
-            try:
-                if dt_raw:
-                    s = str(dt_raw).replace("Z", "+00:00")
-                    dt = datetime.fromisoformat(s)
-                    if dt.tzinfo is None:
-                        dt = dt.replace(tzinfo=timezone.utc)
-                    dt = dt.astimezone(tz)
-            except Exception:
-                dt = None
-            clean.append({"datetime": dt.isoformat() if dt else None,
-                          "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if dt else "Time not verified",
-                          "name": str(ev.get("title") or ev.get("name") or ev.get("event") or "Economic event"),
-                          "currency": cur, "impact": "high",
-                          "forecast": ev.get("consensus", ev.get("forecast")),
-                          "previous": ev.get("prior", ev.get("previous")), "actual": ev.get("actual"), "url": ev.get("url")})
-        return jsonify({"events": clean, "days": days, "source": "https://www.financecalendar.com/api/", "timezone": "Asia/Dhaka"})
-    except Exception:
-        return jsonify({"error": "Live economic calendar is unavailable right now. Try again later.",
-                        "source": "https://www.financecalendar.com/api/"}), 502
+        for e in events[:50]:
+            dt = e.get("datetime")
+            clean.append({"datetime": dt.isoformat() if isinstance(dt, datetime) else None,
+                          "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if isinstance(dt, datetime) else "সময় যাচাই করা যায়নি",
+                          "name": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"),
+                          "forecast": e.get("forecast"), "previous": e.get("previous"), "actual": e.get("actual"), "url": e.get("url")})
+        return jsonify({"events": clean, "days": days, "source": NEWS_SOURCE_URL, "timezone": "Asia/Dhaka"})
+    except Exception as exc:
+        log.warning("Mini App news request failed: %s", exc)
+        return jsonify({"error": "লাইভ economic calendar এখন পাওয়া যায়নি। পরে আবার চেষ্টা করো।", "source": NEWS_SOURCE_URL}), 502
 
 @app.get("/api/lessons")
 @login_required
 def api_lessons():
-    lessons = [
-        {"key": "support", "title": "1/7 - Support & Resistance", "caption": "Support = price repeatedly paused / bounced. Resistance = price repeatedly stalled / fell. Treat them as zones, not thin lines. Wait for rejection + structure confirmation - a touch alone is not an entry."},
-        {"key": "trend", "title": "2/7 - Trend & Market Structure", "caption": "Uptrend: Higher High + Higher Low. Downtrend: Lower Low + Lower High. Sideways: price rotates in a range. If structure is unclear: NO TRADE."},
-        {"key": "breakout", "title": "3/7 - Breakout & Retest", "caption": "Breakout = price closes firmly outside a range. Retest = price returns to the broken level. A wick outside is not enough - need candle close + momentum + retest reaction."},
-        {"key": "pinbar", "title": "4/7 - Pin Bar", "caption": "Pin bar: small body, one long wick. Long lower wick near support = rejection from below. Long upper wick near resistance = rejection from above."},
-        {"key": "engulfing", "title": "5/7 - Engulfing", "caption": "Bullish engulfing: larger bullish body covers prior bearish body. Bearish engulfing: reverse. It hints at momentum shift, not certainty."},
-        {"key": "sweep", "title": "6/7 - Liquidity Sweep", "caption": "Price wicks briefly beyond a prior swing high / low, then closes back inside. Confirmation: close back inside + rejection + structure shift."},
-        {"key": "checklist", "title": "7/7 - Entry Checklist", "caption": "Checklist: 1) Trend / structure 2) Key zone 3) Candle close 4) Confirmation. If any step is missing, wait. Risk only what you can afford to lose."},
-    ]
+    lessons = [{"key": x["key"], "title": x["title"], "caption": x["caption"], "image": f"/api/lessons/{x['key']}/image"} for x in PA_LESSONS]
     return jsonify({"lessons": lessons, "total": len(lessons), "note": "Illustrative examples, not live market data."})
+
+@app.get("/api/lessons/<lesson_key>/image")
+@login_required
+def api_lesson_image(lesson_key: str):
+    lesson = next((x for x in PA_LESSONS if x["key"] == lesson_key), None)
+    if lesson is None:
+        return jsonify({"error": "Lesson not found"}), 404
+    return app.response_class(make_price_action_chart(lesson), mimetype="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 @app.post("/api/result")
 @login_required
 def api_result():
-    b = request.get_json(silent=True) or {}
+    if not _api_allowed("result", 12, 60):
+        return jsonify({"error": "একটু পরে আবার চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
     try:
-        sid = int(b.get("id"))
-    except Exception:
-        return jsonify({"error": "Signal ID is not valid."}), 400
-    out = str(b.get("result", "")).upper()
-    if out not in ("WIN", "LOSS"):
-        return jsonify({"error": "Result must be WIN or LOSS."}), 400
-    for s in _signals:
-        if int(s["id"]) == sid and s.get("status") == "PENDING":
-            s["status"] = out
-            return jsonify({"ok": True, "signal": s, "note": "Manually recorded result; not automatically verified against Quotex."})
-    return jsonify({"error": "No pending signal with this ID."}), 404
+        signal_id = int(body.get("id"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Signal ID সঠিক নয়।"}), 400
+    outcome = str(body.get("result", "")).upper()
+    if outcome not in ("WIN", "LOSS"):
+        return jsonify({"error": "Result WIN বা LOSS হতে হবে।"}), 400
+    updated, signal = update_signal_result(outcome, signal_id)
+    if not updated:
+        return jsonify({"error": "এই ID-এর pending signal পাওয়া যায়নি।"}), 404
+    return jsonify({"ok": True, "signal": signal, "note": "ম্যানুয়ালি দেওয়া ফল; Quotex থেকে স্বয়ংক্রিয়ভাবে যাচাই করা হয়নি।"})
 
 @app.post("/api/news/analyze")
 @login_required
 def api_news_analyze():
-    if not _allowed("news_analyze", 8, 60):
-        return jsonify({"error": "Max 8 news analyses per minute."}), 429
-    b = request.get_json(silent=True) or {}
-    cur, ev, act, fore, prev = str(b.get("currency", "")).strip().upper(), str(b.get("event", "")).strip(), str(b.get("actual", "")).strip(), str(b.get("forecast", "")).strip(), str(b.get("previous", "")).strip()
-    if not cur or not ev or not act or not fore:
-        return jsonify({"error": "Fill currency, event, actual and forecast."}), 400
-    prompt = f"Economic news explanation. Currency: {cur}; event: {ev}; actual: {act}; forecast: {fore}; previous: {prev or 'not supplied'}. Explain actual-vs-forecast carefully, likely first-order currency interpretation, what could reverse the reaction, and uncertainty. Do not claim current market reaction without live price data."
+    if not _api_allowed("news_analyze", 8, 60):
+        return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৮টি news analysis; পরে আবার চেষ্টা করো।"}), 429
+    body = request.get_json(silent=True) or {}
+    currency = str(body.get("currency", "")).strip().upper()
+    event = str(body.get("event", "")).strip()
+    actual = str(body.get("actual", "")).strip()
+    forecast = str(body.get("forecast", "")).strip()
+    previous = str(body.get("previous", "")).strip()
+    if not currency or not event or not actual or not forecast:
+        return jsonify({"error": "Currency, event, actual ও forecast পূরণ করো।"}), 400
+    prompt = (f"Economic news explanation in Bengali. Currency: {currency}; event: {event}; actual: {actual}; forecast: {forecast}; previous: {previous or 'not supplied'}. Explain actual-vs-forecast carefully, likely first-order currency interpretation, what could reverse the reaction, and uncertainty. Do not claim current market reaction without live price data.")
     return jsonify({"analysis": ai_answer(prompt), "note": "Economic interpretation only; current price reaction is not verified."})
 
-# ---------------- Frontend (all screens, inline) ----------------
-INDEX_HTML = r'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#160b3c"><title>GHOST AI — Market Console</title><style>
-:root{--bg:#14083a;--panel:rgba(54,24,118,.72);--line:rgba(200,160,255,.20);--text:#f8f3ff;--muted:#b8a6dd}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
-body{background:radial-gradient(ellipse at 50% -10%,#6a36c9 0,transparent 44%),linear-gradient(160deg,#14083a,#1a0b48 58%,#0d0626);overflow-x:hidden}
-button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.45}
-#stars{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.32}.app{position:relative;z-index:1;min-height:100vh}
-.top{height:64px;position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:rgba(20,8,58,.88);border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:10px;cursor:pointer}.brandMark{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#e4a8ff,#7443e8 55%,#2b176a);font-size:22px}.brand b{font-size:13px;letter-spacing:1.6px}.brand small{display:block;color:#bca8ed;font-size:9px;letter-spacing:1.7px}
-.topRight{display:flex;gap:8px}.brokerBtn{font-size:10px;padding:8px 11px;border:1px solid var(--line);border-radius:12px;background:#ffffff0b;color:#e8dcff}.iconBtn{width:37px;height:37px;border:1px solid var(--line);border-radius:12px;color:#fff;background:#ffffff0b;font-size:16px}
-.page{max-width:980px;margin:auto;padding:16px 14px 118px}.view{display:none}.view.active{display:block}
-.eyebrow{font-size:9px;letter-spacing:2.2px;color:#d8b7ff}.titleRow{display:flex;justify-content:space-between;align-items:center;margin:7px 2px 14px;gap:10px}.titleRow h1{font-size:21px;margin:0}.titleRow p{font-size:10px;color:var(--muted);margin:4px 0 0;line-height:1.5}.pill{font-size:9px;padding:7px 10px;border-radius:20px;border:1px solid var(--line);background:#ffffff0a;white-space:nowrap}
-.panel{border:1px solid var(--line);border-radius:21px;background:linear-gradient(145deg,rgba(77,43,155,.55),rgba(36,18,87,.68) 60%,rgba(26,16,69,.8));box-shadow:0 18px 50px rgba(4,1,20,.55)}
-.btn{border:1px solid #d0a0ff66;border-radius:13px;padding:12px 16px;color:#fff;font-size:10px;font-weight:800;background:linear-gradient(135deg,#a55bff,#6936d3 60%,#4a2aa5)}.btn.secondary{background:#ffffff0b;border-color:var(--line)}.btn.full{width:100%}.btn.small{padding:8px 11px}
-.sectionHead{display:flex;justify-content:space-between;align-items:center;margin:20px 3px 10px}.sectionHead h2{font-size:13px;margin:0}.sectionHead span{font-size:9px;color:var(--muted)}
-.muted{color:var(--muted);font-size:10px;line-height:1.6}.notice{padding:11px 12px;border:1px solid #ffd98c33;background:#ffd98c0d;border-radius:13px;color:#e9d6ae;font-size:9px;line-height:1.55;margin:10px 0}
-.field{width:100%;border:1px solid #c7a7ff35;border-radius:13px;padding:12px;background:#170d3e;color:#fff;outline:none;font-size:11px}select{width:100%;border:1px solid #c7a7ff35;border-radius:13px;padding:12px;background:#170d3e;color:#fff;font-size:11px}
-.tabs{display:flex;gap:7px;padding:3px;margin:12px 0}.tab{flex:1;white-space:nowrap;border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:#c8b7e8;background:#ffffff08;font-size:10px;font-weight:700}.tab.active{color:#fff;background:linear-gradient(120deg,#8a4be955,#5729a477)}
-.pairGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.pairCard{display:flex;align-items:center;gap:9px;padding:12px 10px;border:1px solid var(--line);border-radius:15px;background:#ffffff09;text-align:left;color:#fff;min-width:0}.pairCard.selected{border-color:#d5a0ff;background:#7d43c844}.flag{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:#ffffff14;font-size:15px;flex:none}.pairName{font-size:10px;font-weight:800;white-space:nowrap}.pairType{font-size:8px;color:var(--muted);margin-top:3px}.pairCheck{margin-left:auto;color:#b99aff}
-.listRow{display:flex;justify-content:space-between;align-items:center;padding:13px 10px;border-bottom:1px solid #ffffff13;background:transparent;border-left:0;border-right:0;border-top:0;color:#fff;width:100%;text-align:left}.listRow b{font-size:11px}.listRow small{display:block;font-size:9px;color:var(--muted);margin-top:4px}.badge{font-size:8px;border:1px solid var(--line);border-radius:8px;padding:5px 7px;color:#d8c7f4;white-space:nowrap}
-.heroLanding{border-radius:26px;padding:26px 20px;overflow:hidden;background:radial-gradient(ellipse at 50% 20%,#8a4be955,transparent 55%),linear-gradient(145deg,#4a248c,#1a0e48 62%,#140a36)}.heroLanding h1{font-size:32px;line-height:1.05;margin:10px 0}.heroLanding p{color:#d0c1ed;font-size:11px;line-height:1.7}
-.orbitWrap{position:relative;height:180px;display:grid;place-items:center;margin:8px 0}.orbit{position:absolute;border:1px solid #d9b5ff26;border-radius:50%;animation:orbit 22s linear infinite}.orbit.o1{width:160px;height:160px}.orbit.o2{width:220px;height:220px;border-style:dashed;animation-duration:32s;animation-direction:reverse}.orbitNode{position:absolute;width:34px;height:34px;border-radius:50%;background:#2a1160;border:1px solid #d7a7ff66;display:grid;place-items:center;font-size:16px}.centerOrb{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#e9c6ff,#7b3fe8 55%,#2b176a);font-size:34px;z-index:2}
-.planGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.planCard{padding:16px}.planCard ul{padding-left:16px;color:#d5c8ed;font-size:10px;line-height:1.7}
-.hero{min-height:340px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;padding:22px 18px 84px;background:radial-gradient(ellipse at 50% 52%,#9b5cff55,transparent 40%),linear-gradient(145deg,#4a248c,#1a0e48 62%,#140a36);border-radius:25px}.ghostBig{font-size:150px;filter:drop-shadow(0 0 24px #b57cff88);animation:float 4s ease-in-out infinite}.heroCopy{position:absolute;bottom:16px;left:12px;right:12px}.heroCopy h1{font-size:20px;margin:0 0 5px}.heroCopy p{font-size:10px;color:#d0c1ed;margin:0 0 12px}
-.userCard{display:flex;align-items:center;gap:12px;padding:14px}.avatar{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#e4a8ff,#7443e8);font-size:24px;flex:none}
-.toolGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.tool{padding:16px;border:1px solid var(--line);border-radius:17px;background:#ffffff09;color:#fff;text-align:left}.tool b{display:block;font-size:11px;margin-top:10px}.tool small{display:block;color:var(--muted);font-size:9px;margin-top:4px}.tool .toolIcon{font-size:24px}
-.drop{border:1px dashed #caa0ff77;border-radius:18px;padding:22px;text-align:center;background:#ffffff08}.dropIcon{font-size:32px;display:block;margin-bottom:8px}
-.result{padding:15px;margin-top:12px}.resultHead{display:flex;justify-content:space-between;gap:10px}.resultDir{font-size:24px;font-weight:900}.resultLine{padding:10px 0;border-bottom:1px solid #ffffff13;color:#d5c8ed;font-size:10px;line-height:1.55}.resultLine b{color:#fff}.bar{height:6px;background:#ffffff14;border-radius:9px;margin:10px 0;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#d47bff,#78e9ff)}
-.chat{height:340px;overflow:auto;padding:8px}.bubble{max-width:88%;padding:11px 13px;border-radius:15px;margin:8px 0;font-size:10px;line-height:1.6;background:#ffffff0b;border:1px solid var(--line);white-space:pre-wrap}.bubble.me{margin-left:auto;background:#6034a977}.composer{display:flex;gap:7px}.composer input{flex:1}
-.marketRow{display:flex;justify-content:space-between;align-items:center;padding:12px 3px;border-bottom:1px solid #ffffff13;gap:10px}.marketRow b{font-size:11px}.marketRow small{display:block;font-size:9px;color:var(--muted);margin-top:4px}
-.toggle{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid #ffffff13}.switch{width:52px;height:28px;border-radius:20px;background:#ffffff22;position:relative;flex:none;cursor:pointer;border:1px solid var(--line)}.switch:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}.switch.on{background:#a55bff}.switch.on:after{left:27px}
-.sheetTable{width:100%;border-collapse:collapse;font-size:10px}.sheetTable th,.sheetTable td{padding:9px 6px;border-bottom:1px solid #ffffff13;text-align:left}.sheetTable th{color:#d8b7ff;font-size:9px}
-.lockCard{text-align:center;padding:26px 16px}.lockIcon{font-size:44px}
-.bottom{position:fixed;left:0;right:0;bottom:0;z-index:50;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:8px;background:rgba(22,11,60,.96);border-top:1px solid var(--line)}
-.nav{border:0;background:none;color:#a18cce;font-size:8px;padding:6px 2px}.nav i{display:block;font-style:normal;font-size:19px;margin-bottom:3px}.nav.active{color:#fff}.nav.center i{width:52px;height:52px;margin:-26px auto 2px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#e4a8ff,#7443e8);color:#fff;font-size:24px;box-shadow:0 0 24px #a55bff88;border:2px solid #fff2}
-.sheet{position:fixed;inset:0;z-index:80;background:rgba(8,3,25,.72);display:none;align-items:flex-end;justify-content:center}.sheet.open{display:flex}.sheetBox{width:min(560px,100%);max-height:88vh;overflow:auto;background:linear-gradient(180deg,#3a1a7a,#170c3c);border:1px solid #c58aff55;border-radius:26px 26px 0 0;padding:18px 16px}
-.login{position:fixed;inset:0;z-index:100;display:none;place-items:center;padding:16px;background:rgba(13,6,38,.94)}.login.open{display:grid}.loginBox{width:min(400px,100%);padding:24px;border:1px solid #c58aff55;border-radius:24px;background:linear-gradient(145deg,#48218e,#170c3c)}.loginBox h2{font-size:20px;margin:0}.loginBox p{font-size:10px;color:#c9b8e9;line-height:1.6}.loginBox label{display:block;font-size:9px;color:#d6c6f2;margin:13px 0 6px}.error{min-height:18px;color:#ff9eb3;font-size:10px;margin:8px 0}
-.toast{position:fixed;z-index:130;left:50%;bottom:96px;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#291553;border:1px solid #c28aff66;border-radius:12px;padding:10px 14px;font-size:10px;transition:.25s;max-width:92vw;text-align:center}.toast.show{opacity:1;transform:translate(-50%,0)}
-.hidden{display:none!important}.spinner{width:34px;height:34px;border-radius:50%;border:3px solid #ffffff22;border-top-color:#d98aff;animation:orbit 1s linear infinite;margin:14px auto}.spark{width:64px;height:22px;flex:none;opacity:.85}
-@keyframes orbit{to{transform:rotate(360deg)}}@keyframes float{50%{transform:translateY(-8px)}}
-@media(max-width:560px){.planGrid{grid-template-columns:1fr}.heroLanding h1{font-size:28px}}
-</style></head><body><canvas id="stars"></canvas><div class="app">
-<header class="top"><div class="brand" onclick="showView(state.user?'dashboard':'landing')"><div class="brandMark">👻</div><div><b>GHOST AI</b><small>MARKET CONSOLE</small></div></div><div class="topRight"><button class="brokerBtn" onclick="openBroker()">Broker <b class="brokerLabel">Quotex</b> · Change</button><button class="iconBtn" onclick="openMore()">☰</button></div></header>
-<main class="page">
-<section id="view-landing" class="view active"><div class="panel heroLanding"><div class="eyebrow">AI POWERED MARKET INTELLIGENCE</div><h1>The market never sleeps.<br>Neither does Ghost AI.</h1><p>One console for market selection, screenshot analysis, external-feed Real checks, future-setup planning, news calendar and session planning. No fabricated live prices. No Quotex connection. No guaranteed outcomes.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="launchApp()">LAUNCH GHOST AI →</button><button class="btn secondary" onclick="showView('pricing')">SEE ACCESS PLANS</button></div><div class="orbitWrap"><div class="orbit o1"></div><div class="orbit o2"></div><span class="orbitNode" style="left:12%;top:18%">📈</span><span class="orbitNode" style="right:12%;top:22%">📰</span><span class="orbitNode" style="left:8%;bottom:18%">🧠</span><span class="orbitNode" style="right:8%;bottom:22%">📋</span><div class="centerOrb">👻</div></div><div class="muted" style="text-align:center">GHOST AI · ANALYZER · LIVE · FUTURE · NEWS · MANAGEMENT</div></div>
-<div class="sectionHead"><h2>Access paths</h2><span>Choose how you enter</span></div><div class="planGrid"><div class="panel planCard"><span class="pill">FREE</span><h3>Free — $0</h3><p class="muted">Browse console, pair catalog, lessons and planning tools.</p><ul><li>Pair catalog (Real + OTC)</li><li>Management planner</li><li>Lessons</li></ul><button class="btn secondary full" onclick="launchApp()">START FREE</button></div><div class="panel planCard"><span class="pill">DIRECT</span><h3>Direct — $99 / month</h3><p class="muted">Full engine when admin configures keys. No payment collected here — informational only.</p><ul><li>All Free tools</li><li>Screenshot Analyzer (AI key set)</li><li>Real Market external-feed checks</li></ul><button class="btn full" onclick="showView('pricing')">SEE ACCESS PLANS</button></div></div>
-<div class="sectionHead"><h2>What it does — and what it does not</h2><span>Honest scope</span></div><div class="panel" style="padding:16px"><p class="muted"><b style="color:#fff">Does:</b> list pairs, read a screenshot you upload, run a Real-market external-feed check when keys are set, show high-impact calendar, build session stake sheet from your numbers.<br><br><b style="color:#fff">Does not:</b> show live broker prices, invent OTC candles, claim Quotex verification, auto-send signals, or promise win rate / profit.</p></div>
-<div class="notice">Risk warning: binary options can lose the full stake on a trade. This console is an educational analysis aid, not financial advice, and it is not connected to any broker.</div></section>
+def start_background_threads() -> None:
+    # Avoid duplicate start in environments that import the module more than once.
+    if not state.get("threads_started"):
+        state["threads_started"] = True
+        state["catalog_count"] = len(get_catalog())
+        threading.Thread(target=telegram_poll_loop, daemon=True, name="telegram-poll").start()
+        # Deliberately do not start scanner_loop: automatic signals are disabled.
 
-<section id="view-dashboard" class="view"><div class="panel userCard"><div class="avatar">👻</div><div style="flex:1;min-width:0"><b id="dashName">Arafat Hossain</b><div class="muted" id="dashEmail">demo@ghost.ai</div></div><span class="pill" id="dashPlan">FREE</span><button class="iconBtn" onclick="openMore()">›</button></div>
-<div class="panel hero" style="margin-top:12px"><div class="ghostBig">👻</div><div class="heroCopy"><h1>GHOST AI</h1><p>Your AI desk — pick a market, analyze, then plan.</p><button class="btn" onclick="showView('live')">OPEN TOOLS →</button><div class="muted" style="margin-top:10px">6 AI DESKS · ONE CONSOLE</div></div></div>
-<div class="sectionHead"><h2>Your plan and daily engine quota</h2><span>Live status from backend</span></div><div id="dashStats" class="toolGrid"></div>
-<div class="sectionHead"><h2>Recorded setups</h2><span>Only what the backend actually scanned</span></div><div class="panel" style="padding:14px"><div id="dashFeed"><div class="muted">Loading…</div></div></div>
-<div class="sectionHead"><h2>Quick tools</h2></div><div class="toolGrid"><button class="tool" onclick="showView('live')"><span class="toolIcon">📡</span><b>Live</b><small>Browse pairs</small></button><button class="tool" onclick="showView('analyzer')"><span class="toolIcon">🔍</span><b>Analyzer</b><small>Screenshot / Real scan</small></button><button class="tool" onclick="showView('injector')"><span class="toolIcon">💉</span><b>Injector</b><small>Grid picker</small></button><button class="tool" onclick="showView('future')"><span class="toolIcon">⏱️</span><b>Future Signals</b><small>Step-by-step setup</small></button><button class="tool" onclick="showView('news')"><span class="toolIcon">📰</span><b>News Signals</b><small>Calendar + manual check</small></button><button class="tool" onclick="showView('management')"><span class="toolIcon">📋</span><b>Management</b><small>Session sheet</small></button></div></section>
-
-<section id="view-live" class="view"><div class="eyebrow">SIGNAL CENTER · LIST VIEW</div><div class="titleRow"><div><h1>Live</h1><p>Pick a pair. Pairs are catalog entries — no live broker price is shown here.</p></div><button class="brokerBtn" onclick="openBroker()">Broker <b class="brokerLabel">Quotex</b> · Change</button></div><div class="panel" style="padding:14px"><div class="tabs" id="liveTabs"><button class="tab active" data-market="otc" onclick="state.market='otc';saveState();renderLive()">◉ OTC Market</button><button class="tab" data-market="real" onclick="state.market='real';saveState();renderLive()">◉ Real Market</button></div><input id="liveSearch" class="field" placeholder="Search pair (e.g. EUR/USD, GBP, JPY)…" oninput="state.search=this.value;renderLive()"><div class="sectionHead"><h2 id="liveCount">Pairs</h2><span>1m · catalog</span></div><div id="liveList"></div><div class="notice">Tapping a pair opens Analyzer. OTC has no live feed — Analyzer reads your screenshot. Real uses external feed only when its key is set.</div></div></section>
-
-<section id="view-analyzer" class="view"><div class="eyebrow">GHOST AI ENGINE</div><div class="titleRow"><div><h1>Analyzer</h1><p>Choose a market or upload a chart screenshot.</p></div><span class="pill">✦ VISION AI*</span></div><div class="panel" style="padding:15px"><div class="sectionHead" style="margin-top:0"><h2>SELECT MARKET</h2><span id="analyzerLabel">ghostai - otc-chart</span></div><div class="tabs" id="analyzerTabs"><button class="tab active" data-market="otc" onclick="state.market='otc';saveState();renderAnalyzer()">◉ OTC Market</button><button class="tab" data-market="real" onclick="state.market='real';saveState();renderAnalyzer()">◉ Real Market</button></div><label style="font-size:9px;color:#d6c6f2">PAIR</label><select id="pairSelect" onchange="state.pair=this.value;state.market=this.value.includes('OTC')?'otc':'real';saveState();renderAnalyzer()"></select><div class="sectionHead"><h2>CHART SCREENSHOT</h2><span>OTC: screenshot · Real: external feed</span></div><div class="drop" id="dropZone"><span class="dropIcon">🖼️</span><b>Drop your chart to begin</b><p class="muted">Tap to browse, drag &amp; drop, or paste a screenshot.</p><button class="btn small" type="button">SELECT SCREENSHOT</button><input id="fileInput" type="file" accept="image/*" style="display:none"></div><div id="previewWrap" class="hidden" style="margin-top:12px"></div><button id="scanBtn" class="btn full" style="margin-top:12px" onclick="runAnalyzer()">ANALYZE SCREENSHOT</button><div id="analyzeOut" class="hidden" style="margin-top:12px"></div><div class="notice">* Vision AI runs only when AI_API_KEY is set. Confidence = clarity of evidence, not win probability.</div></div>
-<div class="panel" style="padding:14px;margin-top:12px"><div class="sectionHead" style="margin-top:0"><h2>GHOST AI — ASK</h2><span>Educational</span></div><div class="chat" id="chat"><div class="bubble">👻 <b>Ghost AI</b><br>Ask about support / resistance, BOS, CHoCH, liquidity, confirmation or risk management. I never invent live prices or guaranteed outcomes.</div></div><div class="composer"><input id="chatInput" class="field" placeholder="Ask about price action…" onkeydown="if(event.key==='Enter')askAI()"><button class="btn" onclick="askAI()">ASK</button></div></div></section>
-
-<section id="view-injector" class="view"><div class="eyebrow">MARKET SELECTOR · GRID VIEW</div><div class="titleRow"><div><h1>Injector</h1><p>Pick a pair in grid view, then open it in Analyzer.</p></div><button class="brokerBtn" onclick="openBroker()">Broker <b class="brokerLabel">Quotex</b> · Change</button></div><div class="panel" style="padding:14px"><div class="tabs" id="injTabs"><button class="tab active" data-market="otc" onclick="state.market='otc';saveState();renderInjector()">◉ OTC Market</button><button class="tab" data-market="real" onclick="state.market='real';saveState();renderInjector()">◉ Real Market</button></div><input id="injSearch" class="field" placeholder="Search pair…" oninput="state.search=this.value;renderInjector()"><div class="sectionHead"><h2 id="injCount">Pairs</h2><span>Grid · 1m</span></div><div class="pairGrid" id="injGrid"></div><div class="notice">Small sparkline is an illustrative pattern, not a live price chart.</div></div></section>
-
-<section id="view-future" class="view"><div class="eyebrow">SIGNAL TOOLS · 01</div><div class="titleRow"><div><h1>Future Signals</h1><p>Pick markets, then check setups step by step.</p></div><button class="brokerBtn" onclick="openBroker()">Broker <b class="brokerLabel">Quotex</b> · Change</button></div><div class="panel" style="padding:14px"><div class="tabs" id="futureTabs"><button class="tab active" data-market="otc" onclick="state.market='otc';saveState();renderFuture()">◉ OTC Market</button><button class="tab" data-market="real" onclick="state.market='real';saveState();renderFuture()">◉ Real Market</button></div><input id="futureSearch" class="field" placeholder="Search pair…" oninput="state.search=this.value;renderFuture()"><div class="sectionHead"><h2>Pick markets</h2><span id="futureStepLabel">STEP 1 OF 2</span></div><div class="pairGrid" id="futureGrid"></div><div id="futureResult" class="panel hidden" style="padding:12px;margin-top:12px"></div></div><div style="position:sticky;bottom:96px;background:#160b3cf2;border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:12px;display:flex;gap:8px;align-items:center"><div style="flex:1"><b id="futureHint" style="font-size:11px">No markets yet.</b><div class="muted">Step 1 of 2 — pick at least one market.</div></div><button id="futureBack" class="btn secondary hidden" onclick="futureBack()">← BACK</button><button id="futureNext" class="btn" onclick="futureNext()" disabled>NEXT STEP →</button></div></section>
-
-<section id="view-news" class="view"><div class="eyebrow">SIGNAL TOOLS · 02</div><div class="titleRow"><div><h1>News Signals</h1><p>Calendar + manual Actual / Forecast / Previous check.</p></div><span class="pill">● CALENDAR</span></div><div class="panel" style="padding:14px"><div class="tabs" id="newsTabs"><button class="tab active" data-tab="events" onclick="state.newsTab='events';renderNews()">Today's Events</button><button class="tab" data-tab="fundamental" onclick="state.newsTab='fundamental';renderNews()">Fundamental</button></div>
-<div id="newsEvents"><div class="panel lockCard" style="background:#ffffff08"><div class="lockIcon">🔒</div><h3 style="margin:8px 0 4px">News Signals is locked</h3><p class="muted">Free account can browse, but auto news-signal calls need an active plan. You can still browse calendar below and run a manual check.</p><button class="btn" onclick="showView('pricing')">UNLOCK ENGINE →</button></div><div class="sectionHead"><h2>Today's high-impact events</h2><span>Calendar only</span></div><div id="newsList"></div></div>
-<div id="newsFund" class="hidden"><h3 style="margin:4px 0">Manual news check</h3><p class="muted">Enter released numbers. App explains Actual vs Forecast — it does not claim market already moved that way.</p><label style="font-size:9px;color:#d6c6f2">CURRENCY (e.g. USD)</label><input id="newsCur" class="field" placeholder="USD"><label style="font-size:9px;color:#d6c6f2">EVENT</label><input id="newsEvent" class="field" placeholder="e.g. CPI"><label style="font-size:9px;color:#d6c6f2">ACTUAL</label><input id="newsAct" class="field" placeholder="e.g. 3.1%"><label style="font-size:9px;color:#d6c6f2">FORECAST</label><input id="newsFore" class="field" placeholder="e.g. 3.0%"><label style="font-size:9px;color:#d6c6f2">PREVIOUS</label><input id="newsPrev" class="field" placeholder="e.g. 2.9%"><button class="btn full" style="margin-top:10px" onclick="analyzeNews()">ANALYZE NEWS</button><div id="newsAnalyzeOut" class="panel hidden" style="padding:12px;margin-top:12px"></div></div></div></section>
-
-<section id="view-management" class="view"><div class="eyebrow">SIGNAL TOOLS · 03</div><div class="titleRow"><div><h1>Management</h1><p>Plan a session from your own numbers.</p></div><span class="pill">PLANNER</span></div><div class="panel" style="padding:14px"><div class="tabs" id="mgmtTabs"><button class="tab active" data-tab="management" onclick="state.managementTab='management';renderManagement()">Management</button><button class="tab" data-tab="sheet" onclick="state.managementTab='sheet';renderManagement()">Sheet</button></div>
-<div id="mgmtForm"><div class="sectionHead" style="margin-top:0"><h2>SESSION PLANNER</h2><span>Plan your session</span></div><label style="font-size:9px;color:#d6c6f2">INITIAL CAPITAL ($)</label><input id="mgmtCap" class="field" type="number" value="100"><label style="font-size:9px;color:#d6c6f2">AVERAGE PAYOUT (%)</label><input id="mgmtPay" class="field" type="number" value="80"><label style="font-size:9px;color:#d6c6f2">PROFIT TARGET (%)</label><input id="mgmtTarget" class="field" type="number" value="20"><label style="font-size:9px;color:#d6c6f2">RISK PER TRADE (%)</label><input id="mgmtRisk" class="field" type="number" value="2"><div class="toggle"><span><b style="font-size:11px">Martingale (MTG)</b><br><span class="muted">Double the stake after a loss.</span></span><div id="mgmtMtg" class="switch" onclick="this.classList.toggle('on')"></div></div><button class="btn full" style="margin-top:12px" onclick="generateSheet()">GENERATE SHEET →</button><div class="notice">Martingale can wipe out capital quickly. This sheet assumes every step wins — real trading does not. Never risk money you cannot afford to lose.</div></div>
-<div id="mgmtSheet" class="hidden"><div id="sheetBox"></div><button class="btn secondary" style="margin-top:12px" onclick="goMgmtForm()">EDIT INPUTS</button></div></div></section>
-
-<section id="view-learn" class="view"><div class="eyebrow">LEARN &amp; IMPROVE</div><div class="titleRow"><div><h1>Ghost Academy</h1><p>Price-action learning center.</p></div><span class="pill">7 LESSONS</span></div><div class="panel" style="padding:14px"><button class="btn" onclick="loadLessons()">LOAD LESSONS</button><div id="lessonsBox" style="margin-top:12px"><div class="muted">Tap Load Lessons. Charts are illustrative, not live data.</div></div></div></section>
-
-<section id="view-pricing" class="view"><div class="eyebrow">ACCESS PLANS</div><div class="titleRow"><div><h1>Choose your access</h1><p>No payment is collected in this build.</p></div><span class="pill">INFO ONLY</span></div><div class="planGrid"><div class="panel planCard"><span class="pill">FREE · $0</span><h3>Free</h3><p class="muted">Browse catalog, planner and lessons.</p><ul><li>Pair catalog</li><li>Management planner</li><li>Lessons</li></ul><button class="btn secondary full" onclick="launchApp()">START FREE</button></div><div class="panel planCard"><span class="pill">DIRECT · $99 / MONTH</span><h3>Direct</h3><p class="muted">Full engine when admin configures keys. No checkout wired.</p><ul><li>All Free tools</li><li>Screenshot Analyzer (AI key set)</li><li>Real Market external-feed checks</li><li>News calendar</li></ul><button class="btn full" onclick="launchApp()">REQUEST ACCESS</button></div></div><div class="notice">Admin: set TWELVE_DATA_API_KEY and AI_API_KEY in Render Environment. No checkout is wired in this build.</div></section>
-</main>
-<nav class="bottom"><button class="nav" data-view="dashboard"><i>🏠</i>Dashboard</button><button class="nav" data-view="live"><i>📡</i>Live</button><button class="nav center" data-view="analyzer"><i>👻</i>Analyzer</button><button class="nav" data-view="injector"><i>💉</i>Injector</button><button class="nav" data-view="more"><i>⋯</i>More</button></nav>
-<div class="sheet" id="moreSheet"><div class="sheetBox"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">More</h3><button class="iconBtn" onclick="closeSheet('#moreSheet')">✕</button></div><div class="panel userCard" style="margin-top:12px" id="moreUser"></div><div class="sectionHead"><h2>SIGNAL TOOLS</h2></div><button class="listRow" onclick="closeSheet('#moreSheet');showView('future')"><span><b>Future Signals</b><small>Forward-looking setup workspace</small></span><span><span class="badge">01</span> ›</span></button><button class="listRow" onclick="closeSheet('#moreSheet');showView('news')"><span><b>News Signals</b><small>Calendar + manual check</small></span><span><span class="badge">02</span> ›</span></button><button class="listRow" onclick="closeSheet('#moreSheet');showView('management')"><span><b>Management</b><small>Session planner + sheet</small></span><span><span class="badge">03</span> ›</span></button><button class="listRow" onclick="closeSheet('#moreSheet');showView('learn')"><span><b>Ghost Academy</b><small>7 price-action lessons</small></span><span>›</span></button><button class="listRow" onclick="closeSheet('#moreSheet');showView('pricing')"><span><b>Access Plans</b><small>Free · Direct $99/mo</small></span><span>›</span></button><div class="sectionHead"><h2>ACCOUNT</h2></div><button class="listRow" onclick="doLogout()"><span><b style="color:#ff9eb3">Log out</b><small>End this session</small></span><span>›</span></button><div class="muted" style="margin-top:10px">GHOST AI is not connected to any broker. Broker choice is a label only.</div></div></div>
-<div class="sheet" id="brokerSheet"><div class="sheetBox"><div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Choose your broker</h3><button class="iconBtn" onclick="closeSheet('#brokerSheet')">✕</button></div><p class="muted">This only changes the label in the header. It does not log in to, or trade on, any broker.</p><div id="brokerList"></div></div></div>
-<div class="login" id="loginOverlay"><div class="loginBox"><div style="text-align:center;font-size:40px">👻</div><h2 style="text-align:center">Welcome to GHOST AI</h2><p style="text-align:center">Sign in to open the console.</p><label>EMAIL</label><input id="loginEmail" class="field" type="email" placeholder="demo@ghost.ai"><label>PASSWORD</label><input id="loginPass" class="field" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"><div class="error" id="loginErr"></div><button class="btn full" onclick="doLogin()">SIGN IN →</button><button class="btn secondary full" style="margin-top:8px" onclick="demoLogin()">CONTINUE AS DEMO</button><p class="muted" style="text-align:center;margin-top:12px">Demo: demo@ghost.ai / ghost1234 — change DEMO_PASSWORD in Render before sharing.</p></div></div>
-<div class="toast" id="toast"></div></div>
-<script>
-const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const FLAGS={USD:"🇺🇸",EUR:"🇪🇺",GBP:"🇬🇧",JPY:"🇯🇵",CHF:"🇨🇭",AUD:"🇦🇺",CAD:"🇨🇦",NZD:"🇳🇿",BRL:"🇧🇷",INR:"🇮🇳",IDR:"🇮🇩",MXN:"🇲🇽",PKR:"🇵🇰",PHP:"🇵🇭",COP:"🇨🇴",ARS:"🇦🇷",ZAR:"🇿🇦",BDT:"🇧🇩"};
-const flag=c=>FLAGS[c]||"🏳️";
-function pairObj(b,q,otc){return{symbol:`${b}/${q}${otc?" OTC":""}`,base:b,quote:q,otc};}
-const REAL_PAIRS=[["EUR","USD"],["GBP","USD"],["USD","JPY"],["USD","CHF"],["USD","CAD"],["AUD","USD"],["EUR","GBP"],["EUR","JPY"],["EUR","CHF"],["EUR","CAD"],["EUR","AUD"],["EUR","NZD"],["GBP","AUD"],["GBP","CAD"],["GBP","CHF"],["GBP","JPY"],["GBP","NZD"],["AUD","CAD"],["AUD","CHF"],["AUD","JPY"],["AUD","NZD"],["CAD","JPY"],["CAD","CHF"],["NZD","CAD"],["NZD","CHF"],["NZD","JPY"]].map(([b,q])=>pairObj(b,q,false));
-const OTC_PAIRS=[["AUD","CAD"],["AUD","CHF"],["AUD","JPY"],["AUD","NZD"],["AUD","USD"],["CAD","CHF"],["CAD","JPY"],["CHF","JPY"],["EUR","AUD"],["EUR","CAD"],["EUR","CHF"],["EUR","GBP"],["EUR","JPY"],["EUR","NZD"],["EUR","USD"],["GBP","AUD"],["GBP","CAD"],["GBP","CHF"],["GBP","JPY"],["GBP","NZD"],["GBP","USD"],["NZD","CAD"],["NZD","CHF"],["NZD","JPY"],["USD","ARS"],["USD","BDT"],["USD","BRL"],["USD","CAD"],["USD","CHF"],["USD","COP"],["USD","IDR"],["USD","INR"],["USD","JPY"],["USD","MXN"],["USD","PHP"],["USD","PKR"],["USD","ZAR"]].map(([b,q])=>pairObj(b,q,true));
-const ALL_PAIRS=[...REAL_PAIRS,...OTC_PAIRS];
-const BROKERS=[{name:"Quotex",icon:"💜"},{name:"Binolla",icon:"🟣"},{name:"Pocket Option",icon:"🟠"}];
-const state={broker:"Quotex",market:"otc",pair:"EUR/USD OTC",search:"",futureSel:new Set(),futureStep:1,managementTab:"management",sheet:null,user:null,plan:"FREE",newsTab:"events",lessons:[]};
-function saveState(){try{localStorage.setItem("ghost_state",JSON.stringify({broker:state.broker,market:state.market,pair:state.pair,sheet:state.sheet}))}catch(e){}}
-function loadState(){try{const d=JSON.parse(localStorage.getItem("ghost_state")||"{}");if(d.broker)state.broker=d.broker;if(d.market)state.market=d.market;if(d.pair)state.pair=d.pair;if(d.sheet)state.sheet=d.sheet;}catch(e){}}
-loadState();
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3200);}
-async function api(p,o={}){const r=await fetch(p,{credentials:"same-origin",headers:{"Content-Type":"application/json"},...o});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||`Request failed (${r.status})`);return d;}
-function pairParts(s){const c=s.replace(" OTC","");const [b,q]=c.split("/");return{base:b,quote:q,otc:s.includes("OTC")};}
-function flagPair(s){const {base,quote}=pairParts(s);return `<span class="flag">${flag(base)}${flag(quote)}</span>`;}
-function sparkSVG(){return `<svg class="spark" viewBox="0 0 64 22" fill="none"><path d="M1 16 L9 12 L17 14 L25 8 L33 11 L41 6 L49 9 L57 4 L63 7" stroke="#b47aff" stroke-width="1.6"/><path d="M1 18 L12 18 L20 15 L30 17 L42 13 L55 15 L63 12" stroke="#79e9ff" stroke-width="1.2" opacity=".7"/></svg>`;}
-function filteredPairs(){const w=state.market==="otc";const list=ALL_PAIRS.filter(p=>p.otc===w);const q=state.search.trim().toUpperCase();if(!q)return list;return list.filter(p=>p.symbol.includes(q)||p.base.includes(q)||p.quote.includes(q));}
-function renderBrokerLabels(){$$(".brokerLabel").forEach(e=>e.textContent=state.broker);}
-function showView(n){$$(".view").forEach(v=>v.classList.remove("active"));const el=document.getElementById("view-"+n);if(el)el.classList.add("active");$$(".nav").forEach(x=>x.classList.toggle("active",x.dataset.view===n));$("#moreSheet").classList.remove("open");window.scrollTo({top:0});if(n==="live")renderLive();if(n==="injector")renderInjector();if(n==="future")renderFuture();if(n==="news")renderNews();if(n==="management")renderManagement();if(n==="dashboard")loadDashboard();if(n==="analyzer")renderAnalyzer();history.replaceState(null,"","#/"+n);}
-function openMore(){$("#moreSheet").classList.add("open");renderMore();}
-function closeSheet(id){$(id).classList.remove("open");}
-function openBroker(){$("#brokerSheet").classList.add("open");renderBrokerSheet();}
-function renderBrokerSheet(){$("#brokerList").innerHTML=BROKERS.map(b=>`<button class="listRow" onclick="selectBroker('${b.name}')"><span style="display:flex;gap:10px;align-items:center"><span class="flag">${b.icon}</span><span><b>${b.name}</b><small>${b.name===state.broker?"Currently selected":"Broker account"}</small></span></span><span>${b.name===state.broker?"✓":"›"}</span></button>`).join("");}
-function selectBroker(n){state.broker=n;saveState();renderBrokerLabels();closeSheet("#brokerSheet");toast(`Broker set to ${n}. Label only - it does not connect to the broker.`);}
-function renderMore(){const u=state.user||{name:"Arafat Hossain",email:"demo@ghost.ai",plan:"FREE"};$("#moreUser").innerHTML=`<div class="avatar">👻</div><div style="flex:1;min-width:0"><b>${esc(u.name)}</b><div class="muted">${esc(u.email)}</div><div style="margin-top:6px"><span class="badge">${esc(u.plan||"FREE")}</span></div></div><span>›</span>`;}
-function renderLive(){const list=filteredPairs();const s=$("#liveSearch");if(s)s.value=state.search;const c=$("#liveCount");if(c)c.textContent=`${list.length} pairs · ${state.market==="otc"?"OTC Market":"Real Market"}`;$("#liveList").innerHTML=list.length?list.map(p=>`<button class="listRow" onclick="pickPair('${esc(p.symbol)}','analyzer')"><span style="display:flex;gap:10px;align-items:center">${flagPair(p.symbol)}<span><b>${esc(p.symbol)}</b><small>${p.otc?"OTC MARKET":"REAL MARKET"}</small></span></span><span><span class="badge">1m</span> ›</span></button>`).join(""):`<div class="muted" style="padding:14px">No pairs match.</div>`;$$("#liveTabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.market===state.market));}
-function renderInjector(){const list=filteredPairs();const s=$("#injSearch");if(s)s.value=state.search;const c=$("#injCount");if(c)c.textContent=`${list.length} pairs · ${state.market==="otc"?"OTC Market":"Real Market"}`;$("#injGrid").innerHTML=list.length?list.map(p=>`<button class="pairCard ${state.pair===p.symbol?"selected":""}" onclick="pickPair('${esc(p.symbol)}','analyzer')">${flagPair(p.symbol)}<span style="min-width:0"><span class="pairName">${esc(p.symbol)}</span><span class="pairType">${p.otc?"OTC MARKET":"REAL MARKET"} · 1m</span></span>${sparkSVG()}<span class="pairCheck">${state.pair===p.symbol?"✓":""}</span></button>`).join(""):`<div class="muted">No pairs match.</div>`;$$("#injTabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.market===state.market));}
-function pickPair(sym,go){state.pair=sym;state.market=sym.includes("OTC")?"otc":"real";saveState();renderBrokerLabels();if(go)showView(go);else renderAnalyzer();toast(`Selected ${sym}`);}
-function renderAnalyzer(){const sel=$("#pairSelect");if(sel)sel.innerHTML=ALL_PAIRS.map(p=>`<option value="${esc(p.symbol)}" ${p.symbol===state.pair?"selected":""}>${esc(p.symbol)}</option>`).join("");const lbl=$("#analyzerLabel");if(lbl)lbl.textContent=`ghostai - ${state.market==="otc"?"otc-chart":"real-chart"}`;$$("#analyzerTabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.market===state.market));const btn=$("#scanBtn");if(btn)btn.textContent=state.market==="otc"?"ANALYZE SCREENSHOT":"SCAN REAL MARKET";}
-function renderFuture(){const list=filteredPairs();const s=$("#futureSearch");if(s)s.value=state.search;if(state.futureStep===1){$("#futureStepLabel").textContent="STEP 1 OF 2 — PICK AT LEAST ONE MARKET";$("#futureGrid").innerHTML=list.map(p=>`<button class="pairCard ${state.futureSel.has(p.symbol)?"selected":""}" onclick="toggleFuture('${esc(p.symbol)}')">${flagPair(p.symbol)}<span style="min-width:0"><span class="pairName">${esc(p.symbol)}</span><span class="pairType">${p.otc?"OTC MARKET":"REAL MARKET"} · 1m</span></span><span class="pairCheck">${state.futureSel.has(p.symbol)?"●":"○"}</span></button>`).join("");$("#futureNext").disabled=state.futureSel.size===0;$("#futureNext").textContent="NEXT STEP →";$("#futureHint").textContent=state.futureSel.size?`${state.futureSel.size} market(s) selected.`:"No markets yet. Pick at least one to continue.";$("#futureBack").classList.add("hidden");}else{$("#futureStepLabel").textContent="STEP 2 OF 2 — CHECK SETUP (REAL ONLY)";const sel=[...state.futureSel];$("#futureGrid").innerHTML=sel.map(sym=>`<div class="pairCard selected">${flagPair(sym)}<span style="min-width:0"><span class="pairName">${esc(sym)}</span><span class="pairType">${sym.includes("OTC")?"OTC MARKET — no live feed":"REAL MARKET — external feed"}</span></span><span class="pairCheck">✓</span></div>`).join("");$("#futureNext").disabled=false;$("#futureNext").textContent="CHECK SETUP";$("#futureHint").textContent="OTC has no live feed — use Analyzer screenshot for OTC.";$("#futureBack").classList.remove("hidden");}$$("#futureTabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.market===state.market));}
-function toggleFuture(sym){if(state.futureSel.has(sym))state.futureSel.delete(sym);else state.futureSel.add(sym);renderFuture();}
-function futureNext(){if(state.futureStep===1){if(!state.futureSel.size)return;state.futureStep=2;renderFuture();return;}checkFuture();}
-function futureBack(){state.futureStep=1;renderFuture();}
-async function checkFuture(){const out=$("#futureResult");out.innerHTML=`<div class="spinner"></div><div class="muted" style="text-align:center">Checking selected Real markets one by one…</div>`;out.classList.remove("hidden");let html="";for(const sym of [...state.futureSel]){if(sym.includes("OTC")){html+=`<div class="resultLine"><b>${esc(sym)}</b> — No live OTC feed. Use Analyzer screenshot. No signal fabricated.</div>`;continue;}try{const d=await api("/api/scan",{method:"POST",body:JSON.stringify({symbol:sym.replace(" OTC","")})});const r=d.result||{};html+=`<div class="resultLine"><b>${esc(sym)}</b> — <b>${esc(r.direction||"NO TRADE")}</b><br>${esc(r.reason||"")}<br><span class="muted">Source: Twelve Data · Not Quotex-verified · Candle: ${esc(d.candle_time||"—")}</span></div>`;}catch(e){html+=`<div class="resultLine"><b>${esc(sym)}</b> — ${esc(e.message)}<br><span class="muted">No signal fabricated.</span></div>`;}}out.innerHTML=html||`<div class="muted">Nothing selected.</div>`;}
-function renderNews(){$$("#newsTabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===state.newsTab));$("#newsEvents").classList.toggle("hidden",state.newsTab!=="events");$("#newsFund").classList.toggle("hidden",state.newsTab!=="fundamental");if(state.newsTab==="events")loadNews();}
-async function loadNews(){const box=$("#newsList");box.innerHTML=`<div class="spinner"></div>`;try{const d=await api("/api/news?days=7");const ev=d.events||[];if(!ev.length)box.innerHTML=`<div class="muted">No high-impact events in the next 7 days.</div>`;else box.innerHTML=ev.slice(0,20).map(e=>`<div class="marketRow"><span><b>${esc(e.currency)} · ${esc(e.name)}</b><small>${esc(e.datetime_bd||"")} · Impact: HIGH · Forecast: ${esc(e.forecast??"—")} · Previous: ${esc(e.previous??"—")}</small></span><span class="badge">EVENT</span></div>`).join("");}catch(e){box.innerHTML=`<div class="muted">${esc(e.message)} — calendar unavailable.</div>`;}}
-async function analyzeNews(){const cur=$("#newsCur").value.trim().toUpperCase(),ev=$("#newsEvent").value.trim(),act=$("#newsAct").value.trim(),fore=$("#newsFore").value.trim(),prev=$("#newsPrev").value.trim();const out=$("#newsAnalyzeOut");if(!cur||!ev||!act||!fore){out.innerHTML=`<div class="muted">Fill currency, event, actual and forecast.</div>`;out.classList.remove("hidden");return;}out.innerHTML=`<div class="spinner"></div>`;out.classList.remove("hidden");try{const d=await api("/api/news/analyze",{method:"POST",body:JSON.stringify({currency:cur,event:ev,actual:act,forecast:fore,previous:prev})});out.innerHTML=`<div class="resultLine"><b>${esc(cur)} · ${esc(ev)}</b><br>${esc(d.analysis||"")}</div><div class="muted">${esc(d.note||"")}</div>`;}catch(e){out.innerHTML=`<div class="muted">${esc(e.message)}</div>`;}}
-function renderManagement(){$$("#mgmtTabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===state.managementTab));$("#mgmtForm").classList.toggle("hidden",state.managementTab!=="management");$("#mgmtSheet").classList.toggle("hidden",state.managementTab!=="sheet");if(state.managementTab==="sheet")renderSheet();}
-function generateSheet(){const cap=parseFloat($("#mgmtCap").value),pay=parseFloat($("#mgmtPay").value),target=parseFloat($("#mgmtTarget").value),risk=parseFloat($("#mgmtRisk").value),mtg=$("#mgmtMtg").classList.contains("on");if(!cap||!pay||!target||!risk){toast("Fill in all fields.");return;}if(cap<=0||pay<=0||pay>=100||target<=0||risk<=0||risk>=100){toast("Check numbers — payout and risk must be 0-100.");return;}const rows=[];let balance=cap,stake=cap*risk/100,profit=0,step=0;while(profit<cap*target/100&&step<30){step++;const useStake=mtg&&step>1?Math.min(stake*2,balance):stake;const w=useStake*pay/100;profit+=w;balance+=w;rows.push({step,stake:useStake,win:w,balance,profit});stake=useStake;if(mtg)stake=useStake*2;else stake=balance*risk/100;}state.sheet={cap,pay,target,risk,mtg,rows,totalProfit:profit,finalBalance:balance};saveState();state.managementTab="sheet";renderManagement();toast("Sheet generated — planning aid only.");}
-function renderSheet(){const box=$("#sheetBox");if(!state.sheet){box.innerHTML=`<div style="text-align:center;padding:26px 10px"><div style="font-size:36px">📋</div><h3>No sheet yet</h3><p class="muted">Enter capital, payout, target and risk to build a sheet.</p><button class="btn" onclick="goMgmtForm()">GO TO MANAGEMENT</button></div>`;return;}const s=state.sheet;box.innerHTML=`<div class="resultLine"><b>Capital $${s.cap.toFixed(2)} · Payout ${s.pay}% · Target ${s.target}% · Risk ${s.risk}% · Martingale ${s.mtg?"YES":"NO"}</b><br><span class="muted">Projected profit $${s.totalProfit.toFixed(2)} · Final $${s.finalBalance.toFixed(2)} · ${s.rows.length} step(s) if every step won — planning aid only.</span></div><table class="sheetTable"><tr><th>STEP</th><th>STAKE</th><th>WIN</th><th>BALANCE</th></tr>${s.rows.map(r=>`<tr><td>${r.step}</td><td>$${r.stake.toFixed(2)}</td><td>+$${r.win.toFixed(2)}</td><td>$${r.balance.toFixed(2)}</td></tr>`).join("")}</table>`;}
-function goMgmtForm(){state.managementTab="management";renderManagement();}
-let pendingImage=null;
-function handleFile(f){if(!f)return;if(!f.type.startsWith("image/")){toast("Choose an image file.");return;}if(f.size>12*1024*1024){toast("Image over 12 MB.");return;}pendingImage=f;const url=URL.createObjectURL(f);$("#previewWrap").innerHTML=`<img src="${url}" style="width:100%;border-radius:14px;border:1px solid var(--line)">`;$("#previewWrap").classList.remove("hidden");$("#scanBtn").disabled=false;}
-async function runAnalyzer(){const out=$("#analyzeOut");out.classList.remove("hidden");if(state.market==="real"){const clean=state.pair.replace(" OTC","");out.innerHTML=`<div class="spinner"></div><div class="muted" style="text-align:center">Scanning ${esc(state.pair)}…</div>`;try{const d=await api("/api/scan",{method:"POST",body:JSON.stringify({symbol:clean})});const r=d.result||{};out.innerHTML=`<div class="result"><div class="resultHead"><span class="resultDir">${esc(r.direction||"NO TRADE")}</span><span class="badge">${esc(state.pair)}</span></div><div class="resultLine"><b>Why:</b> ${esc(r.reason||"")}</div><div class="resultLine"><b>External price:</b> ${r.price!=null?esc(String(r.price)):"—"} · <b>Candle:</b> ${esc(d.candle_time||"—")}</div><div class="resultLine"><b>Source:</b> Twelve Data · <b>Quotex-verified:</b> No</div><div class="resultLine"><b>Backtest:</b> ${esc(JSON.stringify(d.backtest||{}))}</div><div class="muted">Educational only. Not financial advice.</div></div>`;}catch(e){out.innerHTML=`<div class="notice">${esc(e.message)} — no signal fabricated.</div>`;}return;}if(!pendingImage){out.innerHTML=`<div class="notice">Choose a chart screenshot first. OTC has no live feed, so Analyzer reads your screenshot.</div>`;return;}out.innerHTML=`<div class="spinner"></div><div class="muted" style="text-align:center">Reading screenshot…</div>`;const fd=new FormData();fd.append("image",pendingImage);try{const r=await fetch("/api/analyze-image",{method:"POST",credentials:"same-origin",body:fd});const d=await r.json();if(!r.ok)throw new Error(d.error||"Analysis failed");const a=d.analysis||{};out.innerHTML=`<div class="result"><div class="resultHead"><span class="resultDir">${esc(a.direction||"NO TRADE")}</span><span class="badge">${esc(state.pair)}</span></div><div class="muted">Confidence (clarity of evidence, not win probability):</div><div class="bar"><i style="width:${a.confidence||0}%"></i></div><div class="muted">${a.confidence||0}% · ${esc(a.confidence_note||"")}</div><div class="resultLine"><b>Summary:</b> ${esc(a.summary||"")}</div><div class="resultLine"><b>Trend:</b> ${esc(a.trend||"")}</div><div class="resultLine"><b>Structure:</b> ${esc(a.structure||"")}</div><div class="resultLine"><b>Zones:</b> ${esc(a.zones||"")}</div><div class="resultLine"><b>Reasoning:</b> ${esc(a.reasoning||"")}</div><div class="resultLine"><b>Confirmation:</b> ${esc(a.confirmation||"")}</div><div class="resultLine"><b>Invalidation:</b> ${esc(a.invalidation||"")}</div><div class="muted">${esc(d.warning||"")}</div></div>`;}catch(e){out.innerHTML=`<div class="notice">${esc(e.message)} — no signal fabricated.</div>`;}}
-async function loadDashboard(){const u=state.user||{name:"Arafat Hossain",email:"demo@ghost.ai",plan:"FREE"};const n=$("#dashName");if(n)n.textContent=u.name;const m=$("#dashEmail");if(m)m.textContent=u.email;const p=$("#dashPlan");if(p)p.textContent=u.plan||"FREE";try{const d=await api("/api/dashboard");const s=$("#dashStats");if(s)s.innerHTML=`<div class="panel" style="padding:14px"><small>CATALOG</small><br><strong>${d.catalog_count||ALL_PAIRS.length}</strong><br><small>pairs listed</small></div><div class="panel" style="padding:14px"><small>EXTERNAL FEED</small><br><strong>${d.twelve_data_key_configured?"READY":"NOT SET"}</strong><br><small>Real scan</small></div><div class="panel" style="padding:14px"><small>VISION AI</small><br><strong>${d.ai_api_key_configured?"READY":"NOT SET"}</strong><br><small>Screenshot</small></div>`;const feed=$("#dashFeed");if(feed){const sig=d.signals||[];feed.innerHTML=sig.length?sig.slice(0,5).map(x=>`<div class="marketRow"><span><b>${esc(x.symbol)} · ${esc(x.direction)}</b><small>${esc(x.reason||"")}</small></span><span class="badge">${esc(x.status||"")}</span></div>`).join(""):`<div class="muted">No recorded setups yet. Run a Real scan from Analyzer, or upload an OTC screenshot — nothing is auto-generated.</div>`;}}catch(e){const s=$("#dashStats");if(s)s.innerHTML=`<div class="panel" style="padding:14px"><small>CATALOG</small><br><strong>${ALL_PAIRS.length}</strong></div>`;}}
-async function checkAuth(){try{const d=await api("/api/auth/me");if(d.authenticated){state.user=d.user;state.plan=d.user.plan||"FREE";renderBrokerLabels();$("#loginOverlay").classList.remove("open");return true;}}catch(e){}return false;}
-async function doLogin(){const email=$("#loginEmail").value.trim().toLowerCase(),pw=$("#loginPass").value;const err=$("#loginErr");if(!email||!pw){err.textContent="Enter email and password.";return;}err.textContent="Signing in…";try{const d=await api("/api/auth/login",{method:"POST",body:JSON.stringify({email,password:pw})});state.user=d.user;state.plan=d.user.plan||"FREE";$("#loginOverlay").classList.remove("open");err.textContent="";toast(`Welcome back, ${d.user.name}.`);showView("dashboard");}catch(e){err.textContent=e.message;}}
-function demoLogin(){$("#loginEmail").value="demo@ghost.ai";$("#loginPass").value="ghost1234";doLogin();}
-async function doLogout(){try{await api("/api/auth/logout",{method:"POST"});}catch(e){}state.user=null;closeSheet("#moreSheet");$("#loginOverlay").classList.add("open");toast("Logged out.");showView("landing");}
-function launchApp(){if(state.user)showView("dashboard");else $("#loginOverlay").classList.add("open");}
-async function loadLessons(){const box=$("#lessonsBox");if(!box)return;box.innerHTML=`<div class="spinner"></div>`;try{const d=await api("/api/lessons");state.lessons=d.lessons||[];box.innerHTML=state.lessons.map(l=>`<div class="panel" style="padding:14px;margin-bottom:10px"><b>${esc(l.title)}</b><p class="muted">${esc(l.caption)}</p><div class="muted">Illustrative example — not live market data.</div></div>`).join("");}catch(e){box.innerHTML=`<div class="muted">${esc(e.message)} — login to load lessons.</div>`;}}
-async function askAI(){const inp=$("#chatInput");const q=inp.value.trim();if(!q)return;const chat=$("#chat");chat.innerHTML+=`<div class="bubble me">${esc(q)}</div>`;inp.value="";chat.scrollTop=chat.scrollHeight;chat.innerHTML+=`<div class="bubble" id="chatWait">Thinking…</div>`;try{const d=await api("/api/ask",{method:"POST",body:JSON.stringify({question:q})});$("#chatWait").remove();chat.innerHTML+=`<div class="bubble">👻 <b>Ghost AI</b><br>${esc(d.answer||"")}</div>`;}catch(e){const w=$("#chatWait");if(w)w.textContent=e.message;}chat.scrollTop=chat.scrollHeight;}
-document.addEventListener("DOMContentLoaded",async()=>{
-renderBrokerLabels();renderLive();renderInjector();renderAnalyzer();renderFuture();renderManagement();
-const drop=$("#dropZone");if(drop){drop.addEventListener("click",()=>$("#fileInput").click());drop.addEventListener("dragover",e=>{e.preventDefault();drop.style.borderColor="#e58bff";});drop.addEventListener("dragleave",()=>drop.style.borderColor="");drop.addEventListener("drop",e=>{e.preventDefault();drop.style.borderColor="";const f=e.dataTransfer.files[0];if(f)handleFile(f);});}
-const fi=$("#fileInput");if(fi)fi.addEventListener("change",e=>handleFile(e.target.files[0]));
-document.addEventListener("paste",e=>{const items=e.clipboardData?.items||[];for(const it of items){if(it.type.startsWith("image/")){handleFile(it.getAsFile());toast("Screenshot pasted.");showView("analyzer");break;}}});
-$$(".nav").forEach(n=>n.addEventListener("click",()=>{if(n.dataset.view==="more"){openMore();return;}if(!state.user&&["dashboard","live","analyzer","injector"].includes(n.dataset.view)){launchApp();return;}showView(n.dataset.view);}));
-const authed=await checkAuth();const hash=(location.hash||"").replace("#/","");if(authed){if(["dashboard","live","analyzer","injector","future","news","management","pricing","learn"].includes(hash))showView(hash);else showView("dashboard");}else{if(hash==="pricing")showView("pricing");else showView("landing");}
-});
-</script><script>const c=document.getElementById("stars");const x=c.getContext("2d");function rs(){c.width=innerWidth;c.height=innerHeight;x.clearRect(0,0,c.width,c.height);for(let i=0;i<90;i++){x.fillStyle=`rgba(255,255,255,${Math.random()*0.7})`;x.beginPath();x.arc(Math.random()*c.width,Math.random()*c.height,Math.random()*1.4,0,7);x.fill();}}rs();addEventListener("resize",rs);</script></body></html>'''
+# Initialize DB and background workers when the Render process starts.
+_db_ok, _db_msg = init_database()
+if _db_ok:
+    _bootstrap_admin()
+if not _db_ok:
+    log.warning("Database not ready at startup: %s", _db_msg)
+start_background_threads()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "10000"))
