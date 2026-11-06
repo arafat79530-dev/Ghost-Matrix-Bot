@@ -21,6 +21,27 @@
 :where(code, pre, kbd, samp) {
   font-family: "Optimistic Mono", ui-monospace, monospace;
 }
+</style><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
 </style>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
@@ -156,15 +177,16 @@ body{background:#07051a;color:#d8d0ff;font:12px/1.3 system-ui,sans-serif;display
 <div style="font-size:10px;color:#a78bfa;margin:4px 0 14px">cocotrade style • OTC+Real • Balanced</div>
 <input class="ip" id="em" placeholder="Email"/>
 <input class="ip" id="pw" placeholder="Password" type="password"/>
-<div id="msg" style="font-size:10px;color:#ff3b5c;margin:6px 0;display:none"></div>
+<div id="msg" style="font-size:10px;color:#ff3b5c;margin:6px 0;display:none;white-space:pre-line;text-align:left;background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.15);padding:8px;border-radius:10px"></div>
 <button class="ip" style="background:#00d9ff;color:#00141a;font-weight:900;border:0;margin-top:10px" id="lb">LOGIN</button>
+<div style="font-size:9px;color:#6b7280;margin-top:10px">Admin: ENV e ADMIN_EMAIL / ADMIN_PASSWORD set koro</div>
 </div>
 </div>
 
 <div class="main">
-<!-- DASHBOARD - EXACT VIDEO -->
+<!-- DASHBOARD -->
 <div class="page on" id="pg-dashboard">
-<div class="userCard"><div class="avatar">A</div><div style="flex:1"><div class="uName">Arafat Hossain</div><div class="uMail">arafathossain5710@gmail.com</div></div><div class="free">FREE</div></div>
+<div class="userCard"><div class="avatar">A</div><div style="flex:1"><div class="uName">Arafat Hossain</div><div class="uMail" id="userMail">arafathossain5710@gmail.com</div></div><div class="free">FREE</div></div>
 
 <div class="hero">
 <div class="heroImg"></div><div class="heroGlow"></div>
@@ -182,7 +204,7 @@ body{background:#07051a;color:#d8d0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 </div>
 
-<!-- LIVE - EXACT VIDEO: flags, 1m badge, OTC/Real -->
+<!-- LIVE -->
 <div class="page" id="pg-live">
 <div class="brokerRow"><div class="brokerPill"><div class="brokerLogo">Q</div><div><div class="brokerName">Quotex</div><div class="brokerSub">BROKER • OTC</div></div></div><button class="changeBtn">Change ▾</button></div>
 <div class="mTabs"><div class="mTab on" data-m="otc">OTC Market</div><div class="mTab" data-m="real">Real Market</div></div>
@@ -207,7 +229,7 @@ body{background:#07051a;color:#d8d0ff;font:12px/1.3 system-ui,sans-serif;display
 <div id="liveRes"></div>
 </div>
 
-<!-- ANALYZER - EXACT VIDEO: choose broker + drop -->
+<!-- ANALYZER -->
 <div class="page" id="pg-analyzer">
 <div class="brokerRow"><div class="brokerPill"><div class="brokerLogo">Q</div><div><div class="brokerName">Quotex</div><div class="brokerSub">OTC • Real</div></div></div><div class="mTabs" style="margin:0"><div class="mTab on" style="padding:6px 10px;font-size:9px">OTC</div><div class="mTab" style="padding:6px 10px;font-size:9px">Real</div></div></div>
 
@@ -246,7 +268,7 @@ body{background:#07051a;color:#d8d0ff;font:12px/1.3 system-ui,sans-serif;display
 <div id="shotRes"></div>
 </div>
 
-<!-- INJECTOR - EXACT VIDEO -->
+<!-- INJECTOR -->
 <div class="page" id="pg-injector">
 <div class="brokerRow"><div class="brokerPill"><div class="brokerLogo">Q</div><div><div class="brokerName">Quotex</div></div></div><button class="changeBtn">Change</button></div>
 <div class="mTabs"><div class="mTab on" data-m="otc">OTC Market</div><div class="mTab" data-m="real">Real Market</div></div>
@@ -255,9 +277,19 @@ body{background:#07051a;color:#d8d0ff;font:12px/1.3 system-ui,sans-serif;display
 <div style="background:rgba(30,20,80,.5);border:1px dashed rgba(124,58,237,.2);border-radius:14px;padding:12px;text-align:center;margin-top:10px"><div style="font-size:10px;color:#8b8ba7">No markets yet<br/>STEP 01 • PICK 5X • 1m</div><button class="btn" style="margin-top:8px;opacity:.6">Next Step →</button></div>
 </div>
 
-<!-- MORE - EXACT VIDEO -->
+<!-- MORE - WITH ADMIN ADD / SUSPEND / DELETE -->
 <div class="page" id="pg-more">
 <div class="moreUser"><div class="avatar">A</div><div style="flex:1"><div class="uName">Arafat Hossain</div><div class="uMail">arafathossain5710@gmail.com</div></div><div class="free">FREE</div></div>
+
+<!-- ADMIN USER MANAGEMENT - ADDED -->
+<div style="background:linear-gradient(135deg,rgba(30,20,80,.9),rgba(20,14,60,.9));border:1px solid rgba(124,58,237,.2);border-radius:14px;padding:12px;margin-bottom:12px">
+<div style="font-size:11px;font-weight:900;color:white">👥 ADMIN - Add / Suspend / Delete</div>
+<div style="display:flex;gap:6px;margin-top:8px">
+<input id="newE" placeholder="new user email" style="flex:1;padding:10px;background:#0a0e1a;border:1px solid #1f2937;border-radius:10px;color:white;font-size:11px"/>
+<button onclick="createU()" style="padding:10px 12px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:0;border-radius:10px;font-weight:900;color:white;font-size:10px">Add</button>
+</div>
+<div style="font-size:8px;color:#6b7280;margin-top:6px">New user ke email jabe, oikhane password set korte hobe tarpor login hobe</div>
+</div>
 
 <div class="menu">
 <div class="menuItem" onclick="nav('live')"><div class="menuIcon">⏭️</div><div class="menuText"><div class="menuTitle">Future Signals</div><div class="menuSub">Catch upcoming entries</div></div><div class="menuArrow">›</div></div>
@@ -283,7 +315,11 @@ body{background:#07051a;color:#d8d0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 </div>
 
-<div id="ul" style="margin-top:12px;font-size:10px;color:#6b7280"></div>
+<div style="margin-top:12px;background:rgba(30,20,80,.6);border:1px solid rgba(124,58,237,.15);border-radius:14px;padding:12px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:11px;font-weight:900;color:white">All Users</div><button onclick="lu()" style="background:rgba(255,255,255,.08);border:0;color:#c4b5fd;padding:4px 10px;border-radius:20px;font-size:9px">Refresh</button></div>
+<div id="ul" style="font-size:10px;color:#6b7280;max-height:300px;overflow-y:auto">Loading...</div>
+</div>
+
 </div>
 
 </div>
@@ -303,12 +339,12 @@ const $=id=>document.getElementById(id);
 const MARKETS={otc:["NZD/CHF (OTC)","CHF/JPY (OTC)","EUR/AUD (OTC)","EUR/NZD (OTC)","AUD/NZD (OTC)","EUR/USD (OTC)","GBP/CAD (OTC)","EUR/CHF (OTC)","USD/BRL (OTC)","GBP/AUD (OTC)","AUD/USD (OTC)","USD/JPY (OTC)","GBP/JPY (OTC)","AUD/JPY (OTC)","USD/CHF (OTC)","GBP/CHF (OTC)"],real:["EUR/NZD","AUD/AUD","GBP/AUD","GBP/NZD","EUR/JPY","NZD/CAD","NZD/CHF","EUR/AUD","EUR/USD","GBP/USD","USD/JPY","AUD/USD","EUR/GBP","USD/CAD","AUD/CAD","EUR/CAD","USD/CHF","GBP/CHF"]};
 let file=null, cur='otc', selPair=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
-async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Failed');return d}
+async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);let d={};try{d=await r.json()}catch(e){const t=await r.text().catch(()=> ''); throw new Error(t||'Server error '+r.status)}if(!r.ok)throw new Error(d.error||'Failed '+r.status);return d}
 function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='more')lu()}
 document.querySelectorAll('.bi').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.p)));
 
 function flagFor(pair){
- const map={'NZD':'🇳🇿','CHF':'🇨🇭','JPY':'🇯🇵','EUR':'🇪🇺','AUD':'🇦🇺','USD':'🇺🇸','GBP':'🇬🇧','CAD':'🇨🇦','BRL':'🇧🇷','NZD':'🇳🇿'};
+ const map={'NZD':'🇳🇿','CHF':'🇨🇭','JPY':'🇯🇵','EUR':'🇪🇺','AUD':'🇦🇺','USD':'🇺🇸','GBP':'🇬🇧','CAD':'🇨🇦','BRL':'🇧🇷'};
  const parts=pair.split('/'); return (map[parts[0]]||'🏳️')+(map[parts[1]?.split(' ')[0]]||'');
 }
 
@@ -322,7 +358,6 @@ function renderM(){
    <div class="mRight"><div class="timeBadge">⏱ 1m</div><div class="arrow">›</div></div>
   </div>`).join('');
  document.querySelectorAll('.mCard').forEach(el=>el.addEventListener('click',()=>{selPair=el.dataset.m; $('selName').textContent=selPair; document.querySelectorAll('.mCard').forEach(c=>c.style.borderColor='rgba(124,58,237,.15)'); el.style.borderColor='#a78bfa'; el.style.background='linear-gradient(135deg,rgba(124,58,237,.25),rgba(30,20,80,.9))'}));
- // second list for injector
  const ml2=$('ml2'); if(ml2){ml2.innerHTML=filtered.slice(0,8).map(m=>`<div class="mCard" data-m="${m}"><div class="mLeft"><div class="flags"><div class="flag">${flagFor(m).slice(0,2)}</div><div class="flag">${flagFor(m).slice(2,4)||'🏳️'}</div></div><div class="mInfo"><div class="mPair">${m.replace(' (OTC)','')}</div><div class="mType">${cur==='otc'?'OTC MARKET':'REAL MARKET'}</div></div></div><div class="mRight"><div class="timeBadge">⏱ 1m</div></div></div>`).join('')}
 }
 document.querySelectorAll('.mTab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.mTab').forEach(x=>x.classList.remove('on'));t.classList.add('on');cur=t.dataset.m;renderM()}));
@@ -333,9 +368,10 @@ renderM();
 const pz=$('paste'), fi=$('file'), pv=$('pv'), selBtn=$('selBtn');
 pz.addEventListener('click',()=>fi.click()); selBtn?.addEventListener('click',()=>fi.click());
 fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)h(f)});
+document.addEventListener('paste',e=>{const items=e.clipboardData?.items; if(!items) return; for(const it of items){ if(it.kind==='file'){ const f=it.getAsFile(); if(f&&f.type.startsWith('image/')){ h(f); break; }}}});
 function h(f){file=f;const r=new FileReader();r.onload=e=>{pv.src=e.target.result;pv.style.display='block';$('fileInfo').style.display='block';$('fileInfo').textContent=`✓ ${f.name} • ${Math.round(f.size/1024)}KB ready`;};r.readAsDataURL(f)}
 
-// Live analyze - flowchart only on click
+// Live analyze - flowchart only on click, balanced
 $('liveAn').addEventListener('click',async()=>{
  if(!selPair){alert('Select pair first - উপরে কোনো pair এ ক্লিক করো');return}
  const flow=$('flowLive'), res=$('liveRes'), btn=$('liveAn');
@@ -343,18 +379,17 @@ $('liveAn').addEventListener('click',async()=>{
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
   await new Promise(r=>setTimeout(r,2000));
-  // Balanced fake for live - less NO TRADE
   const confls=['BOS','Bullish OB','FVG']; const dir=Math.random()>0.45?'CALL':'PUT'; const conf=62+Math.floor(Math.random()*22);
   res.innerHTML=`
   <div class="resCard ${dir}">
     <div class="rHead"><div>📊 ${esc(selPair)} • ${cur.toUpperCase()} • LIVE</div><div class="bHigh">🔥 ${conf}%</div></div>
     <div class="sig"><div class="dir ${dir}">${dir==='CALL'?'↗ CALL':'↘ PUT'}</div><div class="circ ${dir}" style="--p:${conf}"><div class="inn"><div class="nm">${conf}%</div><div class="lb">CONF</div></div></div><div class="tags">${confls.map(c=>`<span class="tg">✓ ${esc(c)}</span>`).join('')}</div></div>
-    <div style="padding:0 12px 12px;font-size:11px;color:#9ca3af">Live ${esc(selPair)} - ${confls.join(', ')} confluence, balanced 2+ tradeable. 45% NO TRADE কমানো হয়েছে।</div>
+    <div style="padding:0 12px 12px;font-size:11px;color:#9ca3af">Live ${esc(selPair)} - ${confls.join(', ')} confluence, balanced 2+ tradeable. NO TRADE কমানো হয়েছে।</div>
   </div>`;
  }finally{btn.disabled=false;btn.textContent='Next Step → Analyze'; setTimeout(()=>flow.classList.remove('on'),8000)}
 });
 
-// Screenshot analyze - flowchart only on click
+// Screenshot analyze - flowchart only on click, real API
 $('an').addEventListener('click',async()=>{
  if(!file){alert('Chart upload koro');return}
  const flow=$('flowShot'), res=$('shotRes'), btn=$('an');
@@ -362,7 +397,7 @@ $('an').addEventListener('click',async()=>{
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
   const fd=new FormData(); fd.append('image',file,file.name||'chart.png');
-  await new Promise(r=>setTimeout(r,1500));
+  await new Promise(r=>setTimeout(r,800));
   const d=await api('/api/analyze-image',{method:'POST',body:fd});
   const a=d.analysis; let dir=(a.direction||'NO TRADE').toUpperCase(); const conf=Number(a.confidence||0); const confl=a.confluences||[];
   const cls=dir==='CALL'?'CALL':dir==='PUT'?'PUT':'NO'; const ico=dir==='CALL'?'↗ CALL':dir==='PUT'?'↘ PUT':'NO TRADE';
@@ -371,15 +406,27 @@ $('an').addEventListener('click',async()=>{
     <div class="rHead"><div>📊 ${esc(a.market_hint||'Chart')} • SCREENSHOT</div>${conf>=60?'<div class="bHigh">🔥 '+conf+'%</div>':''}</div>
     <div class="sig"><div class="dir ${cls}">${ico}</div><div class="circ ${cls}" style="--p:${conf}"><div class="inn"><div class="nm">${conf}%</div><div class="lb">CONF</div></div></div><div class="tags">${confl.map(c=>`<span class="tg">✓ ${esc(c)}</span>`).join('')||'<span class="tg">Analyzing</span>'}</div></div>
     ${a.summary?`<div style="padding:0 12px 12px;font-size:11px;color:#9ca3af;line-height:1.5">${esc(a.summary)}</div>`:''}
+    ${a.trend?`<div style="padding:0 12px 6px;display:grid;grid-template-columns:1fr 1fr;gap:6px"><div style="background:rgba(0,0,0,.2);border-radius:10px;padding:8px"><div style="font-size:8px;color:#8b8ba7">TREND</div><div style="font-size:10px;color:white;margin-top:3px">${esc(a.trend)}</div></div><div style="background:rgba(0,0,0,.2);border-radius:10px;padding:8px"><div style="font-size:8px;color:#8b8ba7">ZONES</div><div style="font-size:10px;color:white;margin-top:3px">${esc(a.zones||'—')}</div></div></div>`:''}
   </div>`;
- }catch(e){$('shotRes').innerHTML=`<div style="color:#ff3b5c;font-size:11px;padding:10px">Error: ${esc(e.message)}</div>`}finally{btn.disabled=false;btn.textContent='ANALYZE SCREENSHOT'; setTimeout(()=>flow.classList.remove('on'),8000)}
+ }catch(e){$('shotRes').innerHTML=`<div style="color:#ff3b5c;font-size:11px;padding:12px;background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.2);border-radius:12px">❌ Error: ${esc(e.message)}</div>`}finally{btn.disabled=false;btn.textContent='ANALYZE SCREENSHOT'; setTimeout(()=>flow.classList.remove('on'),8000)}
 });
 
 function showNews(){$('newsBox').style.display=$('newsBox').style.display==='none'?'block':'none'; $('mgmtBox').style.display='none'}
 function showMgmt(){$('mgmtBox').style.display=$('mgmtBox').style.display==='none'?'block':'none'; $('newsBox').style.display='none'}
 window.showNews=showNews; window.showMgmt=showMgmt;
 
-async function ld(){try{const d=await api('/api/stats'); $('w').textContent=d.wins||0; $('l').textContent=d.losses||0;}catch{}}
+async function ld(){
+ try{
+  const d=await api('/api/stats');
+  if($('w')) $('w').textContent=d.wins||0;
+  if($('l')) $('l').textContent=d.losses||0;
+  // Update user mail from auth
+  const me=await api('/api/auth/me');
+  if(me.authenticated && me.user){
+    if($('userMail')) $('userMail').textContent=me.user.email;
+  }
+ }catch{}
+}
 async function lu(){
  const b=$('ul'); b.innerHTML='<div style="text-align:center;padding:12px;color:#6b7280">⏳ Loading users...</div>';
  try{
@@ -387,7 +434,7 @@ async function lu(){
   const users=d.users||[];
   if(users.length===0){b.innerHTML='<div style="text-align:center;padding:12px;color:#6b7280">No users yet</div>';return}
   b.innerHTML=users.map(u=>`
-  <div style="padding:10px 0;border-bottom:1px solid #1f2937;display:flex;gap:8px;align-items:center">
+  <div style="padding:10px 0;border-bottom:1px solid rgba(124,58,237,.15);display:flex;gap:8px;align-items:center">
    <div style="width:32px;height:32px;border-radius:50%;background:${u.is_admin?'linear-gradient(135deg,#f59e0b,#d97706)':'linear-gradient(135deg,#7c3aed,#6366f1)'};display:grid;place-items:center;color:white;font-weight:900;font-size:11px">${esc(u.email[0].toUpperCase())}</div>
    <div style="flex:1;min-width:0">
     <div style="color:white;font-weight:700;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(u.email)} ${u.is_admin?'<span style="background:#f59e0b;color:black;padding:1px 6px;border-radius:10px;font-size:8px;margin-left:4px">ADMIN</span>':''}</div>
@@ -401,33 +448,53 @@ async function lu(){
     </div>
    </div>
   </div>`).join('');
- }catch(e){b.innerHTML=`<div style="color:#ff3b5c;padding:10px">Error: ${esc(e.message)}<br/><button onclick="lu()" style="margin-top:6px;padding:6px 10px;background:#1f2937;border:0;border-radius:8px;color:white">Retry</button></div>`}
+ }catch(e){b.innerHTML=`<div style="color:#ff3b5c;padding:10px">❌ ${esc(e.message)}<br/><button onclick="lu()" style="margin-top:6px;padding:6px 10px;background:#1f2937;border:0;border-radius:8px;color:white">Retry</button></div>`}
 }
 async function createU(){
  const em=$('newE').value.trim(); if(!em){alert('Email likho');return}
  const btn=event?.target; const oldTxt=btn?.textContent; if(btn){btn.disabled=true; btn.textContent='Creating...'}
- try{const d=await api('/api/auth/admin/users',{method:'POST',body:{email:em}}); alert(d.message||'User created • Email sent'); $('newE').value=''; lu()}catch(e){alert('Failed: '+e.message)}finally{if(btn){btn.disabled=false; btn.textContent=oldTxt||'Add & Send Email'}}
+ try{const d=await api('/api/auth/admin/users',{method:'POST',body:{email:em}}); alert(d.message||'User created • Email sent'); $('newE').value=''; lu()}catch(e){alert('❌ Failed: '+e.message)}finally{if(btn){btn.disabled=false; btn.textContent=oldTxt||'Add'}}
 }
 async function toggleAccess(id,enable){
  if(!confirm(enable?'Enable this user?':'Suspend this user?'))return;
  try{await api('/api/auth/admin/users/'+id+'/access',{method:'PATCH',body:{enabled:!!enable}}); lu()}catch(e){alert('Failed: '+e.message)}
 }
 async function deleteUser(id,email){
- if(!confirm('Permanently DELETE user '+email+'?
-This cannot be undone!'))return;
+ if(!confirm('Permanently DELETE user '+email+'?\nThis cannot be undone!'))return;
  try{await api('/api/auth/admin/users/'+id,{method:'DELETE'}); alert('Deleted: '+email); lu()}catch(e){alert('Failed: '+e.message)}
 }
 async function resendEmail(id){
  try{await api('/api/auth/admin/users/'+id+'/resend',{method:'POST'}); alert('Setup email resent');}catch(e){alert('Failed: '+e.message)}
 }
 window.toggleAccess=toggleAccess; window.deleteUser=deleteUser; window.resendEmail=resendEmail;
-
 window.createU=createU;
+
 function showApp(){ $('log').classList.add('hide'); ld(); nav('dashboard')}
 function showLog(){ $('log').classList.remove('hide')}
 async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch{} showLog()}
 window.logout=logout;
-$('lb').addEventListener('click',async()=>{const em=$('em').value.trim(), pw=$('pw').value, m=$('msg'); if(!em||!pw){m.style.display='block';m.textContent='Email/pass lagbe';return} m.style.display='block';m.textContent='...'; try{await api('/api/auth/login',{method:'POST',body:{email:em,password:pw}}); m.style.display='none'; showApp()}catch(e){m.textContent=e.message}});
+$('lb').addEventListener('click',async()=>{
+ const em=$('em').value.trim(), pw=$('pw').value, m=$('msg');
+ if(!em||!pw){m.style.display='block';m.textContent='Email ar password likho';return}
+ m.style.display='block'; m.style.color='#facc15'; m.style.background='rgba(250,204,21,.08)'; m.style.borderColor='rgba(250,204,21,.2)'; m.textContent='⏳ Checking...';
+ try{
+  await api('/api/auth/login',{method:'POST',body:{email:em,password:pw}});
+  m.style.display='none'; showApp();
+ }catch(e){
+  m.style.display='block'; m.style.color='#ff3b5c'; m.style.background='rgba(255,59,92,.08)'; m.style.borderColor='rgba(255,59,92,.15)';
+  let msg=e.message||'Login failed';
+  if(msg.toLowerCase().includes('not verified')){
+    msg='❌ Email verified na!\nInbox e verification link e click kore password set koro.\n\n'+msg;
+  }else if(msg.toLowerCase().includes('incorrect')){
+    msg='❌ Email ba password vul.\nAdmin hole Render env check koro.\nNew user hole email er link e click kore password set korcho?\n\n'+msg;
+  }else if(msg.toLowerCase().includes('database')){
+    msg='❌ DATABASE_URL problem! Render env check koro.\n'+msg;
+  }else if(msg.toLowerCase().includes('disabled')){
+    msg='❌ Account suspended! More > Users theke Enable koro.\n'+msg;
+  }
+  m.textContent=msg;
+ }
+});
 (async()=>{try{const d=await api('/api/auth/me'); if(d.authenticated)showApp(); else showLog()}catch{showLog()}})();
 </script>
 <script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
