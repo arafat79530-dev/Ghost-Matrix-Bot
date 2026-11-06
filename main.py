@@ -91,6 +91,21 @@ logging.basicConfig(
 )
 log = logging.getLogger("ghost-matrix")
 app = Flask(__name__)
+# Flask sessions and signed email/password tokens require a stable secret.
+# Set FLASK_SECRET_KEY in Render for persistence across restarts; the fallback
+# keeps the app from crashing but invalidates sessions/tokens after restart.
+app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=APP_BASE_URL.startswith("https://"),
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+)
+_auth_serializer = URLSafeTimedSerializer(
+    app.secret_key, salt="ghost-matrix-email-verification-v1"
+)
+if not FLASK_SECRET_KEY:
+    log.warning("FLASK_SECRET_KEY is not configured; using a temporary key. Set it in Render Environment.")
 
 @app.after_request
 def disable_auth_page_caching(response):
@@ -1905,8 +1920,6 @@ def status_route():
 
 @app.post("/api/auth/login")
 def auth_login():
-    if not FLASK_SECRET_KEY:
-        return jsonify({"error": "FLASK_SECRET_KEY is not configured in Render."}), 503
     body = request.get_json(silent=True) or {}
     email = str(body.get("email", "")).strip().lower()
     password = str(body.get("password", ""))
