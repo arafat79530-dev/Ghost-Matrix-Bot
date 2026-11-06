@@ -61,7 +61,16 @@ DEFAULT_REAL_MARKETS = [
     "EUR/AUD", "EUR/CHF", "EUR/JPY", "EUR/GBP", "EUR/CAD", "EUR/USD",
     "GBP/AUD", "GBP/CAD", "GBP/CHF", "GBP/USD", "GBP/JPY", "USD/JPY",
 ]
-REAL_MARKET_SYMBOLS = ",".join(DEFAULT_REAL_MARKETS)  # Fixed allowlist: exactly the 18 user-selected pairs
+REAL_MARKET_SYMBOLS = ",".join(DEFAULT_REAL_MARKETS)
+
+# OTC catalog is UI/catalog metadata only. The current live candle provider
+# (Twelve Data) is not used to fabricate OTC candles or prices.
+DEFAULT_OTC_MARKETS = [
+    "AUD/CAD OTC", "AUD/CHF OTC", "AUD/JPY OTC", "CAD/JPY OTC",
+    "CHF/JPY OTC", "EUR/GBP OTC", "EUR/JPY OTC", "EUR/USD OTC",
+    "GBP/USD OTC", "GBP/JPY OTC", "USD/JPY OTC",
+]
+OTC_MARKET_SYMBOLS = ",".join(DEFAULT_OTC_MARKETS)
 BANGLADESH_TZ = ZoneInfo("Asia/Dhaka")
 
 # The account's reported Twelve Data limit is 8 credits/minute and 800/day.
@@ -90,26 +99,6 @@ def disable_auth_page_caching(response):
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
     return response
-
-@app.route("/manifest.json")
-def serve_manifest():
-    return send_from_directory(
-        os.path.dirname(os.path.abspath(__file__)),
-        "manifest.json",
-        mimetype="application/manifest+json"
-    )
-
-
-@app.route("/icons/<path:filename>")
-def serve_icons(filename):
-    icon_dir = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "icons"
-    )
-    return send_from_directory(icon_dir, filename)
-app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
-app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
-_auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
 
 http_session = requests.Session()
 http_session.headers.update({"User-Agent": "GHOST-MATRIX-V2/2.0"})
@@ -429,12 +418,20 @@ def twelve_get(endpoint: str, params: dict, count_credit: bool = True) -> dict:
     return data
 
 
-def get_catalog(force: bool = False) -> list[dict[str, str]]:
-    """Return only the user's explicitly selected REAL-market candidates; never all 1399 symbols."""
-    symbols = [x.strip().upper() for x in REAL_MARKET_SYMBOLS.split(",") if x.strip()]
-    # Stable unique list while preserving user order.
-    symbols = list(dict.fromkeys(symbols))
-    catalog = [{"symbol": symbol, "group": "User-selected Quotex REAL-market candidate"} for symbol in symbols]
+def get_catalog(force: bool = False) -> list[dict[str, Any]]:
+    """Return the curated REAL + OTC market catalog without inventing OTC prices."""
+    real = [x.strip().upper() for x in REAL_MARKET_SYMBOLS.split(",") if x.strip()]
+    otc = [x.strip().upper() for x in OTC_MARKET_SYMBOLS.split(",") if x.strip()]
+    real = list(dict.fromkeys(real))
+    otc = list(dict.fromkeys(otc))
+    catalog = [
+        {"symbol": symbol, "group": "Real Market", "otc": False, "scannable": True}
+        for symbol in real
+    ]
+    catalog += [
+        {"symbol": symbol, "group": "OTC Market", "otc": True, "scannable": False}
+        for symbol in otc
+    ]
     state["catalog_count"] = len(catalog)
     return catalog
 
@@ -2252,9 +2249,14 @@ def api_scan_one():
         return jsonify({"error": "Scan limit reached. এক মিনিট পরে আবার চেষ্টা করো।"}), 429
     body = request.get_json(silent=True) or {}
     symbol = str(body.get("symbol", "")).strip().upper()
-    allowed = {str(item.get("symbol", "")).upper() for item in get_catalog()}
-    if not symbol or symbol not in allowed:
+    catalog = get_catalog()
+    by_symbol = {str(item.get("symbol", "")).upper(): item for item in catalog}
+    if not symbol or symbol not in by_symbol:
         return jsonify({"error": "তালিকা থেকে একটি valid market নির্বাচন করো।"}), 400
+    if by_symbol[symbol].get("otc"):
+        return jsonify({
+            "error": "OTC market catalog-এ রাখা আছে, কিন্তু live OTC candle feed এই backend-এ configured নয়। Screenshot Analyzer দিয়ে OTC chart বিশ্লেষণ করো; কোনো OTC price/signal বানানো হয় না."
+        }), 503
     with _api_buckets_lock:
         now = time.monotonic()
         if now - _last_app_scan < 8:
