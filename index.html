@@ -35,7 +35,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .mcard{background:linear-gradient(135deg,rgba(28,20,75,.9),rgba(18,14,55,.9));border:1px solid rgba(124,58,237,.14);border-radius:13px;padding:9px 11px;display:flex;align-items:center;justify-content:space-between;transition:.12s}
 .mcard.sel{border-color:#a78bfa;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(28,20,75,.9))}
 .mleft{display:flex;align-items:center;gap:9px}
-.flags{display:flex} .flag{width:22px;height:22px;border-radius:50%;background:#111827;border:1px solid rgba(255,255,255,.15);display:grid;place-items:center;font-size:10px;margin-left:-6px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.3)} .flag:first-child{margin-left:0} .flag img{width:100%;height:100%;object-fit:cover}
+.flags{display:flex} .flag{width:24px;height:24px;border-radius:50%;background:#0a0e1a;border:1.2px solid rgba(255,255,255,.22);display:grid;place-items:center;font-size:10px;margin-left:-7px;overflow:hidden;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1);image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges} .flag:first-child{margin-left:0} .flag img{width:100%;height:100%;object-fit:cover;display:block;image-rendering:-webkit-optimize-contrast}
 .mpair{font-size:11px;font-weight:800;color:white} .mtype{font-size:7px;color:#8b8ba7;margin-top:1px;letter-spacing:.06em}
 .tright{display:flex;align-items:center;gap:6px}
 .badge{background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.25);color:#22d3ee;padding:3px 7px;border-radius:16px;font-size:8px;font-weight:800}
@@ -260,7 +260,7 @@ function flag(pair){
   const map={EUR:'eu',USD:'us',GBP:'gb',JPY:'jp',AUD:'au',NZD:'nz',CHF:'ch',CAD:'ca'};
   const a=pair.split('/'); const c1=a[0]; const c2=(a[1]||'').split(' ')[0];
   const f1=map[c1]||'un'; const f2=map[c2]||'un';
-  return `<img src="https://flagcdn.com/w20/${f1}.png" style="width:16px;height:12px;border-radius:2px;object-fit:cover" onerror="this.outerHTML='<span style=\'font-size:10px\'>'+'${c1[0]}'+'</span>'"/>|<img src="https://flagcdn.com/w20/${f2}.png" style="width:16px;height:12px;border-radius:2px;object-fit:cover" onerror="this.outerHTML='<span style=\'font-size:10px\'>'+'${c2[0]}'+'</span>'"/>`;
+  return `<img src="https://flagcdn.com/w80/${f1}.png" style="width:16px;height:12px;border-radius:2px;object-fit:cover" onerror="this.outerHTML='<span style=\'font-size:10px\'>'+'${c1[0]}'+'</span>'"/>|<img src="https://flagcdn.com/w80/${f2}.png" style="width:16px;height:12px;border-radius:2px;object-fit:cover" onerror="this.outerHTML='<span style=\'font-size:10px\'>'+'${c2[0]}'+'</span>'"/>`;
 }
 function flagImgs(pair){
   const map={EUR:'eu',USD:'us',GBP:'gb',JPY:'jp',AUD:'au',NZD:'nz',CHF:'ch',CAD:'ca'};
@@ -275,13 +275,13 @@ function render(){
  const f2=list.filter(x=>x.toLowerCase().includes(q2));
  $('ml').innerHTML=f.map(m=>{
    const [f1,f2c]=flagImgs(m);
-   return `<div class="mcard" data-m="${m}"><div class="mleft"><div class="flags"><div class="flag"><img src="https://flagcdn.com/w20/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div><div class="flag"><img src="https://flagcdn.com/w20/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div></div><div><div class="mpair">${m.replace(' (OTC)','')}</div><div class="mtype">${cur==='otc'?'OTC':'REAL'}</div></div></div><div class="tright"><div class="badge">1m</div></div></div>`;
+   return `<div class="mcard" data-m="${m}"><div class="mleft"><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div></div><div><div class="mpair">${m.replace(' (OTC)','')}</div><div class="mtype">${cur==='otc'?'OTC':'REAL'}</div></div></div><div class="tright"><div class="badge">1m</div></div></div>`;
  }).join('');
  document.querySelectorAll('#ml .mcard').forEach(el=>el.addEventListener('click',()=>{selPair=el.dataset.m; document.querySelectorAll('#ml .mcard').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); $('liveBar').classList.add('on');}));
  const ml2=$('ml2'); if(ml2){
    ml2.innerHTML=f2.slice(0,16).map(m=>{
      const [f1,f2c]=flagImgs(m);
-     return `<div class="mcard"><div class="mleft"><div class="flags"><div class="flag"><img src="https://flagcdn.com/w20/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w20/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div><div class="mpair">${m.replace(' (OTC)','')}</div><div class="mtype">${cur==='otc'?'OTC':'REAL'}</div></div></div><div class="tright"><div class="badge">1m</div></div></div>`;
+     return `<div class="mcard"><div class="mleft"><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div><div class="mpair">${m.replace(' (OTC)','')}</div><div class="mtype">${cur==='otc'?'OTC':'REAL'}</div></div></div><div class="tright"><div class="badge">1m</div></div></div>`;
    }).join('')
  }
 }
