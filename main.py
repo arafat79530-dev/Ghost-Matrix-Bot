@@ -1878,7 +1878,8 @@ def admin_required(fn):
 # -------------------------------- Flask ------------------------------
 @app.get("/")
 def home():
-    return "GHOST TRADER is running. Data source: external Twelve Data; Quotex verification: disabled.", 200
+    # Serve the Ghost Trader AI interface from the repository root.
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
 @app.get("/app")
 @app.get("/app/")
