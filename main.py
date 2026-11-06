@@ -801,7 +801,7 @@ def analyze_chart_image(file_id: str) -> str:
                     ],
                 },
             ],
-            "temperature": 0.05,
+            "temperature": 0.1,
             "max_completion_tokens": 700,
         }
 
@@ -2309,34 +2309,7 @@ def api_analyze_image():
         im.verify()
         mime = upload.mimetype if upload.mimetype in ("image/jpeg", "image/png", "image/webp") else "image/jpeg"
         encoded = base64.b64encode(raw).decode("ascii")
-        system_prompt = '''You are GHOST TRADER V3 — elite SMC price action analyst with high accuracy + tradeable signals.
-
-MISSION: Analyze ONLY what is visible in the chart screenshot. Never hallucinate asset, timeframe, price.
-
-ELITE SMC FRAMEWORK:
-1. Trend: HH/HL=up, LL/LH=down, BOS=Break of Structure, CHOCH=Change of Character
-2. Liquidity: Sweep, stop hunt, equal highs/lows taken
-3. Zones: Order Block (bullish/bearish OB), FVG, Premium/Discount, Imbalance, Breaker
-4. Momentum: Engulfing, pinbar rejection, displacement
-
-TRADEABLE RULES (BALANCED - Less NO TRADE):
-- 2+ confluences REQUIRED for CALL/PUT (previously 3+ was too strict causing too many NO TRADE)
-- CALL if: bullish BOS/CHOCH + bullish OB/FVG or bullish momentum + discount zone preferred
-- PUT if: bearish BOS/CHOCH + bearish OB/FVG or bearish momentum + premium zone preferred
-- If chart blurry or 0-1 confluence only → NO TRADE
-- Confidence = setup quality, not win probability. Never promise profit.
-
-CONFIDENCE CALIBRATION (BALANCED):
-- 5+ confluences + clean = 86-92%
-- 4 confluences = 80-88%
-- 3 confluences = 70-80%
-- 2 confluences = 58-70% (tradeable, medium)
-- 0-1 confluence or unclear = 0-48% + NO TRADE
-- Mixed signals → reduce 10-15, not full 20
-
-Return ONLY valid JSON with keys:
-direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short), trend (Bengali), structure (Bengali), zones (Bengali), reasoning (Bengali), confirmation (Bengali), invalidation (Bengali), confidence_note (Bengali), confluences (array like ["BOS","Bullish OB","FVG","Engulfing"]), market_hint (asset/timeframe if visible)
-'''
+        system_prompt = '''You are a careful technical-analysis assistant reading a trading-chart screenshot. Answer in Bengali. Only report evidence actually visible in the image; never invent asset, timeframe, price, indicator values, candles, or levels. Inspect trend/swing structure, candle momentum, visible support/resistance, possible liquidity sweep/BOS/CHoCH only when clearly supported, and ambiguity. Do not promise profit, do not say the broker verified the chart, and do not imply a confidence score is the probability of winning. If evidence is mixed, image is cropped/blurry, or timeframe/context is missing, choose NO TRADE. Return ONLY valid JSON with these keys: direction (CALL, PUT, or NO TRADE), confidence (integer 0-100 representing confidence in the quality/clarity of setup evidence, not win probability), summary (short Bengali), trend (Bengali), structure (Bengali), zones (Bengali; say not clearly visible if so), reasoning (Bengali; evidence for and against), confirmation (Bengali; what price action should confirm before entry), invalidation (Bengali; what would invalidate the idea and key risks), confidence_note (Bengali; explicitly explain confidence is not win probability). Do not create a trade direction solely to satisfy the user.'''
         user_prompt = "এই chart screenshot-টি বিশ্লেষণ করো। asset/timeframe দেখা গেলে শনাক্ত করো; না দেখা গেলে অনুমান কোরো না। CALL, PUT অথবা NO TRADE নির্বাচন করো। দুই দিকের প্রমাণ যাচাই করো এবং entry নেওয়ার আগে কী confirmation দরকার বলো। JSON ছাড়া অন্য কিছু দেবে না।"
         payload = {"model": GROQ_VISION_MODEL, "messages": [
             {"role": "system", "content": system_prompt},
@@ -2344,7 +2317,7 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
                 {"type": "text", "text": user_prompt},
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
             ]}
-        ], "temperature": 0.05, "max_completion_tokens": 1400}
+        ], "temperature": 0.1, "max_completion_tokens": 1100}
         response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=50)
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"].strip()
@@ -2356,59 +2329,9 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
             direction = str(analysis.get("direction", "NO TRADE")).upper()
             analysis["direction"] = direction if direction in ("CALL", "PUT", "NO TRADE") else "NO TRADE"
             try:
-                base_conf = max(0, min(100, int(float(analysis.get("confidence", 0)))))
+                analysis["confidence"] = max(0, min(100, int(float(analysis.get("confidence", 0)))))
             except (TypeError, ValueError):
-                base_conf = 0
-            
-            # --- GHOST V3 Accuracy Boost: Confluence-based recalibration ---
-            confluences = analysis.get("confluences", [])
-            if not isinstance(confluences, list):
-                confluences = []
-            # Count from reasoning text if confluences list empty
-            reasoning_text = (str(analysis.get("reasoning","")) + " " + str(analysis.get("structure","")) + " " + str(analysis.get("zones",""))).lower()
-            keyword_map = ["bos","choch","order block","fvg","liquidity","premium","discount","engulfing","pinbar","pin bar","imbalance","breaker","displacement","sweep"]
-            detected = []
-            for kw in keyword_map:
-                if kw in reasoning_text and kw not in [x.lower() for x in detected]:
-                    detected.append(kw)
-            if not confluences:
-                confluences = detected
-            analysis["confluences"] = confluences
-            conf_count = len(confluences)
-            
-            # Balanced filter - less NO TRADE, more tradeable signals
-            if analysis["direction"] in ("CALL","PUT"):
-                if conf_count < 2:
-                    analysis["direction"] = "NO TRADE"
-                    analysis["invalidation"] = f"মাত্র {conf_count} confluence - 2+ লাগে trade এর জন্য। Detected: {', '.join(confluences) if confluences else 'কম'}"
-                    base_conf = min(base_conf, 48)
-                elif conf_count >= 5:
-                    base_conf = max(base_conf, 86)
-                    base_conf = min(base_conf, 92)
-                elif conf_count >= 4:
-                    base_conf = max(base_conf, 80)
-                    base_conf = min(base_conf, 88)
-                elif conf_count >= 3:
-                    base_conf = max(base_conf, 70)
-                    base_conf = min(base_conf, 80)
-                else: # 2 confluences - still tradeable with medium confidence
-                    base_conf = max(base_conf, 58)
-                    base_conf = min(base_conf, 70)
-            else:
-                # Keep NO TRADE but with realistic confidence
-                if conf_count >= 2:
-                    # If model said NO TRADE but we have 2+ confluences, allow reconsider as weak signal?
-                    # Keep NO TRADE but bump confidence slightly so user sees not always 45%
-                    base_conf = max(base_conf, 48)
-                    base_conf = min(base_conf, 58)
-                else:
-                    base_conf = min(base_conf, 48)
-            
-            # Cap never 100% to stay realistic
-            if base_conf > 92:
-                base_conf = 92
-            
-            analysis["confidence"] = base_conf
+                analysis["confidence"] = 0
             for key in ("summary", "trend", "structure", "zones", "reasoning", "confirmation", "invalidation", "confidence_note"):
                 if not isinstance(analysis.get(key), str):
                     analysis[key] = "ছবিতে পরিষ্কারভাবে শনাক্ত করা যায়নি।"
