@@ -210,6 +210,138 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .carouselDots .dot{width:6px;height:6px;border-radius:50%;background:#3b2a6a;transition:.25s}
 .carouselDots .dot.on{background:#a78bfa;width:18px;border-radius:4px}
 
+
+/* === GHOST - ACCESS TIER + UNLOCK + FUTURE + NEWS + MANAGEMENT - COCO STYLE === */
+.accessSheet{margin-top:14px;background:#f8f7ff;border-radius:28px 28px 0 0;padding:20px 16px 20px;position:relative;animation:sheetUp .6s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+.accessSheet::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;border-radius:3px;background:#d1d5db}
+.accessTierLabel{display:flex;justify-content:center;margin:8px 0 10px}
+.accessTierLabel span{font-size:8px;letter-spacing:.18em;font-weight:800;color:#6b7280;background:white;border:1px solid #e5e7eb;border-radius:20px;padding:5px 10px;display:flex;align-items:center;gap:5px}
+.accessTitle{font-size:20px;font-weight:900;color:#111827;text-align:center;line-height:1.25;letter-spacing:-.02em}
+.planCard{margin-top:16px;background:linear-gradient(135deg,#2a1a5a,#1a1238);border-radius:18px;padding:16px;position:relative;overflow:hidden;animation:cardIn .5s ease both}
+.planCard::before{content:'';position:absolute;top:0;left:16px;right:16px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent)}
+.planTop{display:flex;align-items:center;gap:10px}
+.planTop .planIc{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);display:grid;place-items:center;color:#c4b5fd}
+.planTop .planIc svg{width:20px;height:20px}
+.planTop .lbl{font-size:8px;letter-spacing:.16em;color:#a78bfa;font-weight:700}
+.planTop .val{font-size:19px;font-weight:900;color:white;line-height:1}
+.planReset{margin-top:12px;display:flex;align-items:center;gap:7px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:9px 12px;font-size:11px;color:#e9d5ff}
+.planReset svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none;flex-shrink:0}
+.unlockBtn{margin-top:10px;width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-size:12.5px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 8px 20px rgba(124,58,237,.4);transition:.2s}
+.unlockBtn:active{transform:scale(.98)}
+.quotaTitle{margin-top:18px;font-size:14px;font-weight:900;color:#111827;display:flex;align-items:center;gap:8px}
+.quotaTitle .qIc{width:28px;height:28px;border-radius:8px;background:#ede9fe;display:grid;place-items:center;color:#7c3aed}
+.quotaSub{font-size:11px;color:#6b7280;line-height:1.5;margin-top:4px;padding-left:36px}
+.unlockEngineCard{margin-top:12px;background:linear-gradient(135deg,#1e1540,#120a2e);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.2s}
+.unlockEngineCard:active{transform:scale(.98)}
+.unlockEngineCard .ueIc{width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,.2);display:grid;place-items:center;color:#c4b5fd;flex-shrink:0}
+.unlockEngineCard .ueTx{flex:1}
+.unlockEngineCard .ueTi{font-size:12px;font-weight:900;color:white}
+.unlockEngineCard .ueSu{font-size:10px;color:#a78bfa;line-height:1.4;margin-top:2px}
+.quotaGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.quotaCard{background:white;border:1px solid #eef0ff;border-radius:14px;padding:12px;text-align:center;position:relative;overflow:hidden;cursor:pointer;transition:.2s;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.quotaCard:active{transform:scale(.97)}
+.quotaCard .qcIc{width:32px;height:32px;border-radius:9px;margin:0 auto;display:grid;place-items:center}
+.quotaCard .qcTi{font-size:11px;font-weight:800;color:#111827;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quotaCard .lockWrap{margin:10px auto 0;width:56px;height:56px;border-radius:50%;background:#f3f4f6;display:grid;place-items:center;position:relative}
+.quotaCard .lockWrap::after{content:'LOCKED';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);background:#111827;color:white;font-size:6px;font-weight:900;letter-spacing:.08em;padding:2px 5px;border-radius:8px;white-space:nowrap}
+.quotaCard .lockWrap svg{width:24px;height:24px;stroke:#9ca3af;stroke-width:1.8;fill:none}
+.quotaCard .upTxt{font-size:10px;color:#6b7280;margin-top:12px}
+.quotaCard.full{grid-column:1 / -1}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* Unlock Modal */
+.unlockModal{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.unlockModal.on{display:flex;animation:fadeIn .25s ease}
+.unlockSheet{background:#f8f7ff;width:100%;max-width:390px;border-radius:24px 24px 0 0;padding:22px 18px 24px;animation:sheetUp .35s cubic-bezier(.2,.8,.2,1) both;max-height:88vh;overflow-y:auto}
+.unlockSheetTop{display:flex;justify-content:space-between;align-items:center}
+.unlockSheetTop .kicker{font-size:8px;letter-spacing:.2em;color:#6b7280;font-weight:800;display:flex;align-items:center;gap:5px}
+.unlockSheetTop .kicker svg{width:14px;height:14px}
+.unlockSheetTop .xBtn{width:28px;height:28px;border-radius:50%;background:#eef2ff;border:0;font-size:14px;cursor:pointer}
+.unlockLogo{width:56px;height:56px;border-radius:14px;background:#111827;display:grid;place-items:center;margin:16px auto 0;overflow:hidden}
+.unlockLogo img{width:100%;height:100%;object-fit:cover}
+.unlockH{font-size:22px;font-weight:900;color:#111827;text-align:center;margin-top:12px;line-height:1.2}
+.unlockP{font-size:12px;color:#6b7280;text-align:center;line-height:1.5;margin-top:8px;padding:0 10px}
+.unlockFeat{margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.unlockFeat .uf{display:flex;gap:12px;background:white;border:1px solid #eef0ff;border-radius:14px;padding:12px;align-items:flex-start}
+.unlockFeat .uf .ufIc{width:36px;height:36px;border-radius:10px;background:#ede9fe;display:grid;place-items:center;color:#7c3aed;flex-shrink:0}
+.unlockFeat .uf .ufTi{font-size:12.5px;font-weight:800;color:#111827}
+.unlockFeat .uf .ufSu{font-size:11px;color:#6b7280;line-height:1.4;margin-top:2px}
+.viewPlansBtn{margin-top:16px;width:100%;padding:14px;border:0;border-radius:13px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.contactAdminBtn{margin-top:10px;width:100%;padding:13px;border:1.5px solid #111827;border-radius:13px;background:white;color:#111827;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none}
+.contactAdminBtn svg{width:18px;height:18px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* Future Signals */
+.futureStepBar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.futureStepBar .stepInfo{flex:1}
+.futureStepBar .stepInfo .ti{font-size:13px;font-weight:900;color:white}
+.futureStepBar .stepInfo .su{font-size:9px;letter-spacing:.14em;color:#8b8ba7;font-weight:700;margin-top:2px}
+.nextStepBar{position:sticky;bottom:0;margin:12px -12px -12px;padding:12px;background:linear-gradient(180deg,transparent,#0d0928 30%);display:flex;align-items:center;gap:10px}
+.nextStepBar .nsInfo{flex:1}
+.nextStepBar .nsInfo .ti{font-size:12px;font-weight:900;color:white}
+.nextStepBar .nsInfo .su{font-size:8.5px;letter-spacing:.1em;color:#8b8ba7;font-weight:700}
+.nextStepBar .nsBtn{padding:12px 18px;border:0;border-radius:12px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.nextStepBar .nsBtn:disabled{opacity:.5}
+.futureGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.futureCard{background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:12px;position:relative;cursor:pointer;transition:.2s;min-height:105px}
+.futureCard:active{transform:scale(.97)}
+.futureCard.sel{border-color:#a78bfa;box-shadow:0 0 0 1.5px #a78bfa}
+.futureCard .check{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;border:1.5px solid #6b7280;display:grid;place-items:center}
+.futureCard.sel .check{background:#a78bfa;border-color:#a78bfa;color:white;font-size:11px;font-weight:900}
+.queueCard{background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin-bottom:12px}
+.queueCard .qHead{display:flex;align-items:center;gap:10px}
+.queueCard .qHead .qIc{width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,.15);display:grid;place-items:center;color:#c4b5fd}
+.queueCard .qHead .qTi{font-size:13px;font-weight:900;color:white}
+.queueCard .qHead .qSu{font-size:10px;color:#8b8ba7;margin-top:2px}
+.queueCard .qBadge{margin-left:auto;background:rgba(255,255,255,.07);border-radius:10px;padding:8px 10px;text-align:center}
+.queueCard .qBadge b{font-size:15px;color:white}
+.queueCard .qBadge span{font-size:7px;letter-spacing:.1em;color:#8b8ba7;display:block}
+.sigCountBox{text-align:center;padding:14px 0 6px}
+.sigCountBox .big{font-size:32px;font-weight:900;color:white;line-height:1}
+.sigCountBox .lbl{font-size:8px;letter-spacing:.14em;color:#8b8ba7;font-weight:700;margin-top:4px}
+.sigSlider{width:100%;accent-color:#a78bfa;margin:10px 0}
+.sigPresets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.sigPresets button{padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#c4b5fd;font-weight:800;font-size:12px;cursor:pointer}
+.sigPresets button.on{background:#a78bfa;color:white;border-color:#a78bfa}
+/* News Locked */
+.newsTabs{display:flex;gap:0;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:4px;margin-bottom:14px}
+.newsTabs .ntab{flex:1;padding:10px;border-radius:10px;font-size:11px;font-weight:800;text-align:center;color:#8b8ba7;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.newsTabs .ntab.on{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white}
+.lockedCard{background:linear-gradient(180deg,#241a4e,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:28px 18px;text-align:center;animation:cardIn .4s ease both}
+.lockedCard .lockIc{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);display:grid;place-items:center;margin:0 auto;color:white}
+.lockedCard .lockIc svg{width:26px;height:26px}
+.lockedCard h3{font-size:16px;font-weight:900;color:white;margin-top:14px}
+.lockedCard p{font-size:11.5px;color:#9ca3af;line-height:1.5;margin-top:8px;padding:0 12px}
+.lockedCard .unlockBtn{max-width:220px;margin:16px auto 0}
+/* Management */
+.mgmtTabs{display:flex;gap:0;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:4px;margin-bottom:14px}
+.mgmtTabs .mtab{flex:1;padding:10px;border-radius:10px;font-size:11px;font-weight:800;text-align:center;color:#8b8ba7;cursor:pointer}
+.mgmtTabs .mtab.on{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white}
+.planBox{background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
+.planBox::before{content:'';position:absolute;top:0;left:14px;right:14px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+.planBox .pbLabel{font-size:8.5px;letter-spacing:.16em;color:#8b8ba7;font-weight:800;display:flex;align-items:center;gap:6px}
+.planBox .pbLabel .pbIc{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;flex-shrink:0}
+.planBox input{width:100%;background:transparent;border:0;outline:none;color:white;font-size:26px;font-weight:900;margin-top:8px;padding:0}
+.planBox input::placeholder{color:#3b3b4d}
+.planBox .unit{position:absolute;right:16px;bottom:16px;font-size:14px;color:#8b8ba7;font-weight:700}
+.planBox .err{font-size:10.5px;color:#ff8a9a;margin-top:6px;display:none}
+.planBox.err .err{display:block}
+.planBox.err{border-color:rgba(255,59,92,.4)}
+.mtgRow{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:13px;margin:12px 0}
+.mtgRow .mtgIc{width:38px;height:38px;border-radius:10px;background:rgba(167,139,250,.15);display:grid;place-items:center;color:#c4b5fd;flex-shrink:0}
+.mtgRow .mtgTx{flex:1}
+.mtgRow .mtgTi{font-size:13px;font-weight:900;color:white}
+.mtgRow .mtgSu{font-size:10.5px;color:#8b8ba7;margin-top:2px;line-height:1.4}
+.toggle{width:64px;height:28px;border-radius:20px;background:#2a2f45;position:relative;cursor:pointer;flex-shrink:0;transition:.25s}
+.toggle::after{content:'NO';position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:900;color:white}
+.toggle::before{content:'';position:absolute;right:4px;top:4px;width:20px;height:20px;border-radius:50%;background:#6b7280;transition:.25s}
+.toggle.on{background:#a78bfa}
+.toggle.on::after{content:'YES';left:auto;right:6px}
+.toggle.on::before{right:auto;left:4px;background:white}
+.genSheetBtn{width:100%;padding:14px;border:0;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 10px 24px rgba(124,58,237,.4);display:flex;align-items:center;justify-content:center;gap:8px}
+.genSheetBtn:disabled{opacity:.55}
+.genHint{font-size:11px;color:#8b8ba7;text-align:center;margin-top:10px}
+.sheetResult{margin-top:12px;display:none}
+.sheetResult.on{display:block;animation:cardIn .35s ease both}
+
 /* COCO STYLE FLOATING PILL NAV - CSS + JS ANIMATED */
 .bnav{margin:0 12px 12px;border-radius:24px;background:linear-gradient(180deg,#241848 0%,#170e38 50%,#120a2e 100%);border:1px solid rgba(255,255,255,.10);box-shadow:0 -2px 20px rgba(0,0,0,.25),0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.14);display:grid;grid-template-columns:1fr 1fr 1.25fr 1fr 1fr;align-items:center;padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex-shrink:0;position:relative;overflow:visible;height:66px;animation:navIn .5s ease-out}
 .bnav::before{content:'';position:absolute;top:-1px;left:22%;right:22%;height:1.5px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);border-radius:2px;pointer-events:none}
@@ -262,6 +394,23 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px">
 <div style="background:rgba(28,20,75,.6);border:1px solid rgba(124,58,237,.14);border-radius:12px;padding:10px"><div style="font-size:14px;font-weight:900;color:white" id="w">0</div><div style="font-size:8px;color:#8b8ba7">WINS</div></div>
 <div style="background:rgba(28,20,75,.6);border:1px solid rgba(124,58,237,.14);border-radius:12px;padding:10px"><div style="font-size:14px;font-weight:900;color:#ff3b5c" id="l">0</div><div style="font-size:8px;color:#8b8ba7">LOSSES</div></div>
+</div>
+<div class="accessSheet">
+<div class="accessTierLabel"><span>👑 ACCESS TIER</span></div>
+<div class="accessTitle">Your plan and daily<br>engine quota.</div>
+<div class="planCard"><div class="planTop"><div class="planIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6 6 .8-4.5 4.2 1 6.5L12 16.5 6.5 19.5l1-6.5L3 8.8 9 8z"/></svg></div><div><div class="lbl">CURRENT PLAN</div><div class="val">Free</div></div></div>
+<div class="planReset"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> Resets daily at 6:00 AM (BST)</div>
+<button class="unlockBtn" onclick="openUnlock()">🔑 Unlock access →</button></div>
+<div class="quotaTitle"><span class="qIc">◉</span> Daily quota</div>
+<div class="quotaSub">Generating results stays locked on the Free plan.</div>
+<div class="unlockEngineCard" onclick="openUnlock()"><div class="ueIc">🔑</div><div class="ueTx"><div class="ueTi">Unlock your engine</div><div class="ueSu">Every tool below opens with a daily allowance.</div></div><div style="color:#c4b5fd">→</div></div>
+<div class="quotaGrid">
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#ede9fe;color:#7c3aed">📊</div><div class="qcTi">OTC Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dcfce7;color:#16a34a">📈</div><div class="qcTi">Real Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#fef3c7;color:#d97706">🔮</div><div class="qcTi">Future Si...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dbeafe;color:#2563eb">📡</div><div class="qcTi">Live Sign...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard full" onclick="openUnlock()"><div class="qcIc" style="background:#f3e8ff;color:#9333ea">💉</div><div class="qcTi">Ghost Injector</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+</div>
 </div>
 </div>
 
@@ -378,8 +527,48 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="carouselInfo"><div class="selName" id="carSelName">Ghost SmartFlow</div><div class="selSub" id="carSelSub">Momentum flow read</div><div class="carouselDots" id="carDots"></div><div class="hint">● SWIPE TO ROTATE &nbsp;•&nbsp; TAP A CARD TO SELECT</div></div>
 </div>
 
-<div class="page" id="pg-more">
 
+<div class="page" id="pg-future">
+<div class="brokerCard"><div class="brokerLogo"><svg viewBox="0 0 24 24"><path d="M4 20V8l4-4v16 M8 20V4l4-3v19 M12 20V7l4-3v16 M16 20V9l4-4v15" stroke="#dc2626" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 20h20" stroke="#dc2626" stroke-width="1.5"/></svg></div><div class="brokerInfo"><div class="brokerLabel">BROKER</div><div class="brokerName">Quotex</div></div><button class="changeBtn">Change ↓</button></div>
+<div id="futureStep1">
+<div class="futureStepBar"><div class="stepInfo"><div class="ti">Pick markets</div><div class="su">STEP 1 OF 2 • PICK AT LEAST ONE</div></div></div>
+<div class="tabs"><div class="tab on" data-m="otc">OTC Market</div><div class="tab" data-m="real">Real Market</div></div>
+<div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input id="futureSearch" placeholder="Search pair (e.g. EUR/USD)"/></div>
+<div class="futureGrid" id="futureGrid"></div>
+<div class="nextStepBar"><div class="nsInfo"><div class="ti" id="futureSelTxt">No markets yet</div><div class="su" id="futureSelSub">STEP 1 OF 2 • PICK AT LEAST ONE</div></div><button class="nsBtn" id="futureNext" disabled onclick="goFutureStep2()">→ Next Step</button></div>
+</div>
+<div id="futureStep2" style="display:none">
+<div class="futureStepBar"><div class="stepInfo"><div class="ti">Queue setup</div><div class="su">STEP 2 OF 2 • REVIEW AND GENERATE</div></div><button class="injChangeBtn" onclick="backFutureStep1()">← Markets</button></div>
+<div class="queueCard"><div class="qHead"><div class="qIc">🔗</div><div><div class="qTi">Selected markets</div><div class="qSu">At least one pair stays in the queue</div></div><div class="qBadge"><b id="futureCount">1</b><span>PAIR</span></div></div><div id="futureSelList" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px"></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px;display:flex;align-items:center;gap:6px">🔒 One market must stay — add more from the Markets step</div></div>
+<div class="queueCard"><div class="qHead"><div class="qIc">Σ</div><div><div class="qTi">How many signals?</div><div class="qSu">Tap the number to edit • 5-20</div></div></div><div class="sigCountBox"><div style="display:flex;align-items:center;justify-content:center;gap:12px"><button onclick="changeSigCount(-1)" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);border:0;color:white;font-size:18px">−</button><div class="big" id="sigCount">5</div><button onclick="changeSigCount(1)" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);border:0;color:white;font-size:18px">+</button></div><div class="lbl">SIGNALS QUEUED</div></div><input type="range" min="5" max="20" value="5" class="sigSlider" id="sigSlider" oninput="setSigCount(this.value)"/><div class="sigPresets"><button class="on" onclick="setSigCount(5)">5</button><button onclick="setSigCount(10)">10</button><button onclick="setSigCount(15)">15</button><button onclick="setSigCount(20)">20</button></div></div>
+<div class="nextStepBar"><div class="nsInfo"><div class="ti" id="futureGenTxt">1 pair • 5 signals</div><div class="su">GHOST SMARTFLOW</div></div><button class="nsBtn" onclick="generateFuture()">Generate 5 Signals</button></div>
+<div id="futureResult" style="margin-top:12px"></div>
+</div>
+</div>
+
+<div class="page" id="pg-news">
+<div class="newsTabs"><div class="ntab on">📄 Today's Events</div><div class="ntab">📊 Fundamental</div></div>
+<div class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()">🔑 Unlock engine</button></div>
+</div>
+
+<div class="page" id="pg-management">
+<div class="mgmtTabs"><div class="mtab on">Management</div><div class="mtab">Sheet</div></div>
+<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><div style="width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,.15);display:grid;place-items:center;color:#c4b5fd">◉</div><div><div style="font-size:8px;letter-spacing:.16em;color:#8b8ba7;font-weight:800">SESSION PLANNER</div><div style="font-size:16px;font-weight:900;color:white;margin-top:2px">Plan your session</div></div></div></div>
+<div class="planBox" id="capBox"><div class="pbLabel"><span class="pbIc" style="background:#1e3a8a;color:#93c5fd">💵</span> INITIAL CAPITAL</div><input id="mgmtCap" type="number" placeholder="$ 0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">$</span><div class="err">⚠ Initial capital must be greater than 10 to generate a sheet.</div></div>
+<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#14532d;color:#86efac">🎯</span> AVERAGE PAYOUT</div><input id="mgmtPayout" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
+<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#713f12;color:#fde68a">◎</span> PROFIT TARGET</div><input id="mgmtProfit" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
+<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#7f1d1d;color:#fca5a5">🛡</span> RISK PER TRADE</div><input id="mgmtRisk" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
+<div class="mtgRow"><div class="mtgIc">↻</div><div class="mtgTx"><div class="mtgTi">Martingale (MTG)</div><div class="mtgSu">Double the stake after a loss</div></div><div class="toggle" id="mtgToggle" onclick="toggleMTG()"></div></div>
+<button class="genSheetBtn" id="genSheetBtn" disabled onclick="generateSheet()">📋 Generate Sheet</button>
+<div class="genHint" id="genHint">Fill in all fields to generate your trade sheet.</div>
+<div class="sheetResult" id="sheetResult"></div>
+</div>
+
+<div class="page" id="pg-more">
+<div style="font-size:8px;letter-spacing:.18em;color:#8b8ba7;font-weight:800;margin:6px 2px 10px">SIGNAL TOOLS &nbsp; 3</div>
+<div class="mItem" onclick="nav('future')"><div class="mIc live1"><span>🔮</span></div><div class="mTx"><div class="mTi">Future Signals</div><div class="mSu">Batch-generate upcoming entries</div></div><div style="color:#6b7280">01 ›</div></div>
+<div class="mItem" onclick="nav('news')"><div class="mIc live2"><span>📰</span></div><div class="mTx"><div class="mTi">News Signals</div><div class="mSu">Economic events and bias calls</div></div><div style="color:#6b7280">02 ›</div></div>
+<div class="mItem" onclick="nav('management')"><div class="mIc live3"><span>📋</span></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Capital plan and MTG tracker</div></div><div style="color:#6b7280">03 ›</div></div>
 <div class="adminBox">
 <div style="font-size:10px;font-weight:900;color:white;display:flex;align-items:center;gap:8px"><div class="mIc live2" style="width:28px;height:28px;border-radius:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="white"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none"/></svg></div> Add User</div>
 <div style="display:flex;gap:6px;margin-top:6px">
@@ -412,6 +601,24 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="bi" data-p="more"><svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg><span>More</span></div>
 </div>
 
+</div>
+
+
+<div class="unlockModal" id="unlockModal">
+<div class="unlockSheet">
+<div class="unlockSheetTop"><div class="kicker">👑 GHOST ENGINE</div><button class="xBtn" onclick="closeUnlock()">✕</button></div>
+<div class="unlockLogo"><img src="https://flagcdn.com/w80/gb.png" style="display:none"/><div style="font-size:26px">👻</div></div>
+<div class="unlockH">Unlock your engine.</div>
+<div class="unlockP">Your Free account can explore every page. Generating results with Ghost is reserved for members.</div>
+<div class="unlockFeat">
+<div class="uf"><div class="ufIc">∞</div><div><div class="ufTi">Daily signal engine</div><div class="ufSu">Live, Future, Injector and both chart analyzers.</div></div></div>
+<div class="uf"><div class="ufIc">🚀</div><div><div class="ufTi">Instant activation</div><div class="ufSu">Your plan switches on within minutes of verification.</div></div></div>
+<div class="uf"><div class="ufIc">🎧</div><div><div class="ufTi">Priority desk</div><div class="ufSu">Direct support line for members, every day.</div></div></div>
+</div>
+<button class="viewPlansBtn" onclick="contactAdmin()">📋 View Plans →</button>
+<a class="contactAdminBtn" href="https://t.me/ghostsupportbd" target="_blank"><svg viewBox="0 0 24 24" fill="#229ED9"><path d="M9.04 15.9l-.38 5.32c.55 0 .79-.24 1.08-.52l2.6-2.48 5.39 3.94c.99.54 1.7.26 1.97-.92L23.5 3.6c.22-1.03-.37-1.43-1.06-1.18L1.5 10.2c-.97.38-.96 1.02-.17 1.29l5.36 1.67L19.1 5.3c.58-.36 1.1-.16.67.22L9.04 15.9z"/></svg> Contact Admin</a>
+<div style="font-size:10px;color:#9ca3af;text-align:center;margin-top:10px">Telegram: @ghostsupportbd</div>
+</div>
 </div>
 
 <script>
@@ -624,6 +831,83 @@ function selectStrat(i){
   document.getElementById('stratThumb').innerHTML=s.svg;
   setTimeout(()=>closeStratPicker(),350);
 }
+
+
+// === GHOST - ACCESS TIER + UNLOCK + FUTURE + NEWS + MANAGEMENT ===
+function openUnlock(){ document.getElementById('unlockModal').classList.add('on'); }
+function closeUnlock(){ document.getElementById('unlockModal').classList.remove('on'); }
+window.openUnlock=openUnlock; window.closeUnlock=closeUnlock;
+function contactAdmin(){ window.open('https://t.me/ghostsupportbd','_blank'); }
+window.contactAdmin=contactAdmin;
+document.getElementById('unlockModal')?.addEventListener('click',e=>{ if(e.target.id==='unlockModal') closeUnlock(); });
+// Future Signals
+let futureSel=new Set(), futureCount=5;
+function renderFuture(){
+  const grid=document.getElementById('futureGrid'); if(!grid) return;
+  const list=cur==='otc'?MARKETS.otc:MARKETS.real;
+  const q=document.getElementById('futureSearch')?.value.toLowerCase()||'';
+  const f=list.filter(x=>x.toLowerCase().includes(q));
+  grid.innerHTML=f.slice(0,20).map(m=>{
+    const [f1,f2c]=flagImgs(m); const sel=futureSel.has(m);
+    return `<div class="futureCard ${sel?'sel':''}" data-m="${m}"><div class="check">${sel?'✓':''}</div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div class="mpair" style="margin-top:8px">${m.replace(' (OTC)','')} (OTC)</div></div>`;
+  }).join('');
+  grid.querySelectorAll('.futureCard').forEach(el=>el.addEventListener('click',()=>{
+    const m=el.dataset.m; if(futureSel.has(m)) futureSel.delete(m); else futureSel.add(m); renderFuture(); updateFutureBar();
+  }));
+  updateFutureBar();
+}
+function updateFutureBar(){
+  const n=futureSel.size; const txt=document.getElementById('futureSelTxt'); const sub=document.getElementById('futureSelSub'); const btn=document.getElementById('futureNext');
+  if(txt) txt.textContent = n===0?'No markets yet': n+' pair'+(n>1?'s':'')+' selected';
+  if(sub) sub.textContent = n===0?'STEP 1 OF 2 • PICK AT LEAST ONE':'STEP 1 OF 2 • OTC MARKET';
+  if(btn) btn.disabled = n===0;
+}
+function goFutureStep2(){
+  document.getElementById('futureStep1').style.display='none'; document.getElementById('futureStep2').style.display='block';
+  document.getElementById('futureCount').textContent=futureSel.size;
+  document.getElementById('futureSelList').innerHTML=[...futureSel].map(m=>`<span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:6px 10px;font-size:10px;font-weight:800;color:#e9d5ff;display:flex;align-items:center;gap:6px">${m.replace(' (OTC)','')} <span style="color:#a78bfa">🔒</span></span>`).join('');
+  updateFutureGenTxt();
+}
+function backFutureStep1(){ document.getElementById('futureStep2').style.display='none'; document.getElementById('futureStep1').style.display='block'; }
+window.goFutureStep2=goFutureStep2; window.backFutureStep1=backFutureStep1;
+function setSigCount(v){ futureCount=Number(v); document.getElementById('sigCount').textContent=futureCount; document.getElementById('sigSlider').value=futureCount; document.querySelectorAll('.sigPresets button').forEach(b=>b.classList.toggle('on', Number(b.textContent)===futureCount)); updateFutureGenTxt(); }
+function changeSigCount(d){ setSigCount(Math.min(20, Math.max(5, futureCount+d))); }
+window.setSigCount=setSigCount; window.changeSigCount=changeSigCount;
+function updateFutureGenTxt(){ const el=document.getElementById('futureGenTxt'); if(el) el.textContent=futureSel.size+' pair • '+futureCount+' signals'; }
+function generateFuture(){ openUnlock(); }
+window.generateFuture=generateFuture;
+document.getElementById('futureSearch')?.addEventListener('input', renderFuture);
+// Management
+let mtgOn=false;
+function toggleMTG(){ mtgOn=!mtgOn; document.getElementById('mtgToggle').classList.toggle('on', mtgOn); }
+window.toggleMTG=toggleMTG;
+function validateMgmt(){
+  const cap=Number(document.getElementById('mgmtCap').value||0);
+  const pay=Number(document.getElementById('mgmtPayout').value||0);
+  const prof=Number(document.getElementById('mgmtProfit').value||0);
+  const risk=Number(document.getElementById('mgmtRisk').value||0);
+  const capBox=document.getElementById('capBox');
+  if(cap>0 && cap<=10) capBox.classList.add('err'); else capBox.classList.remove('err');
+  const ok = cap>10 && pay>0 && prof>0 && risk>0;
+  document.getElementById('genSheetBtn').disabled=!ok;
+  document.getElementById('genHint').textContent = ok ? 'Ready to generate your trade sheet.' : 'Fill in all fields to generate your trade sheet.';
+}
+window.validateMgmt=validateMgmt;
+function generateSheet(){
+  const cap=Number(document.getElementById('mgmtCap').value);
+  const pay=Number(document.getElementById('mgmtPayout').value);
+  const prof=Number(document.getElementById('mgmtProfit').value);
+  const risk=Number(document.getElementById('mgmtRisk').value);
+  const stake=cap*risk/100; const targetAmt=cap*prof/100; const trades=Math.ceil(targetAmt/(stake*pay/100));
+  const res=document.getElementById('sheetResult');
+  res.innerHTML=`<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(167,139,250,.3);border-radius:14px;padding:14px"><div style="font-size:12px;font-weight:900;color:white">Your Trade Sheet</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:11px"><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">STAKE / TRADE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${stake.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">TARGET PROFIT</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${targetAmt.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">EST. TRADES</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${trades}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">MARTINGALE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${mtgOn?'YES':'NO'}</div></div></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px">Capital $${cap} • Payout ${pay}% • Risk ${risk}% • MTG ${mtgOn?'ON - stake doubles after loss':'OFF'}</div></div>`;
+  res.classList.add('on'); res.scrollIntoView({behavior:'smooth',block:'center'});
+}
+window.generateSheet=generateSheet;
+// Init future on nav
+const _origNav = nav;
+function nav2(p){ _origNav(p); if(p==='future') renderFuture(); }
+window.nav = nav2;
 
 </script>
 </body>
