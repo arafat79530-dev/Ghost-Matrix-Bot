@@ -285,7 +285,21 @@ def init_database() -> tuple[bool, str]:
 
 # --- GHOST AI Helpers ---
 def get_user_active_plan(user_id: int):
-    """Return active plan dict or None. Auto-expires past-expiry plans."""
+    """Return active plan dict or None. OWNER/ADMIN always OWNER/ADMIN - never FREE."""
+    # OWNER/ADMIN synthetic plan - checked first so owner never shows FREE
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id, email, is_admin FROM gm_users WHERE id=%s", (user_id,))
+                _u = cur.fetchone()
+                if _u:
+                    _em = (_u.get("email") or "")
+                    if _is_owner_email(_em):
+                        return {"id": 0, "user_id": int(user_id), "plan_id": 0, "plan_name": "OWNER", "name": "OWNER", "display_plan": "OWNER", "status": "active", "access": "FULL", "is_owner": True, "is_admin": True, "price": 0, "description": "Owner - Full Access", "duration_days": 0, "duration": "Lifetime", "start_date": None, "expiry_date": None, "notes": "OWNER • FULL ACCESS"}
+                    if bool(_u.get("is_admin")):
+                        return {"id": 0, "user_id": int(user_id), "plan_id": 0, "plan_name": "ADMIN", "name": "ADMIN", "display_plan": "ADMIN", "status": "active", "access": "FULL", "is_owner": False, "is_admin": True, "price": 0, "description": "Admin - Full Access", "duration_days": 0, "duration": "Lifetime", "start_date": None, "expiry_date": None, "notes": "ADMIN • FULL ACCESS"}
+    except Exception:
+        pass
     try:
         with db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -307,6 +321,30 @@ def get_user_active_plan(user_id: int):
     except Exception as exc:
         log.warning("get_user_active_plan failed: %s", exc)
         return None
+
+
+def _is_owner_email(email: str) -> bool:
+    return bool(email) and bool(ADMIN_EMAIL) and str(email).strip().lower() == ADMIN_EMAIL.strip().lower()
+
+def _display_plan_for_user(user: dict, plan: dict | None):
+    """Return display plan for OWNER/ADMIN vs normal user. Owner never FREE."""
+    email = (user.get("email") or "") if isinstance(user, dict) else ""
+    is_admin = bool(user.get("is_admin")) if isinstance(user, dict) else False
+    if _is_owner_email(email):
+        return {"plan_name": "OWNER", "name": "OWNER", "status": "active", "display_plan": "OWNER", "access": "FULL", "is_owner": True, "is_admin": True, "role": "admin"}
+    if is_admin:
+        return {"plan_name": "ADMIN", "name": "ADMIN", "status": "active", "display_plan": "ADMIN", "access": "FULL", "is_owner": False, "is_admin": True, "role": "admin"}
+    if plan:
+        return {**plan, "display_plan": (plan.get("plan_name") or "FREE").upper(), "is_owner": False, "is_admin": False}
+    return {"plan_name": "FREE", "name": "FREE", "status": "inactive", "display_plan": "FREE / NO ACTIVE PLAN", "access": "LIMITED", "is_owner": False, "is_admin": False}
+
+def _user_has_full_access(user: dict) -> bool:
+    if not isinstance(user, dict):
+        return False
+    if _is_owner_email(user.get("email") or ""):
+        return True
+    return bool(user.get("is_admin"))
+
 
 def get_verified_accuracy():
     """Verified accuracy from actual WIN/LOSS only. Returns None if no settled signals."""
@@ -2095,8 +2133,10 @@ def auth_login():
     session.permanent = True
     session["user_id"] = int(user["id"])
     _plan = get_user_active_plan(int(user["id"]))
-    _has = bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
-    return jsonify({"ok": True, "user": {"id": int(user["id"]), "email": user["email"], "name": user.get("name") or "", "is_admin": bool(user["is_admin"]), "role": "admin" if user["is_admin"] else "user", "access_enabled": bool(user.get("access_enabled", True)), "plan": _plan, "active_plan": _has}})
+    _is_owner = _is_owner_email(user.get("email") or "")
+    _has = True if (_is_owner or bool(user.get("is_admin"))) else bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
+    _disp = "OWNER" if _is_owner else ("ADMIN" if user.get("is_admin") else (_plan.get("display_plan") or _plan.get("plan_name") or "FREE"))
+    return jsonify({"ok": True, "user": {"id": int(user["id"]), "email": user["email"], "name": user.get("name") or "", "is_admin": bool(user["is_admin"]), "is_owner": _is_owner, "role": "admin" if user["is_admin"] else "user", "access_enabled": bool(user.get("access_enabled", True)), "plan": _plan, "display_plan": _disp, "plan_label": _disp, "access": "FULL" if (_is_owner or user.get("is_admin")) else "LIMITED", "active_plan": _has}})
 
 
 @app.get("/api/auth/me")
@@ -2112,7 +2152,7 @@ def auth_me():
         if not user or not user["email_verified"] or not user.get("access_enabled", True):
             session.clear()
             return jsonify({"authenticated": False}), 200
-        _plan2 = get_user_active_plan(int(user["id"])); _has2 = bool(_plan2 and _plan2.get("plan_name") not in ("FREE",) and _plan2.get("status")=="active"); return jsonify({"authenticated": True, "user": {"id": int(user["id"]), "email": user["email"], "name": user.get("name") or "", "is_admin": bool(user["is_admin"]), "role": "admin" if user["is_admin"] else "user", "access_enabled": bool(user.get("access_enabled", True)), "plan": _plan2, "active_plan": _has2}, "affiliate_url": AFFILIATE_URL, "app_name": APP_NAME})
+        _plan2 = get_user_active_plan(int(user["id"])); _is_owner2 = _is_owner_email(user.get("email") or ""); _has2 = True if (_is_owner2 or bool(user.get("is_admin"))) else bool(_plan2 and _plan2.get("plan_name") not in ("FREE",) and _plan2.get("status")=="active"); _disp2 = "OWNER" if _is_owner2 else ("ADMIN" if user.get("is_admin") else (_plan2.get("display_plan") or _plan2.get("plan_name") or "FREE")); return jsonify({"authenticated": True, "user": {"id": int(user["id"]), "email": user["email"], "name": user.get("name") or "", "is_admin": bool(user["is_admin"]), "is_owner": _is_owner2, "role": "admin" if user["is_admin"] else "user", "access_enabled": bool(user.get("access_enabled", True)), "plan": _plan2, "display_plan": _disp2, "plan_label": _disp2, "access": "FULL" if (_is_owner2 or user.get("is_admin")) else "LIMITED", "active_plan": _has2}, "affiliate_url": AFFILIATE_URL, "app_name": APP_NAME})
     except Exception as exc:
         log.error("Auth status error: %s", exc)
         return jsonify({"authenticated": False, "error": "Authentication database unavailable"}), 503
@@ -2204,9 +2244,12 @@ def api_plans():
 def api_user_plan():
     uid = session.get("user_id")
     plan = get_user_active_plan(uid)
-    # FREE does NOT grant signal access - only DEPOSIT PLAN / PREMIUM / CUSTOM active grants
-    has_access = bool(plan and plan.get("plan_name") not in ("FREE",) and plan.get("status")=="active")
-    return jsonify({"plan": plan, "active_plan": has_access, "logged_in": True, "affiliate_url": AFFILIATE_URL})
+    # OWNER/ADMIN = FULL ACCESS, never FREE. FREE does NOT grant signal access - only DEPOSIT PLAN / PREMIUM / CUSTOM active grants
+    is_owner = bool(plan and plan.get("is_owner"))
+    is_admin = bool(plan and plan.get("is_admin"))
+    has_access = True if (is_owner or is_admin) else bool(plan and plan.get("plan_name") not in ("FREE",) and plan.get("status")=="active")
+    display = "OWNER" if is_owner else ("ADMIN" if is_admin else (plan.get("display_plan") or plan.get("plan_name") if plan else "FREE / NO ACTIVE PLAN"))
+    return jsonify({"plan": plan, "display_plan": display, "plan_label": display, "active_plan": has_access, "has_access": has_access, "access": "FULL" if (is_owner or is_admin) else "LIMITED", "is_owner": is_owner, "is_admin": is_admin})
 
 @app.get("/api/user/signals")
 @login_required
@@ -2253,9 +2296,16 @@ def api_admin_users():
                 users=[dict(r) for r in cur.fetchall()]
                 for u in users:
                     if u.get("created_at"): u["created_at"]=u["created_at"].isoformat()
-                    # attach current plan
+                    u["is_owner"]=_is_owner_email(u.get("email") or "")
+                    # attach current plan - owner shows OWNER, admin shows ADMIN
                     plan=get_user_active_plan(int(u["id"]))
                     u["current_plan"]=plan
+                    if u["is_owner"]:
+                        u["display_plan"]="OWNER"; u["access"]="FULL"
+                    elif u.get("is_admin"):
+                        u["display_plan"]="ADMIN"; u["access"]="FULL"
+                    else:
+                        u["display_plan"]=(plan.get("plan_name") if plan else "FREE")
         return jsonify({"users": users})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 503
@@ -2282,6 +2332,17 @@ def api_admin_create_user():
 @admin_required
 def api_admin_update_user(user_id):
     body=request.get_json(silent=True) or {}
+    # OWNER protection: never deactivate, never assign plan, never demote OWNER
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT email, is_admin FROM gm_users WHERE id=%s", (user_id,))
+                _t = cur.fetchone()
+                if _t and _is_owner_email(_t[0] or ""):
+                    return jsonify({"error": "Owner account cannot be modified - OWNER • FULL ACCESS. Assign/Activate/Deactivate not allowed for Owner."}), 403
+    except Exception as exc:
+        # If the guard check itself fails, fall through to normal handling but log
+        log.warning("Owner guard check failed: %s", exc)
     try:
         with db_connection() as conn:
             with conn.cursor() as cur:
@@ -2730,7 +2791,17 @@ def api_analyze_image():
     if not _uid:
         return jsonify({"error": "Login required", "auth_required": True, "locked": True}), 401
     _plan = get_user_active_plan(int(_uid))
-    _has_plan = bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
+    # OWNER/ADMIN: full access without plan
+    _is_owner_analyze = False
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT email, is_admin FROM gm_users WHERE id=%s", (int(_uid),))
+                _ru = cur.fetchone()
+                if _ru: _is_owner_analyze = _is_owner_email(_ru[0] or "") or bool(_ru[1])
+    except Exception:
+        pass
+    _has_plan = True if _is_owner_analyze else bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
     if not _has_plan:
         return jsonify({"error": "SIGNAL ACCESS LOCKED", "locked": True, "message": "Your account does not have an active signal plan.", "affiliate_url": AFFILIATE_URL, "plan": _plan}), 403
     if not _api_allowed("vision", 4, 60):
@@ -2909,6 +2980,72 @@ def api_news():
     except Exception as exc:
         log.warning("Mini App news request failed: %s", exc)
         return jsonify({"error": "লাইভ economic calendar এখন পাওয়া যায়নি। পরে আবার চেষ্টা করো।", "source": NEWS_SOURCE_URL}), 502
+
+
+@app.get("/api/news/bias")
+@login_required
+def api_news_bias():
+    """News bias for a market - no invented data. Returns NEWS DATA UNAVAILABLE if no real data."""
+    market = str(request.args.get("market") or request.args.get("symbol") or "").strip().upper()
+    if not market:
+        return jsonify({"available": False, "status": "NEWS DATA UNAVAILABLE", "message": "Market not provided."})
+    # Extract currencies from EUR/USD
+    parts = market.replace(" ", "").split("/")
+    base = parts[0][:3] if len(parts) > 0 else ""
+    quote = parts[1][:3] if len(parts) > 1 else ""
+    try:
+        events = get_economic_calendar(7)
+    except Exception as exc:
+        log.warning("News bias calendar failed: %s", exc)
+        return jsonify({"available": False, "status": "NEWS DATA UNAVAILABLE", "market": market, "message": "Real economic calendar unavailable. Do not force a signal from news."})
+    if not events:
+        return jsonify({"available": False, "status": "NEWS DATA UNAVAILABLE", "market": market, "message": "No high-impact events found for this period."})
+    # Filter to base/quote currencies
+    rel = [e for e in events if str(e.get("currency") or "").upper() in (base, quote)]
+    if not rel:
+        return jsonify({"available": False, "status": "NEWS DATA UNAVAILABLE", "market": market, "events": [], "message": f"No high-impact events for {base}/{quote} in next 7 days. Use technical analysis only."})
+    # Compute bias from actual vs forecast where actual exists
+    bullish = 0; bearish = 0; scored = 0
+    clean = []
+    for e in rel[:12]:
+        dt = e.get("datetime")
+        # Simple bias: if actual exists and differs from forecast, infer direction via analyze_manual_news helper
+        bias = "NEUTRAL"
+        if e.get("actual") is not None and e.get("forecast") is not None:
+            try:
+                tmp = {"currency": e.get("currency"), "event": e.get("name") or "", "actual": _extract_number(str(e.get("actual"))), "forecast": _extract_number(str(e.get("forecast"))), "previous": _extract_number(str(e.get("previous"))) if e.get("previous") is not None else None}
+                dirc, _, _ = analyze_manual_news({**tmp, "actual_text": str(e.get("actual")), "forecast_text": str(e.get("forecast")), "previous_text": str(e.get("previous") or "")})
+                if dirc.startswith("UP"): bias = "BULLISH " + str(e.get("currency"))
+                elif dirc.startswith("DOWN"): bias = "BEARISH " + str(e.get("currency"))
+                if bias != "NEUTRAL": scored += 1
+                if "BULLISH" in bias: bullish += 1
+                if "BEARISH" in bias: bearish += 1
+            except Exception:
+                pass
+        clean.append({"datetime": dt.isoformat() if isinstance(dt, datetime) else None, "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if isinstance(dt, datetime) else None, "name": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"), "forecast": e.get("forecast"), "previous": e.get("previous"), "actual": e.get("actual"), "bias": bias})
+    if scored == 0:
+        overall = "NEUTRAL / AVOID"
+        detail = "Events found but no Actual vs Forecast to determine bias. Do not use news as confirmation."
+    else:
+        # Map currency bias to market: if base bullish -> CALL, if quote bullish -> PUT (base vs quote)
+        base_bull = sum(1 for c in clean if c["currency"] == base and "BULLISH" in c["bias"])
+        base_bear = sum(1 for c in clean if c["currency"] == base and "BEARISH" in c["bias"])
+        quote_bull = sum(1 for c in clean if c["currency"] == quote and "BULLISH" in c["bias"])
+        quote_bear = sum(1 for c in clean if c["currency"] == quote and "BEARISH" in c["bias"])
+        net_base = base_bull - base_bear
+        net_quote = quote_bull - quote_bear
+        if net_base > 0 and net_quote <= 0:
+            overall = "BULLISH " + base + " - Favors CALL / UP"
+        elif net_base < 0 and net_quote >= 0:
+            overall = "BEARISH " + base + " - Favors PUT / DOWN"
+        elif net_base > 0 and net_quote > 0:
+            overall = "CONFLICT - Both currencies bullish - NEUTRAL / AVOID"
+        elif net_base < 0 and net_quote < 0:
+            overall = "CONFLICT - Both bearish - NEUTRAL / AVOID"
+        else:
+            overall = "NEUTRAL / AVOID"
+        detail = f"Scored {scored} event(s) with Actual vs Forecast. Base {base}: +{base_bull}/-{base_bear}, Quote {quote}: +{quote_bull}/-{quote_bear}."
+    return jsonify({"available": True, "market": market, "base": base, "quote": quote, "events": clean, "bias": overall, "detail": detail, "status": overall, "source": NEWS_SOURCE_URL, "timezone": "Asia/Dhaka"})
 
 @app.get("/api/lessons")
 @login_required
