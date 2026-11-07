@@ -35,13 +35,35 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .heroGlow{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(168,85,247,.45),transparent 70%);filter:blur(18px)}
 .heroCnt{position:relative;z-index:2;width:100%}
 .openB{width:100%;padding:13px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;border:0;border-radius:14px;font-weight:900;font-size:12px;box-shadow:0 8px 20px rgba(124,58,237,.4)}
-.tabs{display:flex;gap:8px;margin-bottom:10px}
-.tab{flex:1;padding:9px;border-radius:12px;font-size:10px;font-weight:800;text-align:center;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#9ca3af}
-.tab.on{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;border-color:#a78bfa}
-.sbox{position:relative;margin-bottom:10px}
-.sbox input{width:100%;padding:11px 12px 11px 34px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;color:white;font-size:11px}
-.sbox .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;font-size:12px}
-.mlist{display:flex;flex-direction:column;gap:7px}
+/* COCO STYLE - OTC / REAL PILL TABS */
+.tabs{display:flex;gap:0;margin-bottom:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:4px;position:relative}
+.tab{flex:1;padding:10px 8px;border-radius:10px;font-size:11px;font-weight:800;text-align:center;border:0;background:transparent;color:#8b8ba7;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:.25s}
+.tab svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;box-shadow:0 6px 18px rgba(124,58,237,.45)}
+.tab:not(.on):hover{color:#c4b5fd}
+/* COCO STYLE - SEARCH + 2-COL GRID CARDS */
+.sbox{position:relative;margin-bottom:12px}
+.sbox input{width:100%;padding:12px 12px 12px 36px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.07);border-radius:12px;color:white;font-size:11px;outline:none}
+.sbox input::placeholder{color:#6b7280}
+.sbox .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7280;display:grid;place-items:center}
+.sbox .ic svg{width:16px;height:16px;stroke:#6b7280;stroke-width:2;fill:none}
+.mlist{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mcard{background:linear-gradient(180deg,#1e1540 0%,#140b30 100%);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:12px;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;animation:cardIn .4s ease both;box-shadow:0 6px 18px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.06)}
+.mcard::before{content:'';position:absolute;top:0;left:12px;right:12px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+.mcard:active{transform:scale(.96)}
+.mcard:hover{border-color:rgba(167,139,250,.35);box-shadow:0 10px 24px rgba(124,58,237,.25)}
+.mcard.sel{border-color:#a78bfa;box-shadow:0 0 0 1.5px #a78bfa,0 10px 24px rgba(124,58,237,.35)}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mcard .flags{margin-bottom:2px}
+.mcard .mpair{font-size:12.5px;font-weight:900;color:white;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcard .mtype{font-size:7.5px;color:#8b8ba7;letter-spacing:.04em;display:none}
+.mcard .cardBottom{display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px}
+.mcard .spark{flex:1;max-width:82px;height:22px}
+.mcard .spark svg{width:100%;height:100%;overflow:visible}
+.mcard .spark path{fill:none;stroke:#a78bfa;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px rgba(167,139,250,.5))}
+.mcard .injBtn{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);display:grid;place-items:center;flex-shrink:0;transition:.2s}
+.mcard .injBtn:active{transform:scale(.9);background:rgba(167,139,250,.25)}
+.mcard .injBtn svg{width:16px;height:16px;stroke:#c4b5fd;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .mcard{background:linear-gradient(135deg,rgba(28,20,75,.9),rgba(18,14,55,.9));border:1px solid rgba(124,58,237,.14);border-radius:13px;padding:9px 11px;display:flex;align-items:center;justify-content:space-between;transition:.12s}
 .mcard.sel{border-color:#a78bfa;background:linear-gradient(135deg,rgba(124,58,237,.22),rgba(28,20,75,.9))}
 .mleft{display:flex;align-items:center;gap:9px}
@@ -152,8 +174,8 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-live">
-<div class="tabs"><div class="tab on" data-m="otc">OTC</div><div class="tab" data-m="real">REAL</div></div>
-<div class="sbox"><div class="ic">🔍</div><input id="search" placeholder="Search"/></div>
+<div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
+<div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input id="search" placeholder="Search pair (e.g. EUR/USD)"/></div>
 <div class="mlist" id="ml"></div>
 <div class="analyzeBar" id="liveBar"><button class="btn" id="liveAn">Analyze →</button></div>
 <div class="flow" id="flowLive"><div class="flowBg"></div>
@@ -237,9 +259,9 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-injector">
-<div class="tabs"><div class="tab on" data-m="otc">OTC</div><div class="tab" data-m="real">REAL</div></div>
+<div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
 <div class="sbox"><div class="ic">🔍</div><input placeholder="Search" id="search2"/></div>
-<div class="mlist" id="ml2"></div>
+<div class="mlist" id="ml2" class="mlist"></div>
 </div>
 
 <div class="page" id="pg-more">
@@ -323,15 +345,21 @@ function render(){
  const q=$('search')?.value.toLowerCase()||''; const q2=$('search2')?.value.toLowerCase()||'';
  const f=list.filter(x=>x.toLowerCase().includes(q));
  const f2=list.filter(x=>x.toLowerCase().includes(q2));
- $('ml').innerHTML=f.map(m=>{
+ $('ml').innerHTML=f.map((m,i)=>{
    const [f1,f2c]=flagImgs(m);
-   return `<div class="mcard" data-m="${m}"><div class="mleft"><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div></div><div><div class="mpair">${m.replace(' (OTC)','')}</div><div class="mtype">${cur==='otc'?'OTC':'REAL'}</div></div></div><div class="tright"><div class="badge">1m</div></div></div>`;
+   const sparkPts=[12,8,16,10,6,14,9,5,11,7,13,4].map((v,j)=>`${j*7},${22-v}`).join(' ');
+   const label = cur==='otc' ? `${m.replace(' (OTC)','')} (OTC)` : m;
+   return `<div class="mcard" data-m="${m}" style="animation-delay:${i*0.04}s"><div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div></div><div class="mpair">${label}</div></div><div class="cardBottom"><div class="spark"><svg viewBox="0 0 84 22" preserveAspectRatio="none"><polyline points="${sparkPts}"/></svg></div><div class="injBtn" data-inj="${m}"><svg viewBox="0 0 24 24"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg></div></div></div>`;
  }).join('');
- document.querySelectorAll('#ml .mcard').forEach(el=>el.addEventListener('click',()=>{selPair=el.dataset.m; document.querySelectorAll('#ml .mcard').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); $('liveBar').classList.add('on');}));
+ document.querySelectorAll('#ml .mcard').forEach(el=>el.addEventListener('click',(e)=>{
+   if(e.target.closest('.injBtn')){ e.stopPropagation(); selPair=el.dataset.m; document.querySelectorAll('#ml .mcard').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); el.animate([{transform:'scale(1)'},{transform:'scale(1.03)'},{transform:'scale(1)'}],{duration:300}); nav('injector'); return; }
+   selPair=el.dataset.m; document.querySelectorAll('#ml .mcard').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); $('liveBar').classList.add('on');}));
  const ml2=$('ml2'); if(ml2){
-   ml2.innerHTML=f2.slice(0,16).map(m=>{
+   ml2.innerHTML=f2.slice(0,16).map((m,i)=>{
      const [f1,f2c]=flagImgs(m);
-     return `<div class="mcard"><div class="mleft"><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div><div class="mpair">${m.replace(' (OTC)','')}</div><div class="mtype">${cur==='otc'?'OTC':'REAL'}</div></div></div><div class="tright"><div class="badge">1m</div></div></div>`;
+     const sparkPts=[12,8,16,10,6,14,9,5,11,7,13,4].map((v,j)=>`${j*7},${22-v}`).join(' ');
+     const label = cur==='otc' ? `${m.replace(' (OTC)','')} (OTC)` : m;
+     return `<div class="mcard" style="animation-delay:${i*0.04}s"><div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div class="mpair">${label}</div></div><div class="cardBottom"><div class="spark"><svg viewBox="0 0 84 22" preserveAspectRatio="none"><polyline points="${sparkPts}"/></svg></div><div class="injBtn"><svg viewBox="0 0 24 24"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg></div></div></div>`;
    }).join('')
  }
 }
