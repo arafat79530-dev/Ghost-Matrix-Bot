@@ -226,6 +226,57 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 
 
 
+
+/* === GHOST AI - FUTURISTIC BROKER SELECTOR (Only Broker Component) === */
+.ghostBrokerCard{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(42,26,90,.95),rgba(18,12,48,.96) 55%,rgba(30,16,70,.95));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(167,139,250,.35);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 14px 36px rgba(0,0,0,.45),0 0 28px rgba(124,58,237,.22),inset 0 1px 0 rgba(255,255,255,.12);cursor:pointer;transition:transform .18s ease,box-shadow .25s ease,border-color .25s ease}
+.ghostBrokerCard::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.14) 48%,transparent 62%);transform:translateX(-120%);animation:gbSweep 3.2s ease-in-out infinite;pointer-events:none}
+.ghostBrokerCard::after{content:'';position:absolute;inset:-1px;border-radius:21px;padding:1px;background:conic-gradient(from 0deg,transparent 0%,#a78bfa 10%,#00d9ff 18%,transparent 26%,transparent 55%,#c4b5fd 63%,transparent 71%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.75;animation:gbBorderSpin 5s linear infinite;pointer-events:none}
+@keyframes gbSweep{0%{transform:translateX(-120%)}55%{transform:translateX(120%)}100%{transform:translateX(120%)}}
+@keyframes gbBorderSpin{to{transform:rotate(360deg)}}
+.ghostBrokerCard:active{transform:scale(.98)}
+.ghostBrokerCard:hover{border-color:rgba(167,139,250,.7);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 36px rgba(124,58,237,.38)}
+.gb-logo{width:56px;height:56px;flex-shrink:0;border-radius:16px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.2);animation:gbFloat 3.5s ease-in-out infinite}
+.gb-logo img{width:86%;height:86%;object-fit:contain;display:block}
+.gb-logo-fallback{font-size:15px;font-weight:900;letter-spacing:-.02em;color:#0f0a2e;line-height:1;text-align:center;padding:4px}
+@keyframes gbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.gb-info{flex:1;min-width:0}
+.gb-label{font-size:9px;letter-spacing:.24em;font-weight:900;color:#a5a3c7;display:flex;align-items:center;gap:6px}
+.gb-dot{width:7px;height:7px;border-radius:50%;background:#00ff88;box-shadow:0 0 10px #00ff88;animation:gbPulse 1.6s ease-in-out infinite}
+@keyframes gbPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.78)}}
+.gb-name{font-size:22px;font-weight:900;color:#fff;line-height:1.1;margin-top:4px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gb-sub{font-size:10.5px;color:#c4b5fd;margin-top:2px;font-weight:600}
+.gb-change{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:9px 12px;border-radius:12px;border:1px solid rgba(167,139,250,.5);background:rgba(124,58,237,.18);color:#e9d5ff;font-size:11px;font-weight:800;transition:.15s}
+.gb-change:active{transform:scale(.94)}
+.gb-change svg{width:13px;height:13px;stroke:currentColor;stroke-width:2.2;fill:none}
+/* Bottom Sheet Modal */
+.gb-overlay{position:fixed;inset:0;background:rgba(3,1,16,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1200;display:none;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .25s ease}
+.gb-overlay.open{display:flex;opacity:1}
+.gb-sheet{width:100%;max-width:480px;background:linear-gradient(180deg,#2a1a5e,#120a32 60%,#0d0728);border:1px solid rgba(167,139,250,.32);border-bottom:0;border-radius:24px 24px 0 0;padding:10px 14px 22px;box-shadow:0 -12px 50px rgba(0,0,0,.6),0 0 40px rgba(124,58,237,.25);transform:translateY(100%);transition:transform .38s cubic-bezier(.2,.9,.25,1);max-height:88vh;overflow-y:auto}
+.gb-overlay.open .gb-sheet{transform:translateY(0)}
+.gb-handle{width:42px;height:5px;border-radius:20px;background:rgba(255,255,255,.22);margin:6px auto 14px}
+.gb-modalTitle{font-size:16px;font-weight:900;color:#fff;letter-spacing:.04em;text-align:center}
+.gb-modalSub{font-size:11.5px;color:#a5a3c7;text-align:center;margin-top:4px}
+.gb-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.gb-item{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:12px;cursor:pointer;transition:transform .15s ease,border-color .2s ease,box-shadow .2s ease,background .2s ease}
+.gb-item:hover{transform:translateY(-1px);border-color:rgba(167,139,250,.5);box-shadow:0 10px 28px rgba(0,0,0,.35),0 0 22px rgba(124,58,237,.18)}
+.gb-item:active{transform:scale(.98)}
+.gb-item.selected{border-color:#a78bfa;background:linear-gradient(135deg,rgba(167,139,250,.22),rgba(124,58,237,.12));box-shadow:0 0 0 1px #a78bfa,0 12px 32px rgba(124,58,237,.32),0 0 28px rgba(167,139,250,.35);animation:gbSelectedPulse 2.2s ease-in-out infinite}
+@keyframes gbSelectedPulse{0%,100%{box-shadow:0 0 0 1px #a78bfa,0 12px 32px rgba(124,58,237,.32)}50%{box-shadow:0 0 0 1px #c4b5fd,0 12px 32px rgba(124,58,237,.5),0 0 34px rgba(167,139,250,.55)}}
+.gb-item-logo{width:52px;height:52px;flex-shrink:0;border-radius:14px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+.gb-item-logo img{width:88%;height:88%;object-fit:contain}
+.gb-item-info{flex:1;min-width:0}
+.gb-item-name{font-size:15.5px;font-weight:900;color:#fff;line-height:1}
+.gb-item-sub{font-size:10.5px;color:#8b8ba7;margin-top:3px}
+.gb-check{flex-shrink:0;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;transition:.2s}
+.gb-item .gb-check{border:1.5px solid rgba(255,255,255,.22);color:transparent;background:transparent}
+.gb-item.selected .gb-check{background:linear-gradient(135deg,#00ff88,#00c896);border-color:#00ff88;color:#04120a;box-shadow:0 0 16px rgba(0,255,136,.7);animation:gbCheckPop .35s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes gbCheckPop{0%{transform:scale(.5)}100%{transform:scale(1)}}
+.gb-selectedLabel{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;letter-spacing:.14em;color:#00ff88;background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.35);padding:4px 7px;border-radius:20px;margin-top:5px;animation:gbCheckPop .35s ease both}
+.gb-close{width:100%;margin-top:14px;padding:13px;border:0;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 10px 22px rgba(124,58,237,.4)}
+.gb-close:active{transform:scale(.98)}
+.gb-note{font-size:9.5px;color:#8b8ba7;text-align:center;margin-top:10px;line-height:1.5}
+@media(max-width:360px){.gb-name{font-size:19px}.gb-logo{width:50px;height:50px}.gb-item-logo{width:48px;height:48px}}
+
 /* === GHOST AI - FUTURISTIC SIGNAL TERMINAL (Result Card Only) === */
 .ghostTerm{position:relative;overflow:hidden;border-radius:22px;background:linear-gradient(160deg,rgba(28,20,70,.92),rgba(10,6,32,.96) 55%,rgba(20,12,55,.92));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(167,139,250,.28);padding:16px;margin-top:12px;box-shadow:0 20px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04) inset,0 0 32px rgba(124,58,237,.22);animation:gtReveal .6s cubic-bezier(.2,.9,.25,1) both}
 .ghostTerm::before{content:'';position:absolute;inset:-2px;border-radius:24px;padding:2px;background:conic-gradient(from 0deg,transparent 0%,#a78bfa 8%,#00ff88 14%,transparent 22%,transparent 50%,#ff3b5c 58%,#a78bfa 64%,transparent 72%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:gtBorderSpin 4.5s linear infinite;pointer-events:none}
@@ -626,7 +677,11 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-live">
-<div class="brokerCard"><div class="brokerLogo"><svg viewBox="0 0 24 24"><path d="M4 20V8l4-4v16 M8 20V4l4-3v19 M12 20V7l4-3v16 M16 20V9l4-4v15" stroke="#dc2626" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 20h20" stroke="#dc2626" stroke-width="1.5"/></svg></div><div class="brokerInfo"><div class="brokerLabel"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h6"/></svg> BROKER</div><div class="brokerName">Quotex</div></div><button class="changeBtn" onclick="document.getElementById('brokerMenu').style.display=document.getElementById('brokerMenu').style.display==='block'?'none':'block'">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div><div id="brokerMenu" style="display:none;background:#1a1238;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px;margin-bottom:12px"><div style="padding:9px 10px;border-radius:8px;background:rgba(167,139,250,.15);color:white;font-size:11px;font-weight:800;display:flex;gap:8px;align-items:center"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></span> Quotex</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Pocket Option</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Binomo</div></div>
+<div class="ghostBrokerCard" id="ghostBrokerCard" onclick="openBrokerModal()" role="button" aria-label="Choose your broker">
+  <div class="gb-logo" id="gbLogo"><img id="gbLogoImg" class="gb-logoImg" src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex logo" onerror="this.style.display='none';document.getElementById('gbLogoFallback').style.display='grid'"/><span id="gbLogoFallback" class="gb-logoFallback" class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
+  <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" id="gbName">Quotex</div><div class="gb-sub" id="gbSub">GHOST AI • Connected for signals</div></div>
+  <div class="gb-change">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+</div>
 <div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
 <div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input id="search" placeholder="Search pair (e.g. EUR/USD)"/></div>
 <div class="mlist-live" id="ml"></div>
@@ -675,6 +730,11 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <input type="file" id="file" accept="image/*" hidden/>
 <img id="pv" style="width:100%;border-radius:10px;display:none;margin-top:10px;border:1px solid #1f2937"/>
 <div id="fileInfo" style="font-size:9px;color:#a78bfa;margin-top:6px;display:none"></div>
+</div>
+<div class="ghostBrokerCard" onclick="openBrokerModal()" role="button" aria-label="Choose your broker" style="padding:10px 12px;margin-top:10px">
+  <div class="gb-logo" style="width:44px;height:44px;border-radius:12px"><img class="gb-logoImg" src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logoFallback gb-logo-fallback" style="display:none">QUOTEX</span></div>
+  <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" style="font-size:17px">Quotex</div></div>
+  <div class="gb-change">Change</div>
 </div>
 <button class="btn" id="an" style="margin-top:10px">Analyze</button>
 <div class="flow" id="flowShot"><div class="flowBg"></div>
@@ -955,7 +1015,7 @@ $('an').addEventListener('click',async()=>{
  flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='...';
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
-  const fd=new FormData(); fd.append('image',file,file.name||'chart.png');
+  const fd=new FormData(); fd.append('image',file,file.name||'chart.png'); fd.append('broker', window.GHOST_BROKER || localStorage.getItem('ghost_ai_broker') || 'Quotex'); fd.append('market_type', window.GHOST_BROKER || 'Quotex');
   ghostShowAnalyzing(res);
   await new Promise(r=>setTimeout(r,1100));
   const d=await api('/api/analyze-image',{method:'POST',body:fd});
@@ -1337,7 +1397,7 @@ function ghostRenderTerminal(el, d, a, dir, conf, confl){
     const dirLabel = isCall ? 'CALL' : 'PUT';
     const upDown = isCall ? 'UP' : 'DOWN';
     const confArr = (confl||[]).map(c=>`<span>${c}</span>`).join('');
-    el.innerHTML = `<div class="ghostTerm ${cls} newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live"><span class="gt-dot"></span> AI SIGNAL READY</div></div><div class="gt-market">${market}</div><div class="gt-meta"><b>1 MIN</b><b>${mtype}</b><b>ENTRY ${entry}</b></div><div class="gt-signalWrap"><div class="gt-arrow ${isCall?'':'down'}">${arrow}</div><div class="gt-dir">${dirLabel}</div><div class="gt-updown">▲ ${upDown} • 1 MIN</div></div><div class="gt-confWrap"><div class="gt-ring"><svg viewBox="0 0 60 60"><circle class="gt-ringBg" cx="30" cy="30" r="30"></circle><circle class="gt-ringFg" cx="30" cy="30" r="30" data-gtring="${conf}"></circle></svg><div class="gt-ringNum"><div><b data-gtnum="0">0%</b><span>CONF</span></div></div></div><div class="gt-confBar"><div class="gt-confLabel"><span>CONFIDENCE</span><b data-gtnum2="0">0%</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${conf}"></div></div><div style="font-size:9px;color:#8b8ba7;margin-top:8px;line-height:1.5">Confidence = setup quality, not win probability.</div></div></div><div class="gt-factors">${confArr || '<span>Trend</span><span>Structure</span><span>Momentum</span>'}</div><div class="gt-analysis">${summary}</div><div class="gt-footer"><span>IMAGE QUALITY: <b>${imgQ}/100</b></span><span>${verified}</span></div><div class="gt-footer"><span>ANALYSIS COMPLETE</span><span>${nowStr} • ENTRY ${entry}</span></div><div class="gt-risk">Risk Warning: Trading involves substantial risk. This is educational analysis, not financial advice. Never trade more than you can afford to lose.</div></div>`;
+    el.innerHTML = `<div class="ghostTerm ${cls} newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live"><span class="gt-dot"></span> AI SIGNAL READY</div></div><div class="gt-market">${market}</div><div class="gt-meta"><b>1 MIN</b><b>${mtype}</b><b>ENTRY ${entry}</b></div><div class="gt-signalWrap"><div class="gt-arrow ${isCall?'':'down'}">${arrow}</div><div class="gt-dir">${dirLabel}</div><div class="gt-updown">▲ ${upDown} • 1 MIN</div></div><div class="gt-confWrap"><div class="gt-ring"><svg viewBox="0 0 60 60"><circle class="gt-ringBg" cx="30" cy="30" r="30"></circle><circle class="gt-ringFg" cx="30" cy="30" r="30" data-gtring="${conf}"></circle></svg><div class="gt-ringNum"><div><b data-gtnum="0">0%</b><span>CONF</span></div></div></div><div class="gt-confBar"><div class="gt-confLabel"><span>CONFIDENCE</span><b data-gtnum2="0">0%</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${conf}"></div></div><div style="font-size:9px;color:#8b8ba7;margin-top:8px;line-height:1.5">Confidence = setup quality, not win probability.</div></div></div><div class="gt-factors">${confArr || '<span>Trend</span><span>Structure</span><span>Momentum</span>'}</div><div class="gt-analysis">${summary}</div><div class="gt-footer"><span class="gt-broker-tag">BROKER: ${window.GHOST_BROKER || 'Quotex'}</span><span>IMAGE QUALITY: <b>${imgQ}/100</b></span></div><div class="gt-footer"><span>${verified}</span></div><div class="gt-footer"><span>ANALYSIS COMPLETE</span><span>${nowStr} • ENTRY ${entry}</span></div><div class="gt-risk">Risk Warning: Trading involves substantial risk. This is educational analysis, not financial advice. Never trade more than you can afford to lose.</div></div>`;
   }
   // Animate ring + bars + numbers
   requestAnimationFrame(()=>{
@@ -1353,6 +1413,95 @@ window.ghostShowAnalyzing = ghostShowAnalyzing;
 window.ghostRenderTerminal = ghostRenderTerminal;
 window.ghostEntryTime = ghostEntryTime;
 
+
+// === GHOST AI - BROKER SELECTOR LOGIC ===
+const GHOST_BROKERS = {
+  'Quotex': { logo: 'https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp', fallback: 'QUOTEX', sub: 'GHOST AI • Connected for signals' },
+  'Binolla': { logo: 'https://binollainfo.com/img/binolla-logo.png', fallback: 'BINOLLA', sub: 'GHOST AI • Connected for signals' },
+  'Pocket Option': { logo: 'https://pocketoption-pt.com/images/logo-pocketoption.png', fallback: 'POCKET OPTION', sub: 'GHOST AI • Connected for signals' },
+  'Olymptrade': { logo: 'https://www.binoption.net/wp-content/uploads/2019/01/olymp-trade-logo.png', fallback: 'OLYMP TRADE', sub: 'GHOST AI • Connected for signals' }
+};
+let GHOST_BROKER = 'Quotex';
+try{ const saved = localStorage.getItem('ghost_ai_broker'); if(saved && GHOST_BROKERS[saved]) GHOST_BROKER = saved; }catch(e){}
+function renderBroker(){
+  document.querySelectorAll('#gbName, .gb-name').forEach(el=>{ el.textContent = GHOST_BROKER; });
+  document.querySelectorAll('#gbSub, .gb-sub').forEach(el=>{ el.textContent = GHOST_BROKERS[GHOST_BROKER].sub; });
+  document.querySelectorAll('#gbLogoImg, .gb-logoImg').forEach(imgEl=>{ imgEl.src = GHOST_BROKERS[GHOST_BROKER].logo; imgEl.alt = GHOST_BROKER + ' logo'; imgEl.style.display='block'; });
+  document.querySelectorAll('#gbLogoFallback, .gb-logoFallback').forEach(fbEl=>{ fbEl.textContent = GHOST_BROKERS[GHOST_BROKER].fallback; fbEl.style.display='none'; });
+  // Update modal list selection
+  document.querySelectorAll('.gb-item').forEach(item=>{
+    const isSel = item.dataset.broker === GHOST_BROKER;
+    item.classList.toggle('selected', isSel);
+    const lbl = item.querySelector('[data-sel]'); if(lbl) lbl.style.display = isSel ? 'inline-flex' : 'none';
+  });
+  // Update any other broker name displays (signal tools)
+  document.querySelectorAll('[data-ghost-broker-name]').forEach(el=>{ el.textContent = GHOST_BROKER; });
+  // Update terminal cards broker label if exists
+  document.querySelectorAll('.gt-broker-tag').forEach(el=>{ el.textContent = 'BROKER: ' + GHOST_BROKER; });
+  window.GHOST_BROKER = GHOST_BROKER;
+  // Save
+  try{ localStorage.setItem('ghost_ai_broker', GHOST_BROKER); }catch(e){}
+}
+function openBrokerModal(){
+  const ov = document.getElementById('gbOverlay'); if(!ov) return;
+  renderBroker(); ov.classList.add('open'); document.body.style.overflow='hidden';
+}
+function closeBrokerModal(){
+  const ov = document.getElementById('gbOverlay'); if(!ov) return;
+  ov.classList.remove('open'); document.body.style.overflow='';
+}
+function selectBroker(name){
+  if(!GHOST_BROKERS[name]) return;
+  GHOST_BROKER = name; renderBroker();
+  // Haptic-like micro feedback: pulse card
+  const card = document.getElementById('ghostBrokerCard'); if(card){ card.style.transform='scale(.98)'; setTimeout(()=>card.style.transform='',140); }
+  // Auto-close after short glow so user sees ✓ SELECTED
+  setTimeout(closeBrokerModal, 420);
+}
+window.openBrokerModal = openBrokerModal; window.closeBrokerModal = closeBrokerModal; window.selectBroker = selectBroker; window.renderBroker = renderBroker;
+// Restore on load
+document.addEventListener('DOMContentLoaded', renderBroker);
+// Also render immediately if DOM already ready (script at end)
+if(document.readyState !== 'loading') renderBroker();
+// ESC to close
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(); });
+// Swipe down to close (mobile) - simple touch handling
+(function(){ let startY=0; const sheet=document.getElementById('gbOverlay'); if(!sheet) return; sheet.addEventListener('touchstart', e=>{ startY=e.touches[0].clientY; }, {passive:true}); sheet.addEventListener('touchend', e=>{ const dy=e.changedTouches[0].clientY - startY; if(dy>90) closeBrokerModal(); }, {passive:true}); })();
+
 </script>
+
+<!-- GHOST AI - BROKER SELECTOR BOTTOM SHEET -->
+<div class="gb-overlay" id="gbOverlay" onclick="if(event.target===this) closeBrokerModal()">
+  <div class="gb-sheet" role="dialog" aria-modal="true" aria-label="Choose your broker">
+    <div class="gb-handle"></div>
+    <div class="gb-modalTitle">CHOOSE YOUR BROKER</div>
+    <div class="gb-modalSub">Select your preferred trading platform</div>
+    <div class="gb-list" id="gbList">
+      <div class="gb-item" data-broker="Quotex" onclick="selectBroker('Quotex')">
+        <div class="gb-item-logo"><img src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub">Fast execution • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-check">✓</div>
+      </div>
+      <div class="gb-item" data-broker="Binolla" onclick="selectBroker('Binolla')">
+        <div class="gb-item-logo"><img src="https://binollainfo.com/img/binolla-logo.png" alt="Binolla official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOLLA</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Binolla</div><div class="gb-item-sub">Smart binary • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Binolla" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-check">✓</div>
+      </div>
+      <div class="gb-item" data-broker="Pocket Option" onclick="selectBroker('Pocket Option')">
+        <div class="gb-item-logo"><img src="https://pocketoption-pt.com/images/logo-pocketoption.png" alt="Pocket Option official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">POCKET<br>OPTION</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub">Social trading • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-check">✓</div>
+      </div>
+      <div class="gb-item" data-broker="Olymptrade" onclick="selectBroker('Olymptrade')">
+        <div class="gb-item-logo"><img src="https://www.binoption.net/wp-content/uploads/2019/01/olymp-trade-logo.png" alt="Olymptrade official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">OLYMP<br>TRADE</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Olymptrade</div><div class="gb-item-sub">Trusted platform • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Olymptrade" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-check">✓</div>
+      </div>
+    </div>
+    <button class="gb-close" onclick="closeBrokerModal()">Done</button>
+    <div class="gb-note">Logos are official brand assets of their respective brokers.<br>GHOST AI is not affiliated with any broker. Trading involves risk.</div>
+  </div>
+</div>
+
 </body>
 </html>
