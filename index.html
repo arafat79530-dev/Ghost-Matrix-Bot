@@ -342,6 +342,63 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .sheetResult{margin-top:12px;display:none}
 .sheetResult.on{display:block;animation:cardIn .35s ease both}
 
+
+/* === FUTURISTIC ANIMATIONS - VIDEO FEATURES === */
+@keyframes futFloat{0%,100%{transform:translateY(0) rotate(-1deg) scale(1)}50%{transform:translateY(-6px) rotate(1deg) scale(1.04)}}
+@keyframes futGlowPulse{0%,100%{box-shadow:0 0 12px rgba(167,139,250,.4),0 0 24px rgba(124,58,237,.2)}50%{box-shadow:0 0 22px rgba(167,139,250,.8),0 0 40px rgba(124,58,237,.45)}}
+@keyframes futShimmer{0%{transform:translateX(-120%) skewX(-15deg)}100%{transform:translateX(250%) skewX(-15deg)}}
+@keyframes futGradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes futLockPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(167,139,250,0))}50%{transform:scale(1.12);filter:drop-shadow(0 0 6px rgba(167,139,250,.7))}}
+@keyframes futCardIn{0%{opacity:0;transform:translateY(18px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes futScan{0%{top:-10%}100%{top:110%}}
+@keyframes futRingPulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.45);opacity:0}}
+@keyframes futNeonBorder{0%,100%{border-color:rgba(167,139,250,.25)}50%{border-color:rgba(167,139,250,.85)}}
+@keyframes futIconSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+/* Access Tier - Futuristic */
+.accessSheet{overflow:hidden;position:relative}
+.accessSheet::after{content:'';position:absolute;left:0;right:0;height:1px;top:0;background:linear-gradient(90deg,transparent,#a78bfa,transparent);animation:futGradientShift 3s ease infinite;background-size:200% 100%}
+.planCard{background:linear-gradient(120deg,#2a1a5a,#1a1238,#3b1f7a,#1a1238);background-size:300% 300%;animation:futGradientShift 6s ease infinite;position:relative;overflow:hidden}
+.planCard::after{content:'';position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);animation:futShimmer 2.8s ease-in-out infinite}
+.planCard .planIc{animation:futFloat 3s ease-in-out infinite}
+.unlockBtn,.viewPlansBtn{background:linear-gradient(120deg,#a78bfa,#7c3aed,#c4b5fd,#7c3aed);background-size:250% 100%;animation:futGradientShift 3s ease infinite,futGlowPulse 2.2s ease-in-out infinite;position:relative;overflow:hidden}
+.unlockBtn::after,.viewPlansBtn::after{content:'';position:absolute;top:0;left:0;width:35%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:futShimmer 2.2s ease-in-out infinite}
+.unlockEngineCard{background:linear-gradient(120deg,#1e1540,#2a1a5a,#120a2e);background-size:250% 100%;animation:futGradientShift 5s ease infinite;position:relative;overflow:hidden}
+.unlockEngineCard::after{content:'';position:absolute;left:0;top:-10%;width:100%;height:2px;background:linear-gradient(90deg,transparent,#a78bfa,transparent);animation:futScan 2.6s linear infinite}
+.unlockEngineCard .ueIc{animation:futFloat 2.8s ease-in-out infinite}
+.quotaCard{animation:futCardIn .5s ease both;animation-delay:calc(var(--d,0)*0.08s);border:1px solid rgba(167,139,250,.12)}
+.quotaCard:nth-child(1){--d:1}.quotaCard:nth-child(2){--d:2}.quotaCard:nth-child(3){--d:3}.quotaCard:nth-child(4){--d:4}.quotaCard:nth-child(5){--d:5}
+.quotaCard .lockWrap svg{animation:futLockPulse 1.8s ease-in-out infinite}
+.quotaCard .qcIc{animation:futFloat 3.2s ease-in-out infinite}
+.quotaCard:active{transform:scale(.96)}
+.accessTitle{animation:futCardIn .5s ease both}
+.planReset{animation:futCardIn .6s ease both}
+/* Unlock Modal - Futuristic */
+.unlockSheet{position:relative;overflow:hidden}
+.unlockSheet::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#a78bfa,#7c3aed,transparent);animation:futGradientShift 2.5s ease infinite;background-size:200% 100%}
+.unlockLogo{position:relative;animation:futFloat 3.2s ease-in-out infinite,futGlowPulse 2.4s ease-in-out infinite;border:2px solid rgba(167,139,250,.6)}
+.unlockLogo::before{content:'';position:absolute;inset:-6px;border-radius:18px;border:1px solid rgba(167,139,250,.5);animation:futRingPulse 1.8s ease-out infinite}
+.unlockLogo::after{content:'';position:absolute;inset:-12px;border-radius:22px;border:1px solid rgba(167,139,250,.25);animation:futRingPulse 1.8s ease-out .6s infinite}
+.unlockH{animation:futCardIn .4s ease both}
+.unlockP{animation:futCardIn .5s ease both}
+.unlockFeat .uf{animation:futCardIn .5s ease both;animation-delay:calc(var(--d,0)*0.12s);position:relative;overflow:hidden}
+.unlockFeat .uf:nth-child(1){--d:1}.unlockFeat .uf:nth-child(2){--d:2}.unlockFeat .uf:nth-child(3){--d:3}
+.unlockFeat .uf::after{content:'';position:absolute;top:0;left:0;width:30%;height:100%;background:linear-gradient(90deg,transparent,rgba(167,139,250,.08),transparent);animation:futShimmer 3s ease-in-out infinite}
+.unlockFeat .uf .ufIc{animation:futFloat 3s ease-in-out infinite}
+.contactAdminBtn{animation:futNeonBorder 2s ease-in-out infinite;transition:.2s}
+.contactAdminBtn:active{transform:scale(.98)}
+.contactAdminBtn svg{animation:futFloat 2.5s ease-in-out infinite}
+/* Future / News / Management - Futuristic */
+.futureCard{animation:futCardIn .4s ease both}
+.futureCard.sel{animation:futGlowPulse 1.6s ease-in-out infinite}
+.queueCard{animation:futCardIn .45s ease both}
+.lockedCard{position:relative;overflow:hidden}
+.lockedCard::after{content:'';position:absolute;top:0;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,#a78bfa,transparent);animation:futGradientShift 2.5s ease infinite;background-size:200% 100%}
+.lockedCard .lockIc{animation:futGlowPulse 2s ease-in-out infinite,futFloat 3s ease-in-out infinite}
+.planBox{animation:futCardIn .4s ease both}
+.mtgRow .mtgIc{animation:futFloat 3s ease-in-out infinite}
+.mItem{animation:futCardIn .4s ease both}
+
 /* COCO STYLE FLOATING PILL NAV - CSS + JS ANIMATED */
 .bnav{margin:0 12px 12px;border-radius:24px;background:linear-gradient(180deg,#241848 0%,#170e38 50%,#120a2e 100%);border:1px solid rgba(255,255,255,.10);box-shadow:0 -2px 20px rgba(0,0,0,.25),0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.14);display:grid;grid-template-columns:1fr 1fr 1.25fr 1fr 1fr;align-items:center;padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex-shrink:0;position:relative;overflow:visible;height:66px;animation:navIn .5s ease-out}
 .bnav::before{content:'';position:absolute;top:-1px;left:22%;right:22%;height:1.5px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);border-radius:2px;pointer-events:none}
@@ -908,6 +965,24 @@ window.generateSheet=generateSheet;
 const _origNav = nav;
 function nav2(p){ _origNav(p); if(p==='future') renderFuture(); }
 window.nav = nav2;
+
+
+// === FUTURISTIC ANIMATION TRIGGERS ===
+function futReplayAccess(){
+  const sheet=document.querySelector('.accessSheet'); if(!sheet) return;
+  sheet.style.animation='none'; void sheet.offsetWidth; sheet.style.animation='';
+  document.querySelectorAll('.quotaCard').forEach((c,i)=>{ c.style.animation='none'; void c.offsetWidth; c.style.animation=''; c.style.animationDelay=(i*0.08)+'s'; });
+}
+function futReplayUnlock(){
+  document.querySelectorAll('.unlockFeat .uf').forEach((c,i)=>{ c.style.animation='none'; void c.offsetWidth; c.style.animation=''; c.style.animationDelay=(i*0.12)+'s'; });
+  const logo=document.querySelector('.unlockLogo'); if(logo){ logo.style.animation='none'; void logo.offsetWidth; logo.style.animation=''; }
+}
+const _origOpenUnlock = openUnlock;
+openUnlock = function(){ _origOpenUnlock(); setTimeout(futReplayUnlock,30); };
+window.openUnlock=openUnlock;
+// Re-animate Access Tier when Dashboard shown
+const _origNavFut = window.nav;
+window.nav = function(p){ _origNavFut(p); if(p==='dashboard') setTimeout(futReplayAccess,60); if(p==='future'||p==='news'||p==='management'){ setTimeout(()=>{ document.querySelectorAll('#pg-'+p+' .futureCard, #pg-'+p+' .queueCard, #pg-'+p+' .planBox').forEach((c,i)=>{ c.style.animation='none'; void c.offsetWidth; c.style.animation=''; }); },60); } };
 
 </script>
 </body>
