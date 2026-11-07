@@ -96,11 +96,29 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .mTx{flex:1} .mTi{font-size:11px;font-weight:800;color:white} .mSu{font-size:8px;color:#8b8ba7;margin-top:1px}
 .adminBox{background:linear-gradient(135deg,rgba(28,20,75,.9),rgba(18,14,55,.9));border:1px solid rgba(124,58,237,.18);border-radius:13px;padding:11px;margin-bottom:10px}
 .adminBox input{width:100%;padding:9px;background:#0a0e1a;border:1px solid #1f2937;border-radius:10px;color:white;font-size:11px;margin-top:8px}
-.bnav{height:68px;background:#0f0a2e;border-top:1px solid rgba(124,58,237,.14);display:grid;grid-template-columns:1fr 1fr 1.2fr 1fr 1fr;align-items:end;padding:5px 4px calc(5px + env(safe-area-inset-bottom));flex-shrink:0}
-.bi{display:flex;flex-direction:column;align-items:center;gap:3px;color:#6b7280;font-size:7px;font-weight:700;padding:5px 2px}
-.bi.active{color:#a78bfa}
-.bi.c{transform:translateY(-3px)} .bi.c .ic{width:46px;height:46px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border-radius:15px;display:grid;place-items:center;color:white;font-size:19px;box-shadow:0 8px 22px rgba(124,58,237,.5)}
+/* COCO STYLE FLOATING PILL NAV - CSS + JS ANIMATED */
+.bnav{margin:0 12px 12px;border-radius:24px;background:linear-gradient(180deg,#241848 0%,#170e38 50%,#120a2e 100%);border:1px solid rgba(255,255,255,.10);box-shadow:0 -2px 20px rgba(0,0,0,.25),0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.14);display:grid;grid-template-columns:1fr 1fr 1.25fr 1fr 1fr;align-items:center;padding:8px 6px calc(8px + env(safe-area-inset-bottom));flex-shrink:0;position:relative;overflow:visible;height:66px;animation:navIn .5s ease-out}
+.bnav::before{content:'';position:absolute;top:-1px;left:22%;right:22%;height:1.5px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);border-radius:2px;pointer-events:none}
+.bnav::after{content:'';position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:110px;height:22px;background:radial-gradient(ellipse at center,rgba(167,139,250,.35),transparent 70%);filter:blur(6px);pointer-events:none}
+@keyframes navIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.bi{display:flex;flex-direction:column;align-items:center;gap:3px;color:#8b8ba7;font-size:7.5px;font-weight:700;padding:6px 2px;cursor:pointer;position:relative;transition:color .25s,transform .2s;user-select:none}
+.bi svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s,stroke .25s}
+.bi:active{transform:scale(.92)}
+.bi.active{color:#fff}
+.bi.active svg{transform:scale(1.12)}
+.bi.active::after{content:'';width:4px;height:4px;background:#a78bfa;border-radius:50%;box-shadow:0 0 8px #a78bfa;position:absolute;bottom:0;animation:dotPop .3s ease}
+@keyframes dotPop{from{transform:scale(0)}to{transform:scale(1)}}
+.bi.c{transform:translateY(-18px);z-index:2}
+.bi.c .ic{width:58px;height:58px;background:linear-gradient(135deg,#c4b5fd 0%,#a78bfa 40%,#7c3aed 100%);border-radius:18px;display:grid;place-items:center;color:white;border:1.5px solid rgba(255,255,255,.25);box-shadow:0 12px 28px rgba(124,58,237,.65),0 4px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.35);animation:centerFloat 2.8s ease-in-out infinite,centerGlow 2s ease-in-out infinite}
+.bi.c .ic svg{width:28px;height:28px;stroke:white;stroke-width:2}
+.bi.c:active .ic{transform:scale(.92)}
+@keyframes centerFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes centerGlow{0%,100%{box-shadow:0 12px 28px rgba(124,58,237,.65),0 4px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.35)}50%{box-shadow:0 16px 36px rgba(167,139,250,.85),0 6px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.45)}}
+.bi.c span{margin-top:2px;color:#fff;font-weight:800}
 .ic{font-size:15px}
+.navRipple{position:absolute;width:36px;height:36px;border-radius:50%;background:rgba(167,139,250,.35);transform:scale(0);pointer-events:none;animation:ripple .55s ease-out forwards}
+@keyframes ripple{to{transform:scale(1.8);opacity:0}}
+
 .login{position:absolute;inset:0;background:#0f0a2e;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
 .lbBox{width:100%;max-width:340px;background:#111827;border:1px solid #1f2937;border-radius:24px;padding:26px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .ip{width:100%;padding:13px 14px;background:#0a0e1a;border:1px solid #1f2937;border-radius:12px;color:white;margin:6px 0;font-size:13px}
@@ -250,12 +268,12 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 
 </div>
 
-<div class="bnav">
-<div class="bi active" data-p="dashboard"><div class="ic">⊞</div><div>Home</div></div>
-<div class="bi" data-p="live"><div class="ic">📡</div><div>Live</div></div>
-<div class="bi c" data-p="analyzer"><div class="ic">◈</div><div>AI</div></div>
-<div class="bi" data-p="injector"><div class="ic">💉</div><div>Injector</div></div>
-<div class="bi" data-p="more"><div class="ic">☰</div><div>More</div></div>
+<div class="bnav" id="bnav">
+<div class="bi active" data-p="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span>Dashboard</span></div>
+<div class="bi" data-p="live"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M17 7l2.1-2.1 M4.9 19.1L7 17"/></svg><span>Live</span></div>
+<div class="bi c active" data-p="analyzer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="0.8" fill="white"/></svg></div><span>Analyzer</span></div>
+<div class="bi" data-p="injector"><svg viewBox="0 0 24 24"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg><span>Injector</span></div>
+<div class="bi" data-p="more"><svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg><span>More</span></div>
 </div>
 
 </div>
@@ -267,7 +285,27 @@ let file=null, cur='otc', selPair=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);let d={};try{d=await r.json()}catch{const t=await r.text().catch(()=> ''); throw new Error(t||'Error '+r.status)}if(!r.ok)throw new Error(d.error||'Failed');return d}
 function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='more')lu()}
-document.querySelectorAll('.bi').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.p)));
+// COCO STYLE ANIMATED NAV - ripple + pop + bounce
+document.querySelectorAll('.bi').forEach(b=>{
+  b.addEventListener('click',()=>{
+    // Ripple
+    const r=document.createElement('div'); r.className='navRipple';
+    const rect=b.getBoundingClientRect(); r.style.left='50%'; r.style.top='50%'; r.style.transform='translate(-50%,-50%) scale(0)';
+    b.appendChild(r); setTimeout(()=>r.remove(),600);
+    // Pop animation
+    b.animate([{transform:'scale(0.88)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:320,easing:'ease-out'});
+    // Center bounce if analyzer
+    if(b.dataset.p==='analyzer'){
+      const ic=b.querySelector('.ic'); if(ic) ic.animate([{transform:'scale(1) rotate(0deg)'},{transform:'scale(1.12) rotate(8deg)'},{transform:'scale(1) rotate(0deg)'}],{duration:450,easing:'ease-out'});
+    }
+    // Active state
+    document.querySelectorAll('.bi').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    // Keep center always highlighted like Coco
+    document.querySelector('.bi.c').classList.add('active');
+    nav(b.dataset.p);
+  });
+});
 function flag(pair){
   const map={EUR:'eu',USD:'us',GBP:'gb',JPY:'jp',AUD:'au',NZD:'nz',CHF:'ch',CAD:'ca'};
   const a=pair.split('/'); const c1=a[0]; const c2=(a[1]||'').split(' ')[0];
