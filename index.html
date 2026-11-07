@@ -164,7 +164,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .durCard.sel{border-color:#a78bfa;box-shadow:0 0 0 1.5px #a78bfa,0 8px 20px rgba(124,58,237,.35);background:linear-gradient(180deg,#2a1a5a,#1a1238)}
 .durCard .radio{position:absolute;top:9px;right:9px;width:16px;height:16px;border-radius:50%;border:1.5px solid #6b7280;display:grid;place-items:center}
 .durCard.sel .radio{border-color:#a78bfa;background:#a78bfa}
-.durCard.sel .radio::after{content:'✓';color:white;font-size:9px;font-weight:900}
+.durCard.sel .radio::after{content:'';width:6px;height:3px;border-left:2px solid white;border-bottom:2px solid white;transform:rotate(-45deg) translateY(-1px);display:block}
 .durCard .durNum{font-size:22px;font-weight:900;color:white;line-height:1}
 .durCard .durNum small{font-size:9px;color:#8b8ba7;font-weight:700;letter-spacing:.08em}
 .durCard .durName{font-size:11px;font-weight:800;color:white;margin-top:8px}
@@ -210,6 +210,19 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .carouselDots .dot{width:6px;height:6px;border-radius:50%;background:#3b2a6a;transition:.25s}
 .carouselDots .dot.on{background:#a78bfa;width:18px;border-radius:4px}
 
+
+
+/* === CSS ICONS - NO EMOJI, PURE CSS/SVG === */
+.cssIco{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.cssIco svg{width:100%;height:100%;display:block}
+.cssGhost{width:26px;height:26px;background:#fff;border-radius:13px 13px 4px 4px;position:relative;display:inline-block;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.cssGhost::before{content:'';position:absolute;bottom:-4px;left:0;right:0;height:6px;background:#fff;clip-path:polygon(0 0,20% 100%,40% 0,60% 100%,80% 0,100% 100%,100% 0)}
+.cssGhost .gEye{position:absolute;top:7px;width:5px;height:7px;background:#111827;border-radius:50%}
+.cssGhost .gEye:first-child{left:5px}.cssGhost .gEye:nth-child(2){right:5px}
+.cssGhost .gMouth{position:absolute;left:50%;top:15px;transform:translateX(-50%);width:6px;height:8px;background:#111827;border-radius:50%}
+.cssHamburger{display:flex;flex-direction:column;gap:4px;width:18px}
+.cssHamburger i{display:block;height:2px;background:currentColor;border-radius:2px}
+.cssDot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
 
 /* === GHOST - ACCESS TIER + UNLOCK + FUTURE + NEWS + MANAGEMENT - COCO STYLE === */
 .accessSheet{margin-top:14px;background:#f8f7ff;border-radius:28px 28px 0 0;padding:20px 16px 20px;position:relative;animation:sheetUp .6s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
@@ -430,7 +443,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </head>
 <body>
 <div class="app">
-<div class="hdr"><div class="logo"><i></i> GHOST</div><div class="hdrMenu">☰</div></div>
+<div class="hdr"><div class="logo"><i></i> GHOST</div><div class="hdrMenu"><span class="cssHamburger"><i></i><i></i><i></i></span></div></div>
 
 <div class="login" id="log">
 <div class="lbBox">
@@ -453,26 +466,26 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div style="background:rgba(28,20,75,.6);border:1px solid rgba(124,58,237,.14);border-radius:12px;padding:10px"><div style="font-size:14px;font-weight:900;color:#ff3b5c" id="l">0</div><div style="font-size:8px;color:#8b8ba7">LOSSES</div></div>
 </div>
 <div class="accessSheet">
-<div class="accessTierLabel"><span>👑 ACCESS TIER</span></div>
+<div class="accessTierLabel"><span><span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18h18 M3 18l-1-9 5 4 5-7 5 7 5-4-1 9z"/></svg></span> ACCESS TIER</span></div>
 <div class="accessTitle">Your plan and daily<br>engine quota.</div>
 <div class="planCard"><div class="planTop"><div class="planIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 6 6 .8-4.5 4.2 1 6.5L12 16.5 6.5 19.5l1-6.5L3 8.8 9 8z"/></svg></div><div><div class="lbl">CURRENT PLAN</div><div class="val">Free</div></div></div>
 <div class="planReset"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> Resets daily at 6:00 AM (BST)</div>
-<button class="unlockBtn" onclick="openUnlock()">🔑 Unlock access →</button></div>
-<div class="quotaTitle"><span class="qIc">◉</span> Daily quota</div>
+<button class="unlockBtn" onclick="openUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span> Unlock access →</button></div>
+<div class="quotaTitle"><span class="qIc"><span class="cssDot"></span></span> Daily quota</div>
 <div class="quotaSub">Generating results stays locked on the Free plan.</div>
-<div class="unlockEngineCard" onclick="openUnlock()"><div class="ueIc">🔑</div><div class="ueTx"><div class="ueTi">Unlock your engine</div><div class="ueSu">Every tool below opens with a daily allowance.</div></div><div style="color:#c4b5fd">→</div></div>
+<div class="unlockEngineCard" onclick="openUnlock()"><div class="ueIc"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span></div><div class="ueTx"><div class="ueTi">Unlock your engine</div><div class="ueSu">Every tool below opens with a daily allowance.</div></div><div style="color:#c4b5fd">→</div></div>
 <div class="quotaGrid">
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#ede9fe;color:#7c3aed">📊</div><div class="qcTi">OTC Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dcfce7;color:#16a34a">📈</div><div class="qcTi">Real Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#fef3c7;color:#d97706">🔮</div><div class="qcTi">Future Si...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dbeafe;color:#2563eb">📡</div><div class="qcTi">Live Sign...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
-<div class="quotaCard full" onclick="openUnlock()"><div class="qcIc" style="background:#f3e8ff;color:#9333ea">💉</div><div class="qcTi">Ghost Injector</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#ede9fe;color:#7c3aed"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg></span></div><div class="qcTi">OTC Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dcfce7;color:#16a34a"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-6 4 3 6-8"/><path d="M14 6h4v4"/></svg></span></div><div class="qcTi">Real Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#fef3c7;color:#d97706"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 20h8 M10 21h4 M12 3v2"/></svg></span></div><div class="qcTi">Future Si...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dbeafe;color:#2563eb"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M8.5 8.5a5 5 0 0 1 7 0 M6 6a9 9 0 0 1 12 0 M3.5 3.5a13 13 0 0 1 17 0"/></svg></span></div><div class="qcTi">Live Sign...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard full" onclick="openUnlock()"><div class="qcIc" style="background:#f3e8ff;color:#9333ea"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg></span></div><div class="qcTi">Ghost Injector</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
 </div>
 </div>
 </div>
 
 <div class="page" id="pg-live">
-<div class="brokerCard"><div class="brokerLogo"><svg viewBox="0 0 24 24"><path d="M4 20V8l4-4v16 M8 20V4l4-3v19 M12 20V7l4-3v16 M16 20V9l4-4v15" stroke="#dc2626" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 20h20" stroke="#dc2626" stroke-width="1.5"/></svg></div><div class="brokerInfo"><div class="brokerLabel"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h6"/></svg> BROKER</div><div class="brokerName">Quotex</div></div><button class="changeBtn" onclick="document.getElementById('brokerMenu').style.display=document.getElementById('brokerMenu').style.display==='block'?'none':'block'">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div><div id="brokerMenu" style="display:none;background:#1a1238;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px;margin-bottom:12px"><div style="padding:9px 10px;border-radius:8px;background:rgba(167,139,250,.15);color:white;font-size:11px;font-weight:800;display:flex;gap:8px;align-items:center">✔ Quotex</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Pocket Option</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Binomo</div></div>
+<div class="brokerCard"><div class="brokerLogo"><svg viewBox="0 0 24 24"><path d="M4 20V8l4-4v16 M8 20V4l4-3v19 M12 20V7l4-3v16 M16 20V9l4-4v15" stroke="#dc2626" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 20h20" stroke="#dc2626" stroke-width="1.5"/></svg></div><div class="brokerInfo"><div class="brokerLabel"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h6"/></svg> BROKER</div><div class="brokerName">Quotex</div></div><button class="changeBtn" onclick="document.getElementById('brokerMenu').style.display=document.getElementById('brokerMenu').style.display==='block'?'none':'block'">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div><div id="brokerMenu" style="display:none;background:#1a1238;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px;margin-bottom:12px"><div style="padding:9px 10px;border-radius:8px;background:rgba(167,139,250,.15);color:white;font-size:11px;font-weight:800;display:flex;gap:8px;align-items:center"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></span> Quotex</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Pocket Option</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Binomo</div></div>
 <div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
 <div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input id="search" placeholder="Search pair (e.g. EUR/USD)"/></div>
 <div class="mlist-live" id="ml"></div>
@@ -514,7 +527,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="page" id="pg-analyzer">
 <div class="tabs"><div class="tab on">OTC</div><div class="tab">REAL</div></div>
 <div class="drop" id="paste">
-<div class="dropIc">📤</div>
+<div class="dropIc"><span class="cssIco" style="width:20px;height:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg></span></div>
 <div class="dropT">Drop chart</div>
 <div class="dropS">Tap to select</div>
 <button class="selBtn" id="selBtn">Select</button>
@@ -574,12 +587,12 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="secLabel"><span>SELECT STRATEGY</span></div>
 <div class="stratCard" onclick="openStratPicker()"><div class="stratThumb" id="stratThumb"><svg viewBox="0 0 100 100"><path d="M5 60 Q 25 30 45 50 T 95 30" stroke="#a78bfa" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M5 70 Q 30 45 55 60 T 95 45" stroke="#7c3aed" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></svg></div><div class="stratInfo"><div class="stratName" id="stratName">Ghost SmartFlow</div><div class="stratSub" id="stratSub">MOMENTUM FLOW READ</div></div><div class="stratArrow">›</div></div>
 <div class="stratDesc" id="stratDesc">Follows the dominant liquidity stream and rides confirmed momentum.</div>
-<button class="injBtnMain" id="injMainBtn" disabled onclick="injectSignal()">✎ Select a duration to inject</button>
+<button class="injBtnMain" id="injMainBtn" disabled onclick="injectSignal()"><span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Select a duration to inject</button>
 <div class="injResult" id="injResult"></div>
 </div>
 </div>
 <div class="stratModal" id="stratModal">
-<div class="stratModalTop"><div><div class="kicker">GHOST ENGINES</div><h2>Pick a strategy</h2></div><button class="stratClose" onclick="closeStratPicker()">✕</button></div>
+<div class="stratModalTop"><div><div class="kicker">GHOST ENGINES</div><h2>Pick a strategy</h2></div><button class="stratClose" onclick="closeStratPicker()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12 M18 6L6 18"/></svg></span></button></div>
 <div class="carouselWrap" id="carouselWrap"><div class="carousel" id="stratCarousel"></div></div>
 <div class="carouselInfo"><div class="selName" id="carSelName">Ghost SmartFlow</div><div class="selSub" id="carSelSub">Momentum flow read</div><div class="carouselDots" id="carDots"></div><div class="hint">● SWIPE TO ROTATE &nbsp;•&nbsp; TAP A CARD TO SELECT</div></div>
 </div>
@@ -596,7 +609,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 <div id="futureStep2" style="display:none">
 <div class="futureStepBar"><div class="stepInfo"><div class="ti">Queue setup</div><div class="su">STEP 2 OF 2 • REVIEW AND GENERATE</div></div><button class="injChangeBtn" onclick="backFutureStep1()">← Markets</button></div>
-<div class="queueCard"><div class="qHead"><div class="qIc">🔗</div><div><div class="qTi">Selected markets</div><div class="qSu">At least one pair stays in the queue</div></div><div class="qBadge"><b id="futureCount">1</b><span>PAIR</span></div></div><div id="futureSelList" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px"></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px;display:flex;align-items:center;gap:6px">🔒 One market must stay — add more from the Markets step</div></div>
+<div class="queueCard"><div class="qHead"><div class="qIc"><span class="cssIco" style="width:20px;height:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1.5-1.5"/></svg></span></div><div><div class="qTi">Selected markets</div><div class="qSu">At least one pair stays in the queue</div></div><div class="qBadge"><b id="futureCount">1</b><span>PAIR</span></div></div><div id="futureSelList" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px"></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px;display:flex;align-items:center;gap:6px"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span> One market must stay — add more from the Markets step</div></div>
 <div class="queueCard"><div class="qHead"><div class="qIc">Σ</div><div><div class="qTi">How many signals?</div><div class="qSu">Tap the number to edit • 5-20</div></div></div><div class="sigCountBox"><div style="display:flex;align-items:center;justify-content:center;gap:12px"><button onclick="changeSigCount(-1)" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);border:0;color:white;font-size:18px">−</button><div class="big" id="sigCount">5</div><button onclick="changeSigCount(1)" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);border:0;color:white;font-size:18px">+</button></div><div class="lbl">SIGNALS QUEUED</div></div><input type="range" min="5" max="20" value="5" class="sigSlider" id="sigSlider" oninput="setSigCount(this.value)"/><div class="sigPresets"><button class="on" onclick="setSigCount(5)">5</button><button onclick="setSigCount(10)">10</button><button onclick="setSigCount(15)">15</button><button onclick="setSigCount(20)">20</button></div></div>
 <div class="nextStepBar"><div class="nsInfo"><div class="ti" id="futureGenTxt">1 pair • 5 signals</div><div class="su">GHOST SMARTFLOW</div></div><button class="nsBtn" onclick="generateFuture()">Generate 5 Signals</button></div>
 <div id="futureResult" style="margin-top:12px"></div>
@@ -604,28 +617,28 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-news">
-<div class="newsTabs"><div class="ntab on">📄 Today's Events</div><div class="ntab">📊 Fundamental</div></div>
-<div class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()">🔑 Unlock engine</button></div>
+<div class="newsTabs"><div class="ntab on"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span> Today's Events</div><div class="ntab"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg></span> Fundamental</div></div>
+<div class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span> Unlock engine</button></div>
 </div>
 
 <div class="page" id="pg-management">
 <div class="mgmtTabs"><div class="mtab on">Management</div><div class="mtab">Sheet</div></div>
-<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><div style="width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,.15);display:grid;place-items:center;color:#c4b5fd">◉</div><div><div style="font-size:8px;letter-spacing:.16em;color:#8b8ba7;font-weight:800">SESSION PLANNER</div><div style="font-size:16px;font-weight:900;color:white;margin-top:2px">Plan your session</div></div></div></div>
-<div class="planBox" id="capBox"><div class="pbLabel"><span class="pbIc" style="background:#1e3a8a;color:#93c5fd">💵</span> INITIAL CAPITAL</div><input id="mgmtCap" type="number" placeholder="$ 0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">$</span><div class="err">⚠ Initial capital must be greater than 10 to generate a sheet.</div></div>
-<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#14532d;color:#86efac">🎯</span> AVERAGE PAYOUT</div><input id="mgmtPayout" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
-<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#713f12;color:#fde68a">◎</span> PROFIT TARGET</div><input id="mgmtProfit" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
-<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#7f1d1d;color:#fca5a5">🛡</span> RISK PER TRADE</div><input id="mgmtRisk" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
+<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><div style="width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,.15);display:grid;place-items:center;color:#c4b5fd"><span class="cssDot"></span></div><div><div style="font-size:8px;letter-spacing:.16em;color:#8b8ba7;font-weight:800">SESSION PLANNER</div><div style="font-size:16px;font-weight:900;color:white;margin-top:2px">Plan your session</div></div></div></div>
+<div class="planBox" id="capBox"><div class="pbLabel"><span class="pbIc" style="background:#1e3a8a;color:#93c5fd"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 6H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H7"/></svg></span></span> INITIAL CAPITAL</div><input id="mgmtCap" type="number" placeholder="$ 0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">$</span><div class="err"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r="0.8" fill="currentColor"/></svg></span> Initial capital must be greater than 10 to generate a sheet.</div></div>
+<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#14532d;color:#86efac"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span></span> AVERAGE PAYOUT</div><input id="mgmtPayout" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
+<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#713f12;color:#fde68a"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span></span> PROFIT TARGET</div><input id="mgmtProfit" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
+<div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#7f1d1d;color:#fca5a5"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V5z"/><path d="M9 12l2 2 4-4"/></svg></span></span> RISK PER TRADE</div><input id="mgmtRisk" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
 <div class="mtgRow"><div class="mtgIc">↻</div><div class="mtgTx"><div class="mtgTi">Martingale (MTG)</div><div class="mtgSu">Double the stake after a loss</div></div><div class="toggle" id="mtgToggle" onclick="toggleMTG()"></div></div>
-<button class="genSheetBtn" id="genSheetBtn" disabled onclick="generateSheet()">📋 Generate Sheet</button>
+<button class="genSheetBtn" id="genSheetBtn" disabled onclick="generateSheet()"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span> Generate Sheet</button>
 <div class="genHint" id="genHint">Fill in all fields to generate your trade sheet.</div>
 <div class="sheetResult" id="sheetResult"></div>
 </div>
 
 <div class="page" id="pg-more">
 <div style="font-size:8px;letter-spacing:.18em;color:#8b8ba7;font-weight:800;margin:6px 2px 10px">SIGNAL TOOLS &nbsp; 3</div>
-<div class="mItem" onclick="nav('future')"><div class="mIc live1"><span>🔮</span></div><div class="mTx"><div class="mTi">Future Signals</div><div class="mSu">Batch-generate upcoming entries</div></div><div style="color:#6b7280">01 ›</div></div>
-<div class="mItem" onclick="nav('news')"><div class="mIc live2"><span>📰</span></div><div class="mTx"><div class="mTi">News Signals</div><div class="mSu">Economic events and bias calls</div></div><div style="color:#6b7280">02 ›</div></div>
-<div class="mItem" onclick="nav('management')"><div class="mIc live3"><span>📋</span></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Capital plan and MTG tracker</div></div><div style="color:#6b7280">03 ›</div></div>
+<div class="mItem" onclick="nav('future')"><div class="mIc live1"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 20h8 M10 21h4 M12 3v2"/></svg></span></span></div><div class="mTx"><div class="mTi">Future Signals</div><div class="mSu">Batch-generate upcoming entries</div></div><div style="color:#6b7280">01 ›</div></div>
+<div class="mItem" onclick="nav('news')"><div class="mIc live2"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h5"/></svg></span></span></div><div class="mTx"><div class="mTi">News Signals</div><div class="mSu">Economic events and bias calls</div></div><div style="color:#6b7280">02 ›</div></div>
+<div class="mItem" onclick="nav('management')"><div class="mIc live3"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span></span></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Capital plan and MTG tracker</div></div><div style="color:#6b7280">03 ›</div></div>
 <div class="adminBox">
 <div style="font-size:10px;font-weight:900;color:white;display:flex;align-items:center;gap:8px"><div class="mIc live2" style="width:28px;height:28px;border-radius:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="white"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none"/></svg></div> Add User</div>
 <div style="display:flex;gap:6px;margin-top:6px">
@@ -663,16 +676,16 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 
 <div class="unlockModal" id="unlockModal">
 <div class="unlockSheet">
-<div class="unlockSheetTop"><div class="kicker">👑 GHOST ENGINE</div><button class="xBtn" onclick="closeUnlock()">✕</button></div>
-<div class="unlockLogo"><img src="https://flagcdn.com/w80/gb.png" style="display:none"/><div style="font-size:26px">👻</div></div>
+<div class="unlockSheetTop"><div class="kicker"><span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18h18 M3 18l-1-9 5 4 5-7 5 7 5-4-1 9z"/></svg></span> GHOST ENGINE</div><button class="xBtn" onclick="closeUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12 M18 6L6 18"/></svg></span></button></div>
+<div class="unlockLogo"><img src="https://flagcdn.com/w80/gb.png" style="display:none"/><div style="font-size:26px"><span class="cssGhost"><i class="gEye"></i><i class="gEye"></i><i class="gMouth"></i></span></div></div>
 <div class="unlockH">Unlock your engine.</div>
 <div class="unlockP">Your Free account can explore every page. Generating results with Ghost is reserved for members.</div>
 <div class="unlockFeat">
-<div class="uf"><div class="ufIc">∞</div><div><div class="ufTi">Daily signal engine</div><div class="ufSu">Live, Future, Injector and both chart analyzers.</div></div></div>
-<div class="uf"><div class="ufIc">🚀</div><div><div class="ufTi">Instant activation</div><div class="ufSu">Your plan switches on within minutes of verification.</div></div></div>
-<div class="uf"><div class="ufIc">🎧</div><div><div class="ufTi">Priority desk</div><div class="ufSu">Direct support line for members, every day.</div></div></div>
+<div class="uf"><div class="ufIc"><span class="cssIco" style="width:20px;height:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 12c-2-3-5-3-5 0s3 3 5 0c2-3 8-3 10 0 2 3 5 3 5 0s-3-3-5 0c-2 3-8 3-10 0z"/></svg></span></div><div><div class="ufTi">Daily signal engine</div><div class="ufSu">Live, Future, Injector and both chart analyzers.</div></div></div>
+<div class="uf"><div class="ufIc"><span class="cssIco" style="width:20px;height:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c3 2 5 6 5 10l-2 4h-6l-2-4c0-4 2-8 5-10z"/><circle cx="12" cy="11" r="2"/><path d="M9 16l-2 5 M15 16l2 5"/></svg></span></div><div><div class="ufTi">Instant activation</div><div class="ufSu">Your plan switches on within minutes of verification.</div></div></div>
+<div class="uf"><div class="ufIc"><span class="cssIco" style="width:20px;height:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="7" rx="1.5"/><rect x="17" y="13" width="4" height="7" rx="1.5"/></svg></span></div><div><div class="ufTi">Priority desk</div><div class="ufSu">Direct support line for members, every day.</div></div></div>
 </div>
-<button class="viewPlansBtn" onclick="contactAdmin()">📋 View Plans →</button>
+<button class="viewPlansBtn" onclick="contactAdmin()"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span> View Plans →</button>
 <a class="contactAdminBtn" href="https://t.me/ghostsupportbd" target="_blank"><svg viewBox="0 0 24 24" fill="#229ED9"><path d="M9.04 15.9l-.38 5.32c.55 0 .79-.24 1.08-.52l2.6-2.48 5.39 3.94c.99.54 1.7.26 1.97-.92L23.5 3.6c.22-1.03-.37-1.43-1.06-1.18L1.5 10.2c-.97.38-.96 1.02-.17 1.29l5.36 1.67L19.1 5.3c.58-.36 1.1-.16.67.22L9.04 15.9z"/></svg> Contact Admin</a>
 <div style="font-size:10px;color:#9ca3af;text-align:center;margin-top:10px">Telegram: @ghostsupportbd</div>
 </div>
@@ -827,7 +840,7 @@ function backToInjList(){ document.getElementById('injDetail').classList.remove(
 window.backToInjList=backToInjList;
 function selectDur(m){ injDur=m; document.querySelectorAll('.durCard').forEach(c=>c.classList.toggle('sel', Number(c.dataset.dur)===m)); updateInjBtn(); }
 window.selectDur=selectDur;
-function updateInjBtn(){ const b=document.getElementById('injMainBtn'); if(injDur>0){ b.disabled=false; b.innerHTML='✎ Inject '+injDur+'-minute signal'; } else { b.disabled=true; b.innerHTML='✎ Select a duration to inject'; } }
+function updateInjBtn(){ const b=document.getElementById('injMainBtn'); if(injDur>0){ b.disabled=false; b.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Inject '+injDur+'-minute signal'; } else { b.disabled=true; b.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Select a duration to inject'; } }
 function injectSignal(){
   if(!injDur) return;
   const btn=document.getElementById('injMainBtn'); btn.disabled=true; btn.textContent='Injecting...';
@@ -836,7 +849,7 @@ function injectSignal(){
     const dir=Math.random()>0.46?'CALL':'PUT'; const conf=62+Math.floor(Math.random()*24);
     const res=document.getElementById('injResult');
     res.innerHTML=`<div class="res ${dir}"><div class="rh"><div>${injPair} • ${injDur} MIN • ${strat.name}</div><div class="hi">${conf}%</div></div><div class="sig"><div class="dir ${dir}">${dir==='CALL'?'↗ CALL':'↘ PUT'}</div><div class="circ ${dir}" style="--p:${conf}"><div class="inn"><div class="nm">${conf}%</div><div class="lb">CONF</div></div></div><div class="tags"><span class="tg">${strat.name}</span><span class="tg">${injDur} MIN</span></div></div></div>`;
-    res.classList.add('on'); btn.disabled=false; btn.innerHTML='✎ Inject '+injDur+'-minute signal';
+    res.classList.add('on'); btn.disabled=false; btn.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Inject '+injDur+'-minute signal';
     // Update wins/losses like live
     try{ if(dir==='CALL'){ const w=document.getElementById('w'); if(w) w.textContent=Number(w.textContent||0)+1; } }catch{}
   },900);
@@ -853,7 +866,7 @@ function buildCarousel(){
   const c=document.getElementById('stratCarousel'); c.innerHTML='';
   const dots=document.getElementById('carDots'); dots.innerHTML='';
   GHOST_STRATS.forEach((s,i)=>{
-    const div=document.createElement('div'); div.className='strat3DCard'; div.innerHTML=`<div class="checkBadge">✓</div><div class="cardTop"><span>GHOST AI</span><span>0${i+1}</span></div><div class="cardVisual">${s.svg}</div><div class="cardName">${s.name}</div><div class="cardSub">${s.sub}</div>`;
+    const div=document.createElement('div'); div.className='strat3DCard'; div.innerHTML=`<div class="checkBadge"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" style="width:12px;height:12px"><path d="M4 12l5 5L20 6"/></svg></div><div class="cardTop"><span>GHOST AI</span><span>0${i+1}</span></div><div class="cardVisual">${s.svg}</div><div class="cardName">${s.name}</div><div class="cardSub">${s.sub}</div>`;
     div.addEventListener('click',()=>{ selectStrat(i); });
     c.appendChild(div);
     const d=document.createElement('div'); d.className='dot'; dots.appendChild(d);
@@ -922,7 +935,7 @@ function updateFutureBar(){
 function goFutureStep2(){
   document.getElementById('futureStep1').style.display='none'; document.getElementById('futureStep2').style.display='block';
   document.getElementById('futureCount').textContent=futureSel.size;
-  document.getElementById('futureSelList').innerHTML=[...futureSel].map(m=>`<span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:6px 10px;font-size:10px;font-weight:800;color:#e9d5ff;display:flex;align-items:center;gap:6px">${m.replace(' (OTC)','')} <span style="color:#a78bfa">🔒</span></span>`).join('');
+  document.getElementById('futureSelList').innerHTML=[...futureSel].map(m=>`<span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:6px 10px;font-size:10px;font-weight:800;color:#e9d5ff;display:flex;align-items:center;gap:6px">${m.replace(' (OTC)','')} <span style="color:#a78bfa"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span></span>`).join('');
   updateFutureGenTxt();
 }
 function backFutureStep1(){ document.getElementById('futureStep2').style.display='none'; document.getElementById('futureStep1').style.display='block'; }
