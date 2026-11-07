@@ -226,69 +226,6 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 
 
 
-
-
-/* === GHOST FIX - Owner Badge + 4-Tab Nav + Clean Menu === */
-.bnav{grid-template-columns:1fr 1fr 1.3fr 1fr !important}
-.planBadgeOwner{background:linear-gradient(135deg,#fbbf24,#f59e0b) !important;color:#000 !important;box-shadow:0 0 14px rgba(251,191,36,.55)}
-.planBadgeAdmin{background:linear-gradient(135deg,#a78bfa,#7c3aed) !important;color:#fff !important;box-shadow:0 0 14px rgba(167,139,250,.55)}
-.planBadgeActive{background:#00ff88 !important;color:#000 !important}
-.ghostNewsCard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;margin-bottom:10px}
-.ghostNewsUnavailable{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:16px;text-align:center;color:#fbbf24}
-.ghostMgmtExtra{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;margin-top:10px}
-.ghostSettingRow{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;margin-bottom:8px}
-.ghostMoreLabel{font-size:8px;letter-spacing:.18em;color:#8b8ba7;font-weight:800;margin:6px 2px 10px}
-
-/* === GHOST AI - FUTURISTIC BROKER SELECTOR (Only Broker Component) === */
-.ghostBrokerCard{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(42,26,90,.95),rgba(18,12,48,.96) 55%,rgba(30,16,70,.95));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(167,139,250,.35);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 14px 36px rgba(0,0,0,.45),0 0 28px rgba(124,58,237,.22),inset 0 1px 0 rgba(255,255,255,.12);cursor:pointer;transition:transform .18s ease,box-shadow .25s ease,border-color .25s ease}
-.ghostBrokerCard::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.14) 48%,transparent 62%);transform:translateX(-120%);animation:gbSweep 3.2s ease-in-out infinite;pointer-events:none}
-.ghostBrokerCard::after{content:'';position:absolute;inset:-1px;border-radius:21px;padding:1px;background:conic-gradient(from 0deg,transparent 0%,#a78bfa 10%,#00d9ff 18%,transparent 26%,transparent 55%,#c4b5fd 63%,transparent 71%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.75;animation:gbBorderSpin 5s linear infinite;pointer-events:none}
-@keyframes gbSweep{0%{transform:translateX(-120%)}55%{transform:translateX(120%)}100%{transform:translateX(120%)}}
-@keyframes gbBorderSpin{to{transform:rotate(360deg)}}
-.ghostBrokerCard:active{transform:scale(.98)}
-.ghostBrokerCard:hover{border-color:rgba(167,139,250,.7);box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 36px rgba(124,58,237,.38)}
-.gb-logo{width:56px;height:56px;flex-shrink:0;border-radius:16px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.2);animation:gbFloat 3.5s ease-in-out infinite}
-.gb-logo img{width:86%;height:86%;object-fit:contain;display:block}
-.gb-logo-fallback{font-size:15px;font-weight:900;letter-spacing:-.02em;color:#0f0a2e;line-height:1;text-align:center;padding:4px}
-@keyframes gbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-.gb-info{flex:1;min-width:0}
-.gb-label{font-size:9px;letter-spacing:.24em;font-weight:900;color:#a5a3c7;display:flex;align-items:center;gap:6px}
-.gb-dot{width:7px;height:7px;border-radius:50%;background:#00ff88;box-shadow:0 0 10px #00ff88;animation:gbPulse 1.6s ease-in-out infinite}
-@keyframes gbPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.78)}}
-.gb-name{font-size:22px;font-weight:900;color:#fff;line-height:1.1;margin-top:4px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gb-sub{font-size:10.5px;color:#c4b5fd;margin-top:2px;font-weight:600}
-.gb-change{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:9px 12px;border-radius:12px;border:1px solid rgba(167,139,250,.5);background:rgba(124,58,237,.18);color:#e9d5ff;font-size:11px;font-weight:800;transition:.15s}
-.gb-change:active{transform:scale(.94)}
-.gb-change svg{width:13px;height:13px;stroke:currentColor;stroke-width:2.2;fill:none}
-/* Bottom Sheet Modal */
-.gb-overlay{position:fixed;inset:0;background:rgba(3,1,16,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1200;display:none;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .25s ease}
-.gb-overlay.open{display:flex;opacity:1}
-.gb-sheet{width:100%;max-width:480px;background:linear-gradient(180deg,#2a1a5e,#120a32 60%,#0d0728);border:1px solid rgba(167,139,250,.32);border-bottom:0;border-radius:24px 24px 0 0;padding:10px 14px 22px;box-shadow:0 -12px 50px rgba(0,0,0,.6),0 0 40px rgba(124,58,237,.25);transform:translateY(100%);transition:transform .38s cubic-bezier(.2,.9,.25,1);max-height:88vh;overflow-y:auto}
-.gb-overlay.open .gb-sheet{transform:translateY(0)}
-.gb-handle{width:42px;height:5px;border-radius:20px;background:rgba(255,255,255,.22);margin:6px auto 14px}
-.gb-modalTitle{font-size:16px;font-weight:900;color:#fff;letter-spacing:.04em;text-align:center}
-.gb-modalSub{font-size:11.5px;color:#a5a3c7;text-align:center;margin-top:4px}
-.gb-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-.gb-item{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:12px;cursor:pointer;transition:transform .15s ease,border-color .2s ease,box-shadow .2s ease,background .2s ease}
-.gb-item:hover{transform:translateY(-1px);border-color:rgba(167,139,250,.5);box-shadow:0 10px 28px rgba(0,0,0,.35),0 0 22px rgba(124,58,237,.18)}
-.gb-item:active{transform:scale(.98)}
-.gb-item.selected{border-color:#a78bfa;background:linear-gradient(135deg,rgba(167,139,250,.22),rgba(124,58,237,.12));box-shadow:0 0 0 1px #a78bfa,0 12px 32px rgba(124,58,237,.32),0 0 28px rgba(167,139,250,.35);animation:gbSelectedPulse 2.2s ease-in-out infinite}
-@keyframes gbSelectedPulse{0%,100%{box-shadow:0 0 0 1px #a78bfa,0 12px 32px rgba(124,58,237,.32)}50%{box-shadow:0 0 0 1px #c4b5fd,0 12px 32px rgba(124,58,237,.5),0 0 34px rgba(167,139,250,.55)}}
-.gb-item-logo{width:52px;height:52px;flex-shrink:0;border-radius:14px;background:#fff;display:grid;place-items:center;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.3)}
-.gb-item-logo img{width:88%;height:88%;object-fit:contain}
-.gb-item-info{flex:1;min-width:0}
-.gb-item-name{font-size:15.5px;font-weight:900;color:#fff;line-height:1}
-.gb-item-sub{font-size:10.5px;color:#8b8ba7;margin-top:3px}
-.gb-check{flex-shrink:0;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;transition:.2s}
-.gb-item .gb-check{border:1.5px solid rgba(255,255,255,.22);color:transparent;background:transparent}
-.gb-item.selected .gb-check{background:linear-gradient(135deg,#00ff88,#00c896);border-color:#00ff88;color:#04120a;box-shadow:0 0 16px rgba(0,255,136,.7);animation:gbCheckPop .35s cubic-bezier(.2,1.6,.4,1) both}
-@keyframes gbCheckPop{0%{transform:scale(.5)}100%{transform:scale(1)}}
-.gb-selectedLabel{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;letter-spacing:.14em;color:#00ff88;background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.35);padding:4px 7px;border-radius:20px;margin-top:5px;animation:gbCheckPop .35s ease both}
-.gb-close{width:100%;margin-top:14px;padding:13px;border:0;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 10px 22px rgba(124,58,237,.4)}
-.gb-close:active{transform:scale(.98)}
-.gb-note{font-size:9.5px;color:#8b8ba7;text-align:center;margin-top:10px;line-height:1.5}
-@media(max-width:360px){.gb-name{font-size:19px}.gb-logo{width:50px;height:50px}.gb-item-logo{width:48px;height:48px}}
-
 /* === GHOST AI - FUTURISTIC SIGNAL TERMINAL (Result Card Only) === */
 .ghostTerm{position:relative;overflow:hidden;border-radius:22px;background:linear-gradient(160deg,rgba(28,20,70,.92),rgba(10,6,32,.96) 55%,rgba(20,12,55,.92));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(167,139,250,.28);padding:16px;margin-top:12px;box-shadow:0 20px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04) inset,0 0 32px rgba(124,58,237,.22);animation:gtReveal .6s cubic-bezier(.2,.9,.25,1) both}
 .ghostTerm::before{content:'';position:absolute;inset:-2px;border-radius:24px;padding:2px;background:conic-gradient(from 0deg,transparent 0%,#a78bfa 8%,#00ff88 14%,transparent 22%,transparent 50%,#ff3b5c 58%,#a78bfa 64%,transparent 72%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:gtBorderSpin 4.5s linear infinite;pointer-events:none}
@@ -663,7 +600,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 
 <div class="main">
 <div class="page on" id="pg-dashboard">
-<div class="ucard"><div class="av"></div><div><div class="un" id="uName">Arafat</div><div class="um" id="uMail">user@email.com</div></div><div class="free" id="planBadge">FREE</div></div>
+<div class="ucard"><div class="av"></div><div><div class="un" id="uName">Arafat</div><div class="um" id="uMail">user@email.com</div></div><div class="free">FREE</div></div>
 <div class="hero"><div class="heroImg"></div><div class="heroGlow"></div><!-- G is now held in hand in image --></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px">
 <div style="background:rgba(28,20,75,.6);border:1px solid rgba(124,58,237,.14);border-radius:12px;padding:10px"><div style="font-size:14px;font-weight:900;color:white" id="w">0</div><div style="font-size:8px;color:#8b8ba7">WINS</div></div>
@@ -689,11 +626,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-live">
-<div class="ghostBrokerCard" id="ghostBrokerCard" onclick="openBrokerModal()" role="button" aria-label="Choose your broker">
-  <div class="gb-logo" id="gbLogo"><img id="gbLogoImg" class="gb-logoImg" src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex logo" onerror="this.style.display='none';document.getElementById('gbLogoFallback').style.display='grid'"/><span id="gbLogoFallback" class="gb-logoFallback" class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
-  <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" id="gbName">Quotex</div><div class="gb-sub" id="gbSub">GHOST AI • Connected for signals</div></div>
-  <div class="gb-change">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
-</div>
+<div class="brokerCard"><div class="brokerLogo"><svg viewBox="0 0 24 24"><path d="M4 20V8l4-4v16 M8 20V4l4-3v19 M12 20V7l4-3v16 M16 20V9l4-4v15" stroke="#dc2626" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 20h20" stroke="#dc2626" stroke-width="1.5"/></svg></div><div class="brokerInfo"><div class="brokerLabel"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h6"/></svg> BROKER</div><div class="brokerName">Quotex</div></div><button class="changeBtn" onclick="document.getElementById('brokerMenu').style.display=document.getElementById('brokerMenu').style.display==='block'?'none':'block'">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div><div id="brokerMenu" style="display:none;background:#1a1238;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px;margin-bottom:12px"><div style="padding:9px 10px;border-radius:8px;background:rgba(167,139,250,.15);color:white;font-size:11px;font-weight:800;display:flex;gap:8px;align-items:center"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></span> Quotex</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Pocket Option</div><div style="padding:9px 10px;color:#8b8ba7;font-size:11px">Binomo</div></div>
 <div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
 <div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input id="search" placeholder="Search pair (e.g. EUR/USD)"/></div>
 <div class="mlist-live" id="ml"></div>
@@ -742,11 +675,6 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <input type="file" id="file" accept="image/*" hidden/>
 <img id="pv" style="width:100%;border-radius:10px;display:none;margin-top:10px;border:1px solid #1f2937"/>
 <div id="fileInfo" style="font-size:9px;color:#a78bfa;margin-top:6px;display:none"></div>
-</div>
-<div class="ghostBrokerCard" onclick="openBrokerModal()" role="button" aria-label="Choose your broker" style="padding:10px 12px;margin-top:10px">
-  <div class="gb-logo" style="width:44px;height:44px;border-radius:12px"><img class="gb-logoImg" src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logoFallback gb-logo-fallback" style="display:none">QUOTEX</span></div>
-  <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" style="font-size:17px">Quotex</div></div>
-  <div class="gb-change">Change</div>
 </div>
 <button class="btn" id="an" style="margin-top:10px">Analyze</button>
 <div class="flow" id="flowShot"><div class="flowBg"></div>
@@ -830,16 +758,11 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-news">
-<div style="font-size:16px;font-weight:900;color:white;margin:6px 2px 2px">News Signals</div>
-<div style="font-size:11px;color:#8b8ba7;margin:0 2px 12px">Economic events + News Bias - One entry, no fake data.</div>
 <div class="newsTabs"><div class="ntab on"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span> Today's Events</div><div class="ntab"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg></span> Fundamental</div></div>
-<div id="newsBiasBox" style="margin-bottom:12px"></div>
-<div style="font-size:11px;font-weight:900;color:white;margin:4px 2px 8px">ECONOMIC NEWS • HIGH IMPACT • NEXT 7 DAYS (BST)</div>
-<div id="newsListBox"><div style="font-size:11px;color:#8b8ba7;text-align:center;padding:16px">Loading economic news...</div></div>
-<div style="font-size:10px;color:#8b8ba7;line-height:1.6;padding:10px 2px">News Bias is secondary confirmation only. If <b style="color:#fbbf24">NEWS DATA UNAVAILABLE</b>, use technical analysis only - never force CALL/PUT from news.</div>
+<div class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span> Unlock engine</button></div>
 </div>
 
-id="pg-management">
+<div class="page" id="pg-management">
 <div class="mgmtTabs"><div class="mtab on">Management</div><div class="mtab">Sheet</div></div>
 <div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><div style="width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,.15);display:grid;place-items:center;color:#c4b5fd"><span class="cssDot"></span></div><div><div style="font-size:8px;letter-spacing:.16em;color:#8b8ba7;font-weight:800">SESSION PLANNER</div><div style="font-size:16px;font-weight:900;color:white;margin-top:2px">Plan your session</div></div></div></div>
 <div class="planBox" id="capBox"><div class="pbLabel"><span class="pbIc" style="background:#1e3a8a;color:#93c5fd"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 6H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H7"/></svg></span></span> INITIAL CAPITAL</div><input id="mgmtCap" type="number" placeholder="$ 0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">$</span><div class="err"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r="0.8" fill="currentColor"/></svg></span> Initial capital must be greater than 10 to generate a sheet.</div></div>
@@ -850,52 +773,50 @@ id="pg-management">
 <button class="genSheetBtn" id="genSheetBtn" disabled onclick="generateSheet()"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span> Generate Sheet</button>
 <div class="genHint" id="genHint">Fill in all fields to generate your trade sheet.</div>
 <div class="sheetResult" id="sheetResult"></div>
-<div class="ghostMgmtExtra"><div style="font-size:12px;font-weight:900;color:white">Trade History</div><div style="font-size:10px;color:#8b8ba7;margin-top:2px">Your recent signals from Analyzer + Live.</div><div id="mgmtHistoryBox" style="margin-top:8px;font-size:10px;color:#c4b5fd">Loading...</div></div>
-<div class="ghostMgmtExtra"><div style="font-size:12px;font-weight:900;color:white">Daily & Session Limits</div><div style="font-size:10px;color:#8b8ba7;margin-top:4px;line-height:1.7">• <b style="color:white">Daily Limit:</b> Max 20 signals / day - stop after 2 consecutive losses.<br>• <b style="color:white">Session Limit:</b> Max 2 sessions / day, 60 min per session.<br>• <b style="color:white">Risk:</b> 1-2% per trade, MTG max 2 steps. Never chase losses.<br>• <b style="color:white">Rule:</b> If Technical + News CONFLICT → AVOID. If evidence insufficient → NO SIGNAL.</div><div style="display:flex;gap:6px;margin-top:10px"><input id="mgmtDailyLimit" type="number" placeholder="Daily max signals (e.g. 20)" style="flex:1;padding:9px;border-radius:9px;background:#111827;color:white;border:1px solid #2a2f45;font-size:11px"/><button onclick="saveMgmtLimits()" style="padding:9px 12px;border:0;border-radius:9px;background:#a78bfa;color:white;font-weight:900;font-size:11px">Save</button></div><div id="mgmtLimitNote" style="font-size:9px;color:#8b8ba7;margin-top:6px"></div></div>
-<div class="ghostMgmtExtra"><div style="font-size:12px;font-weight:900;color:white">Capital / Balance Plan</div><div style="font-size:10px;color:#8b8ba7;margin-top:4px;line-height:1.7">Use the sheet above. Example: $100 capital → $2/trade (2%), target +10%/day, stop at -6%/day. All inside this one Management page.</div></div>
-
 </div>
 
 <div class="page" id="pg-more">
-<div class="ghostMoreLabel">SIGNAL TOOLS &nbsp;•&nbsp; ONE FEATURE = ONE ENTRY</div>
+<div style="font-size:8px;letter-spacing:.18em;color:#8b8ba7;font-weight:800;margin:6px 2px 10px">SIGNAL TOOLS &nbsp; 3</div>
 <div class="mItem" onclick="nav('future')"><div class="mIc live1"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 20h8 M10 21h4 M12 3v2"/></svg></span></span></div><div class="mTx"><div class="mTi">Future Signals</div><div class="mSu">Batch-generate upcoming entries</div></div><div style="color:#6b7280">01 ›</div></div>
 <div class="mItem" onclick="nav('news')"><div class="mIc live2"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h5"/></svg></span></span></div><div class="mTx"><div class="mTi">News Signals</div><div class="mSu">Economic events and bias calls</div></div><div style="color:#6b7280">02 ›</div></div>
-<div class="mItem" onclick="nav('management')"><div class="mIc live3"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span></span></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Capital plan, Risk, MTG, Trade history, Limits</div></div><div style="color:#6b7280">03 ›</div></div>
-<div class="mItem" onclick="nav('injector')"><div class="mIc live1"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg></span></span></div><div class="mTx"><div class="mTi">Ghost Injector</div><div class="mSu">Inject signal for a pair + duration</div></div><div style="color:#6b7280">04 ›</div></div>
-<div class="mItem" onclick="nav('settings')"><div class="mIc premium"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg></span></span></div><div class="mTx"><div class="mTi">Settings</div><div class="mSu">Account, Broker, Preferences</div></div><div style="color:#6b7280">05 ›</div></div>
-<div class="mItem" onclick="nav('support')"><div class="mIc live2"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8 M8 12h6"/></svg></span></span></div><div class="mTx"><div class="mTi">Support</div><div class="mSu">Contact admin, Help, FAQ</div></div><div style="color:#6b7280">06 ›</div></div>
+<div class="mItem" onclick="nav('management')"><div class="mIc live3"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span></span></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Capital plan and MTG tracker</div></div><div style="color:#6b7280">03 ›</div></div>
+<div class="adminBox">
+<div style="font-size:10px;font-weight:900;color:white;display:flex;align-items:center;gap:8px"><div class="mIc live2" style="width:28px;height:28px;border-radius:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="white"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none"/></svg></div> Add User</div>
+<div style="display:flex;gap:6px;margin-top:6px">
+<input id="newE" placeholder="email"/>
+<button onclick="createU()" style="padding:9px 12px;background:linear-gradient(135deg,#a78bfa,#7c3aed);border:0;border-radius:10px;font-weight:900;color:white;font-size:10px">Add</button>
+</div>
+</div>
+
+<div class="mItem" onclick="nav('live')"><div class="mIc live1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="white"/><path d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.5 4.5l2.2 2.2 M17.3 17.3l2.2 2.2 M17.3 6.7l2.2-2.2 M4.5 19.5l2.2-2.2"/></svg></div><div class="mTx"><div class="mTi">Live</div><div class="mSu">OTC • Real</div></div><div style="color:#6b7280">›</div></div>
+<div class="mItem" onclick="showBox('news')"><div class="mIc live2"><svg viewBox="0 0 24 24"><path d="M4 4h12v16H4z" fill="white" opacity=".9"/><path d="M16 8h4v12H8" fill="none"/><path d="M7 8h6 M7 12h6 M7 16h4" stroke="#4f46e5" stroke-width="1.2"/></svg></div><div class="mTx"><div class="mTi">News</div><div class="mSu">Economic</div></div><div style="color:#6b7280">›</div></div>
+<div class="mItem" onclick="showBox('mgmt')"><div class="mIc live3"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1" fill="white"/><rect x="10" y="8" width="4" height="13" rx="1" fill="white" opacity=".7"/><rect x="17" y="4" width="4" height="17" rx="1" fill="white" opacity=".4"/></svg></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Plan</div></div><div style="color:#6b7280">›</div></div>
+<div class="mItem" onclick="logout()"><div class="mIc premium"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none"/><polyline points="16,17 21,12 16,7" fill="none"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div><div class="mTx"><div class="mTi">Logout</div></div><div style="color:#6b7280">›</div></div>
+
+<div id="newsBox" style="display:none;margin-top:10px;background:rgba(28,20,75,.9);border:1px solid rgba(124,58,237,.15);border-radius:14px;padding:16px;text-align:center"><div style="font-size:12px;font-weight:800;color:white">Locked</div></div>
+<div id="mgmtBox" style="display:none;margin-top:10px;background:rgba(28,20,75,.9);border:1px solid rgba(124,58,237,.15);border-radius:14px;padding:14px"><div style="font-size:10px;font-weight:800;color:white">Plan</div></div>
+
+
 <div class="adminCard" id="adminPanel" style="display:none">
 <div style="font-size:12px;font-weight:900;color:white;margin-bottom:8px">GHOST AI Admin Panel</div>
 <div id="adminSummary" style="margin-bottom:10px"></div>
 <div class="adminTabs"><button data-tab="users" class="on" onclick="adminLoadTab('users')">USERS</button><button data-tab="plans" onclick="adminLoadTab('plans')">PLANS</button><button data-tab="signals" onclick="adminLoadTab('signals')">SIGNALS</button></div>
 <div id="adminBody"></div>
 </div>
-<div class="mItem" onclick="logout()"><div class="mIc premium"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none"/><polyline points="16,17 21,12 16,7" fill="none"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div><div class="mTx"><div class="mTi">Logout</div></div><div style="color:#6b7280">›</div></div>
+
+<div style="margin-top:10px;background:rgba(28,20,75,.6);border:1px solid rgba(124,58,237,.14);border-radius:12px;padding:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:10px;font-weight:900;color:white">Users</div><button onclick="lu()" style="background:rgba(255,255,255,.08);border:0;color:#c4b5fd;padding:3px 8px;border-radius:12px;font-size:8px">Refresh</button></div>
+<div id="ul" style="font-size:9px;color:#6b7280;max-height:260px;overflow-y:auto">Loading...</div>
+</div>
 </div>
 
-
-<div class="page" id="pg-settings">
-<div style="font-size:16px;font-weight:900;color:white;margin:6px 2px 4px">Settings</div>
-<div style="font-size:11px;color:#8b8ba7;margin:0 2px 12px">Account, Broker & Preferences - One place.</div>
-<div class="ghostSettingRow"><div><div style="font-size:12px;font-weight:900;color:white">Account</div><div style="font-size:10px;color:#8b8ba7" id="settingsEmail">user@email.com</div></div><div id="settingsPlanBadge" style="font-size:9px;font-weight:900;padding:5px 10px;border-radius:20px;background:#2a2f45;color:#c4b5fd">FREE</div></div>
-<div class="ghostSettingRow"><div><div style="font-size:12px;font-weight:900;color:white">Broker</div><div style="font-size:10px;color:#8b8ba7">Your trading platform for signals</div></div><button onclick="openBrokerModal()" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(167,139,250,.5);background:rgba(124,58,237,.18);color:#e9d5ff;font-weight:800;font-size:11px;cursor:pointer">Change Broker</button></div>
-<div class="ghostSettingRow"><div><div style="font-size:12px;font-weight:900;color:white">Timezone</div><div style="font-size:10px;color:#8b8ba7">Asia/Dhaka (BST) - Entry times use this zone</div></div><span style="font-size:11px;color:#c4b5fd;font-weight:800">BST</span></div>
-<div class="ghostSettingRow"><div><div style="font-size:12px;font-weight:900;color:white">App</div><div style="font-size:10px;color:#8b8ba7">GHOST AI • GHOST MATRIX • v2.0</div></div></div>
-<div style="font-size:9px;color:#8b8ba7;line-height:1.6;padding:8px 2px">Owner/Admin sees OWNER / ADMIN - FULL ACCESS and never sees plan purchase controls. Normal users see their actual assigned plan.</div>
-</div>
-
-<div class="page" id="pg-support">
-<div style="font-size:16px;font-weight:900;color:white;margin:6px 2px 4px">Support</div>
-<div style="font-size:11px;color:#8b8ba7;margin:0 2px 12px">Direct help from GHOST admin.</div>
-<div class="ghostNewsCard"><div style="font-size:13px;font-weight:900;color:white">Contact Admin</div><div style="font-size:11px;color:#c4b5fd;margin-top:4px;line-height:1.6">For plan activation, UID verification, or account issues - message admin on Telegram.</div><a href="https://t.me/ghostsupportbd" target="_blank" style="display:block;text-align:center;margin-top:12px;padding:12px;border-radius:12px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;text-decoration:none;font-size:13px">Open Telegram • @ghostsupportbd</a></div>
-<div class="ghostNewsCard"><div style="font-size:12px;font-weight:900;color:white">FAQ</div><div style="font-size:11px;color:#c4b5fd;margin-top:6px;line-height:1.7">• <b>NO SIGNAL</b> means evidence was insufficient - never forced.<br>• <b>NEWS DATA UNAVAILABLE</b> means no real calendar data - no fake news is shown.<br>• <b>OWNER</b> = Full Access, never FREE.<br>• One Feature = One Entry - all related tools live inside that feature page.</div></div>
 </div>
 
 <div class="bnav" id="bnav">
 <div class="bi active" data-p="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span>Dashboard</span></div>
 <div class="bi" data-p="live"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M17 7l2.1-2.1 M4.9 19.1L7 17"/></svg><span>Live</span></div>
 <div class="bi c active" data-p="analyzer"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="0.8" fill="white"/></svg></div><span>Analyzer</span></div>
-
+<div class="bi" data-p="injector"><svg viewBox="0 0 24 24"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg><span>Injector</span></div>
 <div class="bi" data-p="more"><svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg><span>More</span></div>
 </div>
 
@@ -947,7 +868,7 @@ const MARKETS={otc:["EUR/USD (OTC)","GBP/USD (OTC)","USD/JPY (OTC)","AUD/USD (OT
 let file=null, cur='otc', selPair=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);let d={};try{d=await r.json()}catch{const t=await r.text().catch(()=> ''); throw new Error(t||'Error '+r.status)}if(!r.ok)throw new Error(d.error||'Failed');return d}
-function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='news') loadNewsSignals(); if(p==='management') loadManagementExtras(); if(p==='settings'){ api('/api/auth/me').then(me=>{ const sb=document.getElementById('settingsPlanBadge'); if(sb && me.user) sb.textContent = me.user.display_plan || me.user.plan_label || 'FREE'; }).catch(()=>{}); } window.scrollTo({top:0,behavior:'smooth'});}
+function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='more')lu()}
 // COCO STYLE ANIMATED NAV - ripple + pop + bounce
 document.querySelectorAll('.bi').forEach(b=>{
   b.addEventListener('click',()=>{
@@ -1034,7 +955,7 @@ $('an').addEventListener('click',async()=>{
  flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='...';
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
-  const fd=new FormData(); fd.append('image',file,file.name||'chart.png'); fd.append('broker', window.GHOST_BROKER || localStorage.getItem('ghost_ai_broker') || 'Quotex'); fd.append('market_type', window.GHOST_BROKER || 'Quotex');
+  const fd=new FormData(); fd.append('image',file,file.name||'chart.png');
   ghostShowAnalyzing(res);
   await new Promise(r=>setTimeout(r,1100));
   const d=await api('/api/analyze-image',{method:'POST',body:fd});
@@ -1051,24 +972,7 @@ $('an').addEventListener('click',async()=>{
 });
 function showBox(id){['newsBox','mgmtBox'].forEach(b=>{const el=$(b); if(b===id)el.style.display=el.style.display==='none'?'block':'none'; else el.style.display='none'});}
 window.showBox=showBox;
-async function ld(){try{const d=await api('/api/stats'); $('w').textContent=d.wins||0; $('l').textContent=d.losses||0; const me=await api('/api/auth/me'); if(me.user&&$('uMail'))$('uMail').textContent=me.user.email; if(me.user&&$('uName'))$('uName').textContent=me.user.email.split('@')[0];
-  // GHOST FIX: Owner/Admin badge - never FREE for Owner
-  const badge=document.getElementById('planBadge'); const settingsBadge=document.getElementById('settingsPlanBadge'); const settingsEmail=document.getElementById('settingsEmail');
-  if(me.user){ const disp = me.user.display_plan || me.user.plan_label || (me.user.is_owner ? 'OWNER' : me.user.is_admin ? 'ADMIN' : (me.user.plan && me.user.plan.plan_name) || 'FREE');
-    if(badge){ badge.textContent = disp; badge.className = 'free'; if(disp==='OWNER'){ badge.classList.add('planBadgeOwner'); } else if(disp==='ADMIN'){ badge.classList.add('planBadgeAdmin'); } else if(me.user.active_plan){ badge.classList.add('planBadgeActive'); } }
-    if(settingsBadge){ settingsBadge.textContent = disp; }
-    if(settingsEmail){ settingsEmail.textContent = me.user.email; }
-    // Hide plan purchase / unlock controls for Owner/Admin
-    const isFull = !!(me.user.is_owner || me.user.is_admin || me.user.access==='FULL');
-    window._ghostIsOwner = !!me.user.is_owner; window._ghostIsAdmin = !!me.user.is_admin; window._ghostHasFullAccess = isFull;
-    if(isFull){ document.querySelectorAll('.unlockBtn, .unlockEngineCard, .quotaCard, .unlockEngineCard').forEach(el=>{ if(el.classList.contains('unlockEngineCard') || el.classList.contains('quotaCard')){ /* keep quota cards visible but remove lock behaviour for owner - show as accessible */ } else { el.style.display='none'; } });
-      const quotaSub=document.querySelector('.quotaSub'); if(quotaSub) quotaSub.textContent = me.user.is_owner ? 'OWNER • FULL ACCESS - All engines unlocked.' : 'ADMIN • FULL ACCESS - All engines unlocked.';
-      const planVal=document.querySelector('.planTop .val'); if(planVal) planVal.textContent = disp;
-    }
-    // Show Admin Panel only for owner/admin - inside More
-    const ap=document.getElementById('adminPanel'); if(ap){ if(me.user.is_admin || me.user.is_owner){ ap.style.display='block'; } else { ap.style.display='none'; } }
-  }
-}catch{}}
+async function ld(){try{const d=await api('/api/stats'); $('w').textContent=d.wins||0; $('l').textContent=d.losses||0; const me=await api('/api/auth/me'); if(me.user&&$('uMail'))$('uMail').textContent=me.user.email; if(me.user&&$('uName'))$('uName').textContent=me.user.email.split('@')[0]}catch{}}
 async function lu(){
  const b=$('ul'); b.innerHTML='Loading...';
  try{
@@ -1315,8 +1219,7 @@ window.doRegister=doRegister;
 async function loadUserPlan(){
   try{
     const d=await api('/api/user/plan');
-    const plan=d.plan; const disp = d.display_plan || d.plan_label || (d.is_owner ? 'OWNER' : d.is_admin ? 'ADMIN' : (plan && plan.plan_name) || 'FREE');
-    const el=document.getElementById('planBadge') || document.querySelector('.free'); if(el && plan){ el.textContent=disp; el.className='free'; if(disp==='OWNER') el.classList.add('planBadgeOwner'); else if(disp==='ADMIN') el.classList.add('planBadgeAdmin'); else if(d.active_plan){ el.classList.add('planBadgeActive'); } else { el.style.background='#2a2f45'; el.style.color='#c4b5fd'; } }
+    const plan=d.plan; const el=document.querySelector('.free'); if(el && plan){ el.textContent=plan.plan_name; el.style.background= d.active_plan?'#00ff88':'#2a2f45'; el.style.color= d.active_plan?'#000':'#c4b5fd'; }
     // Update Access Tier plan card
     const planVal=document.querySelector('.planTop .val'); if(planVal && plan){ planVal.textContent=plan.plan_name; }
     // Show plan expiry in dashboard
@@ -1388,17 +1291,7 @@ async function adminLoadTab(tab){
     if(tab==='users'){
       const d=await api('/api/admin/users'); const users=d.users||[];
       const plans=await api('/api/admin/plans'); const planOpts=(plans.plans||[]).map(p=>`<option value="${p.id}">${p.name} - $${p.price}</option>`).join('');
-      body.innerHTML=users.map(u=>{
-        const isOwner = !!(u.is_owner || (u.display_plan==='OWNER'));
-        const isAdminUser = !!(u.is_admin || u.role==='admin');
-        if(isOwner){
-          return `<div class="adminCard" style="border-color:rgba(251,191,36,.4)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;font-weight:900;color:white">${u.name||u.email} <span style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;padding:2px 7px;border-radius:10px;font-size:8px">OWNER</span></div><div style="font-size:9px;color:#8b8ba7">${u.email} • admin • ${u.status}</div><div style="font-size:9px;color:#fbbf24;margin-top:4px">Plan: OWNER • Status: ACTIVE • Access: FULL</div></div><div style="font-size:9px;font-weight:900;color:#fbbf24;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);padding:6px 10px;border-radius:20px;white-space:nowrap">OWNER • FULL ACCESS</div></div></div>`;
-        }
-        if(isAdminUser){
-          return `<div class="adminCard" style="border-color:rgba(167,139,250,.4)"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;font-weight:900;color:white">${u.name||u.email} <span style="background:#a78bfa;color:#fff;padding:2px 7px;border-radius:10px;font-size:8px">ADMIN</span></div><div style="font-size:9px;color:#8b8ba7">${u.email} • admin • ${u.status}</div><div style="font-size:9px;color:#c4b5fd;margin-top:4px">Plan: ADMIN • Status: ACTIVE • Access: FULL</div></div><div style="font-size:9px;font-weight:900;color:#c4b5fd;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.35);padding:6px 10px;border-radius:20px;white-space:nowrap">ADMIN • FULL ACCESS</div></div></div>`;
-        }
-        return `<div class="adminCard"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;font-weight:900;color:white">${u.name||u.email}</div><div style="font-size:9px;color:#8b8ba7">${u.email} • ${u.role} • ${u.status}</div><div style="font-size:9px;color:#c4b5fd;margin-top:4px">Plan: ${u.current_plan?u.current_plan.plan_name+' • '+u.current_plan.status+' • Exp: '+(u.current_plan.expiry_date?new Date(u.current_plan.expiry_date).toLocaleDateString():'-'):'No active plan'}</div></div><div style="display:flex;flex-direction:column;gap:4px"><select id="planSel-${u.id}" style="padding:6px;border-radius:8px;background:#111827;color:white;border:1px solid #2a2f45;font-size:10px"><option value="">Assign Plan</option>${planOpts}</select><button onclick="adminAssignPlan(${u.id})" style="padding:6px;border:0;border-radius:8px;background:#a78bfa;color:white;font-weight:800;font-size:10px">Assign</button><button onclick="adminToggleUser(${u.id},${u.access_enabled?0:1})" style="padding:6px;border:0;border-radius:8px;background:${u.access_enabled?'#ff3b5c':'#00ff88'};color:${u.access_enabled?'white':'#000'};font-weight:800;font-size:10px">${u.access_enabled?'Deactivate':'Activate'}</button></div></div></div>`;
-      }).join('')||'No users';
+      body.innerHTML=users.map(u=>`<div class="adminCard"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;font-weight:900;color:white">${u.name||u.email}</div><div style="font-size:9px;color:#8b8ba7">${u.email} • ${u.role} • ${u.status}</div><div style="font-size:9px;color:#c4b5fd;margin-top:4px">Plan: ${u.current_plan?u.current_plan.plan_name+' • '+u.current_plan.status+' • Exp: '+(u.current_plan.expiry_date?new Date(u.current_plan.expiry_date).toLocaleDateString():'-'):'No active plan'}</div></div><div style="display:flex;flex-direction:column;gap:4px"><select id="planSel-${u.id}" style="padding:6px;border-radius:8px;background:#111827;color:white;border:1px solid #2a2f45;font-size:10px"><option value="">Assign Plan</option>${planOpts}</select><button onclick="adminAssignPlan(${u.id})" style="padding:6px;border:0;border-radius:8px;background:#a78bfa;color:white;font-weight:800;font-size:10px">Assign</button><button onclick="adminToggleUser(${u.id},${u.access_enabled?0:1})" style="padding:6px;border:0;border-radius:8px;background:${u.access_enabled?'#ff3b5c':'#00ff88'};color:${u.access_enabled?'white':'#000'};font-weight:800;font-size:10px">${u.access_enabled?'Deactivate':'Activate'}</button></div></div></div>`).join('')||'No users';
     } else if(tab==='plans'){
       const d=await api('/api/admin/plans'); const plans=d.plans||[];
       body.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:10px"><input id="newPlanName" placeholder="Plan name e.g. VIP 7 DAYS" style="flex:1;padding:9px;border-radius:9px;background:#111827;color:white;border:1px solid #2a2f45"/><input id="newPlanPrice" placeholder="Price" type="number" style="width:80px;padding:9px;border-radius:9px;background:#111827;color:white;border:1px solid #2a2f45"/><input id="newPlanDays" placeholder="Days" type="number" value="30" style="width:70px;padding:9px;border-radius:9px;background:#111827;color:white;border:1px solid #2a2f45"/><button onclick="adminCreatePlan()" style="padding:9px 12px;border:0;border-radius:9px;background:#a78bfa;color:white;font-weight:900">Create</button></div>`+plans.map(p=>`<div class="adminCard"><div style="display:flex;justify-content:space-between"><div><div style="font-size:11px;font-weight:900;color:white">${p.name}</div><div style="font-size:9px;color:#8b8ba7">${p.description} • ${p.duration} • $${p.price} • ${p.status}</div></div><button onclick="adminTogglePlan(${p.id},'${p.status==='active'?'inactive':'active'}')" style="padding:6px 10px;border:0;border-radius:8px;background:${p.status==='active'?'#ff3b5c':'#00ff88'};color:white;font-weight:800;font-size:10px">${p.status==='active'?'Deactivate':'Activate'}</button></div></div>`).join('');
@@ -1437,14 +1330,14 @@ function ghostRenderTerminal(el, d, a, dir, conf, confl){
   const verified = d && d.verified_accuracy ? `VERIFIED ACCURACY: ${d.verified_accuracy.accuracy}% (${d.verified_accuracy.wins}W / ${d.verified_accuracy.losses}L)` : 'VERIFIED ACCURACY: Calculating from WIN / LOSS';
   const imgQ = d && d.image_quality!=null ? d.image_quality : '--';
   if(isNo){
-    el.innerHTML = `<div class="ghostTerm nosignal newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live" style="color:#fbbf24"><span class="gt-dot" style="background:#fbbf24;box-shadow:0 0 10px #fbbf24"></span> ANALYSIS COMPLETE</div></div><div style="text-align:center;margin-top:14px"><div class="gt-nsIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px;height:28px"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r=".8" fill="currentColor"/></svg></div><div class="gt-market" style="font-size:26px;color:#fbbf24;text-shadow:0 0 24px rgba(251,191,36,.6)">NO SIGNAL</div><div class="gt-meta" style="justify-content:center"><b>${market}</b><b>1 MIN</b><b>${mtype}</b><b>ENTRY ${entry}</b></div></div><div class="gt-analysis" style="text-align:center">${summary}</div><div id="ghostNewsConfirm" style="margin:10px 0 0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;font-size:10px;line-height:1.6;color:#c4b5fd;text-align:left"><b style="color:white">NEWS CONFIRMATION:</b> Checking real news for ${market}...</div><div class="gt-confWrap"><div style="flex:1"><div class="gt-confLabel"><span>IMAGE QUALITY</span><b>${imgQ}/100</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${imgQ}"></div></div><div class="gt-confLabel" style="margin-top:10px"><span>ANALYSIS CONFIDENCE</span><b>${conf}%</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${conf}"></div></div></div></div><div class="gt-footer"><span>${verified}</span><span>${nowStr}</span></div><div class="gt-risk">Risk Warning: No signal is better than a forced signal. Wait for a clearer setup.</div></div>`;
+    el.innerHTML = `<div class="ghostTerm nosignal newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live" style="color:#fbbf24"><span class="gt-dot" style="background:#fbbf24;box-shadow:0 0 10px #fbbf24"></span> ANALYSIS COMPLETE</div></div><div style="text-align:center;margin-top:14px"><div class="gt-nsIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px;height:28px"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r=".8" fill="currentColor"/></svg></div><div class="gt-market" style="font-size:26px;color:#fbbf24;text-shadow:0 0 24px rgba(251,191,36,.6)">NO SIGNAL</div><div class="gt-meta" style="justify-content:center"><b>${market}</b><b>1 MIN</b><b>${mtype}</b><b>ENTRY ${entry}</b></div></div><div class="gt-analysis" style="text-align:center">${summary}</div><div class="gt-confWrap"><div style="flex:1"><div class="gt-confLabel"><span>IMAGE QUALITY</span><b>${imgQ}/100</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${imgQ}"></div></div><div class="gt-confLabel" style="margin-top:10px"><span>ANALYSIS CONFIDENCE</span><b>${conf}%</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${conf}"></div></div></div></div><div class="gt-footer"><span>${verified}</span><span>${nowStr}</span></div><div class="gt-risk">Risk Warning: No signal is better than a forced signal. Wait for a clearer setup.</div></div>`;
   } else {
     const cls = isCall ? 'call' : 'put';
     const arrow = isCall ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20V4"/><path d="M5 11l7-7 7 7"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20V4"/><path d="M5 11l7-7 7 7"/></svg>';
     const dirLabel = isCall ? 'CALL' : 'PUT';
     const upDown = isCall ? 'UP' : 'DOWN';
     const confArr = (confl||[]).map(c=>`<span>${c}</span>`).join('');
-    el.innerHTML = `<div class="ghostTerm ${cls} newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live"><span class="gt-dot"></span> AI SIGNAL READY</div></div><div class="gt-market">${market}</div><div class="gt-meta"><b>1 MIN</b><b>${mtype}</b><b>ENTRY ${entry}</b></div><div class="gt-signalWrap"><div class="gt-arrow ${isCall?'':'down'}">${arrow}</div><div class="gt-dir">${dirLabel}</div><div class="gt-updown">▲ ${upDown} • 1 MIN</div></div><div class="gt-confWrap"><div class="gt-ring"><svg viewBox="0 0 60 60"><circle class="gt-ringBg" cx="30" cy="30" r="30"></circle><circle class="gt-ringFg" cx="30" cy="30" r="30" data-gtring="${conf}"></circle></svg><div class="gt-ringNum"><div><b data-gtnum="0">0%</b><span>CONF</span></div></div></div><div class="gt-confBar"><div class="gt-confLabel"><span>CONFIDENCE</span><b data-gtnum2="0">0%</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${conf}"></div></div><div style="font-size:9px;color:#8b8ba7;margin-top:8px;line-height:1.5">Confidence = setup quality, not win probability.</div></div></div><div class="gt-factors">${confArr || '<span>Trend</span><span>Structure</span><span>Momentum</span>'}</div><div class="gt-analysis">${summary}</div><div id="ghostNewsConfirm" style="margin:10px 12px 0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;font-size:10px;line-height:1.6;color:#c4b5fd;text-align:left"><b style="color:white">NEWS CONFIRMATION:</b> Checking real news for ${market}...</div><div class="gt-footer"><span class="gt-broker-tag">BROKER: ${window.GHOST_BROKER || 'Quotex'}</span><span>IMAGE QUALITY: <b>${imgQ}/100</b></span></div><div class="gt-footer"><span>${verified}</span></div><div class="gt-footer"><span>ANALYSIS COMPLETE</span><span>${nowStr} • ENTRY ${entry}</span></div><div class="gt-risk">Risk Warning: Trading involves substantial risk. This is educational analysis, not financial advice. Never trade more than you can afford to lose.</div></div>`;
+    el.innerHTML = `<div class="ghostTerm ${cls} newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live"><span class="gt-dot"></span> AI SIGNAL READY</div></div><div class="gt-market">${market}</div><div class="gt-meta"><b>1 MIN</b><b>${mtype}</b><b>ENTRY ${entry}</b></div><div class="gt-signalWrap"><div class="gt-arrow ${isCall?'':'down'}">${arrow}</div><div class="gt-dir">${dirLabel}</div><div class="gt-updown">▲ ${upDown} • 1 MIN</div></div><div class="gt-confWrap"><div class="gt-ring"><svg viewBox="0 0 60 60"><circle class="gt-ringBg" cx="30" cy="30" r="30"></circle><circle class="gt-ringFg" cx="30" cy="30" r="30" data-gtring="${conf}"></circle></svg><div class="gt-ringNum"><div><b data-gtnum="0">0%</b><span>CONF</span></div></div></div><div class="gt-confBar"><div class="gt-confLabel"><span>CONFIDENCE</span><b data-gtnum2="0">0%</b></div><div class="gt-bar"><div class="gt-fill" data-gtfill="${conf}"></div></div><div style="font-size:9px;color:#8b8ba7;margin-top:8px;line-height:1.5">Confidence = setup quality, not win probability.</div></div></div><div class="gt-factors">${confArr || '<span>Trend</span><span>Structure</span><span>Momentum</span>'}</div><div class="gt-analysis">${summary}</div><div class="gt-footer"><span>IMAGE QUALITY: <b>${imgQ}/100</b></span><span>${verified}</span></div><div class="gt-footer"><span>ANALYSIS COMPLETE</span><span>${nowStr} • ENTRY ${entry}</span></div><div class="gt-risk">Risk Warning: Trading involves substantial risk. This is educational analysis, not financial advice. Never trade more than you can afford to lose.</div></div>`;
   }
   // Animate ring + bars + numbers
   requestAnimationFrame(()=>{
@@ -1455,192 +1348,11 @@ function ghostRenderTerminal(el, d, a, dir, conf, confl){
       const target = conf; let cur=0; const step = Math.max(1, Math.ceil(target/28)); const iv = setInterval(()=>{ cur+=step; if(cur>=target){ cur=target; clearInterval(iv); } n.textContent = cur+'%'; }, 32);
     });
   });
-  // GHOST FIX: Fetch real news confirmation - never force signal on conflict
-  try{
-    const ncEl = el.querySelector('#ghostNewsConfirm');
-    if(ncEl && typeof fetchNewsConfirmation==='function'){
-      fetchNewsConfirmation(market, dir).then(nc=>{
-        if(!nc || !ncEl) return;
-        if(nc.status==='NEWS DATA UNAVAILABLE'){
-          ncEl.innerHTML = '<b style="color:white">NEWS CONFIRMATION:</b> <span style="color:#fbbf24">NEWS DATA UNAVAILABLE</span><br><span style="color:#8b8ba7">No real news data. Technical analysis only - ' + (isNo ? 'NO SIGNAL stands.' : 'use technical bias with caution.') + '</span>';
-        } else {
-          const isConflict = nc.status.includes('CONFLICT');
-          const color = isConflict ? '#ff3b5c' : nc.status.includes('CONFIRMATION') ? '#00ff88' : '#c4b5fd';
-          ncEl.innerHTML = '<b style="color:white">MARKET:</b> '+market+' • <b style="color:white">TECHNICAL:</b> '+dir+' • <b style="color:white">NEWS BIAS:</b> '+(nc.bias||'NEUTRAL')+'<br><b style="color:white">COMBINED:</b> <span style="color:'+color+';font-weight:900">'+nc.status+'</span><br><span style="color:#8b8ba7">'+(nc.detail||'')+'</span>' + (isConflict && !isNo ? '<br><span style="color:#ff3b5c;font-weight:800">⚠ Technical + News CONFLICT - Consider AVOID even though technical shows '+dir+'.</span>' : '');
-        }
-      }).catch(()=>{ if(ncEl) ncEl.innerHTML='<b style="color:white">NEWS CONFIRMATION:</b> <span style="color:#fbbf24">NEWS DATA UNAVAILABLE</span>'; });
-    }
-  }catch(e){}
 }
 window.ghostShowAnalyzing = ghostShowAnalyzing;
 window.ghostRenderTerminal = ghostRenderTerminal;
 window.ghostEntryTime = ghostEntryTime;
 
-
-// === GHOST AI - BROKER SELECTOR LOGIC ===
-const GHOST_BROKERS = {
-  'Quotex': { logo: 'https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp', fallback: 'QUOTEX', sub: 'GHOST AI • Connected for signals' },
-  'Binolla': { logo: 'https://binollainfo.com/img/binolla-logo.png', fallback: 'BINOLLA', sub: 'GHOST AI • Connected for signals' },
-  'Pocket Option': { logo: 'https://pocketoption-pt.com/images/logo-pocketoption.png', fallback: 'POCKET OPTION', sub: 'GHOST AI • Connected for signals' },
-  'Olymptrade': { logo: 'https://www.binoption.net/wp-content/uploads/2019/01/olymp-trade-logo.png', fallback: 'OLYMP TRADE', sub: 'GHOST AI • Connected for signals' }
-};
-let GHOST_BROKER = 'Quotex';
-try{ const saved = localStorage.getItem('ghost_ai_broker'); if(saved && GHOST_BROKERS[saved]) GHOST_BROKER = saved; }catch(e){}
-function renderBroker(){
-  document.querySelectorAll('#gbName, .gb-name').forEach(el=>{ el.textContent = GHOST_BROKER; });
-  document.querySelectorAll('#gbSub, .gb-sub').forEach(el=>{ el.textContent = GHOST_BROKERS[GHOST_BROKER].sub; });
-  document.querySelectorAll('#gbLogoImg, .gb-logoImg').forEach(imgEl=>{ imgEl.src = GHOST_BROKERS[GHOST_BROKER].logo; imgEl.alt = GHOST_BROKER + ' logo'; imgEl.style.display='block'; });
-  document.querySelectorAll('#gbLogoFallback, .gb-logoFallback').forEach(fbEl=>{ fbEl.textContent = GHOST_BROKERS[GHOST_BROKER].fallback; fbEl.style.display='none'; });
-  // Update modal list selection
-  document.querySelectorAll('.gb-item').forEach(item=>{
-    const isSel = item.dataset.broker === GHOST_BROKER;
-    item.classList.toggle('selected', isSel);
-    const lbl = item.querySelector('[data-sel]'); if(lbl) lbl.style.display = isSel ? 'inline-flex' : 'none';
-  });
-  // Update any other broker name displays (signal tools)
-  document.querySelectorAll('[data-ghost-broker-name]').forEach(el=>{ el.textContent = GHOST_BROKER; });
-  // Update terminal cards broker label if exists
-  document.querySelectorAll('.gt-broker-tag').forEach(el=>{ el.textContent = 'BROKER: ' + GHOST_BROKER; });
-  window.GHOST_BROKER = GHOST_BROKER;
-  // Save
-  try{ localStorage.setItem('ghost_ai_broker', GHOST_BROKER); }catch(e){}
-}
-function openBrokerModal(){
-  const ov = document.getElementById('gbOverlay'); if(!ov) return;
-  renderBroker(); ov.classList.add('open'); document.body.style.overflow='hidden';
-}
-function closeBrokerModal(){
-  const ov = document.getElementById('gbOverlay'); if(!ov) return;
-  ov.classList.remove('open'); document.body.style.overflow='';
-}
-function selectBroker(name){
-  if(!GHOST_BROKERS[name]) return;
-  GHOST_BROKER = name; renderBroker();
-  // Haptic-like micro feedback: pulse card
-  const card = document.getElementById('ghostBrokerCard'); if(card){ card.style.transform='scale(.98)'; setTimeout(()=>card.style.transform='',140); }
-  // Auto-close after short glow so user sees ✓ SELECTED
-  setTimeout(closeBrokerModal, 420);
-}
-window.openBrokerModal = openBrokerModal; window.closeBrokerModal = closeBrokerModal; window.selectBroker = selectBroker; window.renderBroker = renderBroker;
-// Restore on load
-document.addEventListener('DOMContentLoaded', renderBroker);
-// Also render immediately if DOM already ready (script at end)
-if(document.readyState !== 'loading') renderBroker();
-// ESC to close
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(); });
-// Swipe down to close (mobile) - simple touch handling
-(function(){ let startY=0; const sheet=document.getElementById('gbOverlay'); if(!sheet) return; sheet.addEventListener('touchstart', e=>{ startY=e.touches[0].clientY; }, {passive:true}); sheet.addEventListener('touchend', e=>{ const dy=e.changedTouches[0].clientY - startY; if(dy>90) closeBrokerModal(); }, {passive:true}); })();
-
-
-// === GHOST FIX - News Signals (Real data only, no fake) + Management Extras ===
-async function loadNewsSignals(){
-  const box=document.getElementById('newsListBox'); const biasBox=document.getElementById('newsBiasBox');
-  if(!box) return;
-  try{
-    const me=await api('/api/auth/me');
-    const isFull = !!(me.user && (me.user.is_owner || me.user.is_admin || me.user.active_plan));
-    if(!isFull){
-      if(biasBox) biasBox.innerHTML='<div class="ghostNewsUnavailable"><div style="font-size:12px;font-weight:900;color:white">News Signals is locked</div><div style="font-size:10px;color:#c4b5fd;margin-top:4px">Your Free account can browse the app, but live news signals require an active plan. Owner/Admin sees full news.</div><button onclick="openUnlock()" style="margin-top:10px;padding:9px 14px;border:0;border-radius:10px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;font-size:11px">Unlock engine</button></div>';
-      if(box) box.innerHTML='<div style="font-size:10px;color:#8b8ba7;text-align:center;padding:12px">Unlock to see real economic events. No fake news is shown.</div>';
-      return;
-    }
-  }catch(e){}
-  try{
-    const d=await api('/api/news?days=7');
-    const events=d.events||[];
-    if(biasBox){
-      biasBox.innerHTML='<div class="ghostNewsCard"><div style="font-size:11px;font-weight:900;color:white">NEWS BIAS • SECONDARY CONFIRMATION</div><div style="font-size:10px;color:#c4b5fd;margin-top:4px;line-height:1.6">News alone never forces CALL/PUT. Combine with screenshot: <b style="color:#00ff88">Technical CALL + Bullish base = CONFIRMATION</b> • <b style="color:#ff3b5c">Technical CALL + Bearish base = CONFLICT - AVOID</b> • No news data = Technical only.</div><div style="display:flex;gap:6px;margin-top:8px"><select id="newsMarketSel" style="flex:1;padding:8px;border-radius:9px;background:#111827;color:white;border:1px solid #2a2f45;font-size:11px"><option>EUR/USD</option><option>GBP/USD</option><option>USD/JPY</option><option>AUD/USD</option><option>USD/CAD</option><option>EUR/GBP</option></select><button onclick="loadNewsBiasForMarket()" style="padding:8px 12px;border:0;border-radius:9px;background:#a78bfa;color:white;font-weight:900;font-size:11px">Check Bias</button></div><div id="newsBiasResult" style="margin-top:8px"></div></div>';
-    }
-    if(!events.length){
-      box.innerHTML='<div class="ghostNewsUnavailable"><b>NEWS DATA UNAVAILABLE</b><div style="font-size:10px;color:#c4b5fd;margin-top:4px">Real economic calendar unavailable. No fake events shown. Use technical analysis only.</div></div>';
-      return;
-    }
-    box.innerHTML = events.map(e=>`<div class="ghostNewsCard"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-size:12px;font-weight:900;color:white">${e.currency||''} • ${e.name||''}</div><div style="font-size:10px;color:#8b8ba7;margin-top:2px">${e.datetime_bd||''} • Impact: ${(e.impact||'high').toUpperCase()}</div></div><span style="font-size:8px;font-weight:900;padding:4px 8px;border-radius:20px;background:rgba(255,59,92,.15);color:#ff8fa0;height:fit-content">HIGH</span></div><div style="font-size:10px;color:#c4b5fd;margin-top:6px;line-height:1.6">Forecast: ${e.forecast??'—'} • Previous: ${e.previous??'—'} • Actual: ${e.actual??'—'}</div><div style="font-size:9px;color:#8b8ba7;margin-top:4px">Bias: ${e.actual!=null && e.forecast!=null ? 'See Check Bias for this pair - Actual vs Forecast compared' : 'Awaiting Actual - No bias yet'}</div></div>`).join('');
-  }catch(e){
-    if(box) box.innerHTML='<div class="ghostNewsUnavailable"><b>NEWS DATA UNAVAILABLE</b><div style="font-size:10px;color:#c4b5fd;margin-top:4px">Live calendar could not be loaded. No fake data shown.</div></div>';
-    if(biasBox) biasBox.innerHTML='';
-  }
-}
-async function loadNewsBiasForMarket(){
-  const sel=document.getElementById('newsMarketSel'); const res=document.getElementById('newsBiasResult'); if(!sel||!res) return;
-  const mkt=sel.value; res.innerHTML='<div style="font-size:10px;color:#8b8ba7">Checking news bias for '+mkt+'...</div>';
-  try{
-    const d=await api('/api/news/bias?market='+encodeURIComponent(mkt));
-    if(!d.available){
-      res.innerHTML='<div class="ghostNewsUnavailable"><b>NEWS DATA UNAVAILABLE</b><div style="font-size:10px;color:#c4b5fd;margin-top:4px">'+(d.message||'')+'</div></div>';
-      return;
-    }
-    res.innerHTML='<div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px"><div style="font-size:11px;font-weight:900;color:white">NEWS BIAS for '+mkt+': '+d.bias+'</div><div style="font-size:10px;color:#c4b5fd;margin-top:4px;line-height:1.6">'+d.detail+'</div><div style="font-size:9px;color:#8b8ba7;margin-top:6px">Combine: If your screenshot says CALL and news is Bullish base → CONFIRMATION. If opposite → CONFLICT — AVOID.</div></div>';
-  }catch(e){ res.innerHTML='<div class="ghostNewsUnavailable"><b>NEWS DATA UNAVAILABLE</b></div>'; }
-}
-async function loadManagementExtras(){
-  const box=document.getElementById('mgmtHistoryBox'); if(!box) return;
-  try{
-    const d=await api('/api/user/signals'); const list=d.signals||[];
-    if(!list.length){ box.innerHTML='No trade history yet.'; return; }
-    box.innerHTML=list.slice(0,5).map(s=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span>${s.market} • ${s.signal} • ${s.confidence}%</span><span>${s.outcome||'PENDING'}</span></div>`).join('');
-  }catch(e){ box.innerHTML='Trade history unavailable.'; }
-  const saved=localStorage.getItem('ghost_daily_limit'); if(saved){ const inp=document.getElementById('mgmtDailyLimit'); if(inp) inp.value=saved; const note=document.getElementById('mgmtLimitNote'); if(note) note.textContent='Saved daily limit: '+saved+' signals/day'; }
-}
-function saveMgmtLimits(){
-  const v=document.getElementById('mgmtDailyLimit')?.value; if(!v) return;
-  localStorage.setItem('ghost_daily_limit', v);
-  const note=document.getElementById('mgmtLimitNote'); if(note) note.textContent='Saved daily limit: '+v+' signals/day';
-}
-window.loadNewsSignals=loadNewsSignals; window.loadNewsBiasForMarket=loadNewsBiasForMarket; window.loadManagementExtras=loadManagementExtras; window.saveMgmtLimits=saveMgmtLimits;
-async function fetchNewsConfirmation(market, techDir){
-  try{
-    if(!market) return null;
-    const d=await api('/api/news/bias?market='+encodeURIComponent(market));
-    if(!d.available) return {status:'NEWS DATA UNAVAILABLE', detail: d.message||'', bias: 'NEUTRAL'};
-    const biasTxt=(d.bias||'').toUpperCase();
-    const tech = (techDir||'').toUpperCase();
-    let combined='NEUTRAL / AVOID';
-    if(tech==='CALL' && biasTxt.includes('CALL')) combined='CONFIRMATION';
-    else if(tech==='PUT' && biasTxt.includes('PUT')) combined='CONFIRMATION';
-    else if(tech==='CALL' && biasTxt.includes('PUT')) combined='CONFLICT — AVOID';
-    else if(tech==='PUT' && biasTxt.includes('CALL')) combined='CONFLICT — AVOID';
-    else if(biasTxt.includes('CONFLICT')) combined='CONFLICT — AVOID';
-    else if(biasTxt.includes('NEUTRAL')) combined='TECHNICAL ONLY - News neutral';
-    return {status: combined, bias: d.bias, detail: d.detail, events: d.events||[]};
-  }catch(e){ return {status:'NEWS DATA UNAVAILABLE', detail:'News calendar unavailable.', bias:'NEUTRAL'}; }
-}
-window.fetchNewsConfirmation=fetchNewsConfirmation;
-
 </script>
-
-<!-- GHOST AI - BROKER SELECTOR BOTTOM SHEET -->
-<div class="gb-overlay" id="gbOverlay" onclick="if(event.target===this) closeBrokerModal()">
-  <div class="gb-sheet" role="dialog" aria-modal="true" aria-label="Choose your broker">
-    <div class="gb-handle"></div>
-    <div class="gb-modalTitle">CHOOSE YOUR BROKER</div>
-    <div class="gb-modalSub">Select your preferred trading platform</div>
-    <div class="gb-list" id="gbList">
-      <div class="gb-item" data-broker="Quotex" onclick="selectBroker('Quotex')">
-        <div class="gb-item-logo"><img src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub">Fast execution • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-      <div class="gb-item" data-broker="Binolla" onclick="selectBroker('Binolla')">
-        <div class="gb-item-logo"><img src="https://binollainfo.com/img/binolla-logo.png" alt="Binolla official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOLLA</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Binolla</div><div class="gb-item-sub">Smart binary • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Binolla" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-      <div class="gb-item" data-broker="Pocket Option" onclick="selectBroker('Pocket Option')">
-        <div class="gb-item-logo"><img src="https://pocketoption-pt.com/images/logo-pocketoption.png" alt="Pocket Option official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">POCKET<br>OPTION</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub">Social trading • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-      <div class="gb-item" data-broker="Olymptrade" onclick="selectBroker('Olymptrade')">
-        <div class="gb-item-logo"><img src="https://www.binoption.net/wp-content/uploads/2019/01/olymp-trade-logo.png" alt="Olymptrade official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">OLYMP<br>TRADE</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Olymptrade</div><div class="gb-item-sub">Trusted platform • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Olymptrade" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-    </div>
-    <button class="gb-close" onclick="closeBrokerModal()">Done</button>
-    <div class="gb-note">Logos are official brand assets of their respective brokers.<br>GHOST AI is not affiliated with any broker. Trading involves risk.</div>
-  </div>
-</div>
-
 </body>
 </html>
