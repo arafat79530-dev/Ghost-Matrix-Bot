@@ -462,6 +462,8 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .lockedCard h3{font-size:16px;font-weight:900;color:white;margin-top:14px}
 .lockedCard p{font-size:11.5px;color:#9ca3af;line-height:1.5;margin-top:8px;padding:0 12px}
 .lockedCard .unlockBtn{max-width:220px;margin:16px auto 0}
+
+.newsPanelHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.newsPanelHead h3{font-size:14px;font-weight:900;color:white}.newsPanelSub{font-size:9px;color:#8b8ba7;margin-top:3px;line-height:1.4}.newsRefreshBtn{border:1px solid rgba(167,139,250,.35);background:rgba(124,58,237,.12);color:#e9d5ff;border-radius:10px;padding:7px 10px;font-size:9px;font-weight:800}.newsCalendar{display:flex;flex-direction:column;gap:8px}.newsEvent{background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:11px}.newsEventTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.newsEventName{font-size:11px;font-weight:900;color:white}.newsEventTime{font-size:9px;color:#c4b5fd}.newsEventMeta{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.newsChip{font-size:8px;color:#b9b5d0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:4px 6px}.newsChip.impact-high{color:#ffb4c0;border-color:rgba(255,59,92,.3)}.newsChip.impact-med{color:#fbd38d;border-color:rgba(251,191,36,.25)}.newsBias{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;font-size:9px}.newsBias b{font-size:10px}.broadcastCard{margin-top:12px;background:linear-gradient(180deg,#241a4e,#140b30);border:1px solid rgba(167,139,250,.2);border-radius:16px;padding:12px}.broadcastHead{display:flex;align-items:center;justify-content:space-between;gap:8px}.broadcastHead b{display:block;color:white;font-size:11px}.broadcastHead span{display:block;color:#8b8ba7;font-size:8px;margin-top:2px}.broadcastLive{display:flex!important;align-items:center;gap:5px;color:#a7f3d0!important;font-size:8px!important}.broadcastLive i{width:6px;height:6px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88}.broadcastGrid{display:grid;grid-template-columns:1.2fr .8fr auto;gap:7px;margin-top:10px}.broadcastGrid select,.broadcastGrid input{min-width:0;background:#0a0e1a;border:1px solid #2a2f45;border-radius:10px;color:white;padding:9px;font-size:9px;outline:none}.broadcastGrid button{border:0;border-radius:10px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;padding:9px 10px;font-size:9px}.broadcastResult{margin-top:8px;font-size:9px;color:#8b8ba7;line-height:1.4}.fundamentalFeed{display:flex;flex-direction:column;gap:8px}.futureResults{display:flex;flex-direction:column;gap:9px}.futureSignalCard{background:linear-gradient(180deg,#241a4e,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;position:relative;overflow:hidden}.futureSignalCard.call{border-color:rgba(0,255,136,.28)}.futureSignalCard.put{border-color:rgba(255,59,92,.28)}.futureSignalTop,.futureSignalMain,.futureSignalMeta{display:flex;align-items:center;justify-content:space-between;gap:8px}.futureSignalTop b{display:block;color:white;font-size:12px}.futureSignalTop span{display:block;color:#8b8ba7;font-size:8px;margin-top:3px}.futureSignalTime{color:#c4b5fd!important;font-size:9px!important}.futureSignalMain{margin-top:10px}.futureSignalMain strong{font-size:25px;color:#00ff88}.futureSignalCard.put .futureSignalMain strong{color:#ff3b5c}.futureSignalCard.wait .futureSignalMain strong{color:#fbbf24}.futureSignalMain div{text-align:right}.futureSignalMain div span{display:block;color:#8b8ba7;font-size:7px}.futureSignalMain div b{display:block;color:white;font-size:16px;margin-top:2px}.futureSignalMeta{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:8px;color:#8b8ba7}
 /* Management */
 .mgmtTabs{display:flex;gap:0;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:4px;margin-bottom:14px}
 .mgmtTabs .mtab{flex:1;padding:10px;border-radius:10px;font-size:11px;font-weight:800;text-align:center;color:#8b8ba7;cursor:pointer}
@@ -831,8 +833,19 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 </div>
 <div id="newsLockedView" class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span> Unlock engine</button></div>
 <div id="newsOwnerView" class="ownerOnly">
-<div id="newsEventsPanel" class="newsContentCard"><h3>Today's Events</h3><p>News engine is active for the owner. Economic events and signal bias will appear here when the news feed is available.</p></div>
-<div id="newsFundamentalPanel" class="newsContentCard" style="display:none"><h3>Fundamental</h3><p>Fundamental analysis is active for the owner. Switch between tabs above without any plan or unlock prompt.</p></div>
+<div id="newsEventsPanel" class="newsContentCard">
+  <div class="newsPanelHead"><div><h3>Economic Calendar</h3><div class="newsPanelSub">Scheduled events • Forecast • Actual • News bias</div></div><button class="newsRefreshBtn" onclick="loadNewsFeed()">↻ Refresh</button></div>
+  <div class="newsCalendar" id="newsCalendar"></div>
+  <div class="broadcastCard">
+    <div class="broadcastHead"><div><b>Actual Broadcast</b><span>Enter or update the released value</span></div><span class="broadcastLive"><i></i> LIVE FEED</span></div>
+    <div class="broadcastGrid"><select id="broadcastEvent"></select><input id="broadcastActual" inputmode="decimal" placeholder="Actual value"><button onclick="applyNewsBroadcast()">Apply</button></div>
+    <div id="broadcastResult" class="broadcastResult">Waiting for an actual release.</div>
+  </div>
+</div>
+<div id="newsFundamentalPanel" class="newsContentCard" style="display:none">
+  <div class="newsPanelHead"><div><h3>Fundamental</h3><div class="newsPanelSub">Event impact and directional bias</div></div></div>
+  <div id="fundamentalFeed" class="fundamentalFeed"></div>
+</div>
 </div>
 </div>
 
@@ -1087,7 +1100,7 @@ function showLog(){ $('log').classList.remove('hide')}
 async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch{} showLog()}
 window.logout=logout;
 $('lb').addEventListener('click',async()=>{const em=$('em').value.trim(), pw=$('pw').value, m=$('msg'); if(!em||!pw){m.style.display='block';m.textContent='Email/pass lagbe';return} m.style.display='block';m.textContent='...'; try{await api('/api/auth/login',{method:'POST',body:{email:em,password:pw}}); m.style.display='none'; showApp()}catch(e){m.textContent=e.message; m.style.display='block'}});
-initFeatureTabs();
+initFeatureTabs(); loadNewsFeed();
 (async()=>{try{const d=await api('/api/auth/me'); if(d.authenticated)showApp(); else showLog()}catch{showLog()}})();
 
 // === GHOST INJECTOR - COCO FLOW ===
@@ -1116,18 +1129,24 @@ window.backToInjList=backToInjList;
 function selectDur(m){ injDur=m; document.querySelectorAll('.durCard').forEach(c=>c.classList.toggle('sel', Number(c.dataset.dur)===m)); updateInjBtn(); }
 window.selectDur=selectDur;
 function updateInjBtn(){ const b=document.getElementById('injMainBtn'); if(injDur>0){ b.disabled=false; b.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Inject '+injDur+'-minute signal'; } else { b.disabled=true; b.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Select a duration to inject'; } }
-function injectSignal(){
+async function injectSignal(){
   if(!injDur) return;
-  const btn=document.getElementById('injMainBtn'); btn.disabled=true; btn.textContent='Injecting...';
-  const strat=GHOST_STRATS[injStratIdx];
-  setTimeout(()=>{
-    const dir=Math.random()>0.46?'CALL':'PUT'; const conf=62+Math.floor(Math.random()*24);
-    const res=document.getElementById('injResult');
-    res.innerHTML=`<div class="res ${dir}"><div class="rh"><div>${injPair} • ${injDur} MIN • ${strat.name}</div><div class="hi">${conf}%</div></div><div class="sig"><div class="dir ${dir}">${dir==='CALL'?'↗ CALL':'↘ PUT'}</div><div class="circ ${dir}" style="--p:${conf}"><div class="inn"><div class="nm">${conf}%</div><div class="lb">CONF</div></div></div><div class="tags"><span class="tg">${strat.name}</span><span class="tg">${injDur} MIN</span></div></div></div>`;
-    res.classList.add('on'); btn.disabled=false; btn.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Inject '+injDur+'-minute signal';
-    // Update wins/losses like live
-    try{ if(dir==='CALL'){ const w=document.getElementById('w'); if(w) w.textContent=Number(w.textContent||0)+1; } }catch{}
-  },900);
+  const btn=document.getElementById('injMainBtn'); const res=document.getElementById('injResult'); const strat=GHOST_STRATS[injStratIdx];
+  btn.disabled=true; btn.textContent='Generating...'; res.classList.add('on'); res.innerHTML='';
+  ghostShowAnalyzing(res);
+  try{
+    let d=null;
+    try{ d=await api('/api/inject-signal',{method:'POST',headers:{'X-Ghost-Owner':window._ghostIsOwner?'1':'0','X-Ghost-Role':window._ghostIsOwner?'owner':'user'},body:{market:injPair,duration:injDur,strategy:strat.name,market_type:injPair.includes('(OTC)')?'OTC':'REAL'}}); }catch{}
+    const dir=String(d?.direction||d?.signal||'').toUpperCase();
+    const conf=Number(d?.confidence||0);
+    if((dir==='CALL'||dir==='PUT') && conf>0){
+      ghostRenderTerminal(res,{market:injPair,market_type:injPair.includes('(OTC)')?'OTC':'REAL',image_quality:d.image_quality??'--',verified_accuracy:d.verified_accuracy},d.analysis||d,dir,conf,d.confluences||d.factors||[strat.name,'Momentum','Structure']);
+    }else{
+      res.innerHTML='<div class="newsContentCard"><h3>Injector feed unavailable</h3><p>Connect <b>/api/inject-signal</b> to return the signal direction and confidence. The injector now uses the same Live signal card renderer.</p></div>';
+    }
+  }finally{
+    btn.disabled=false; btn.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Inject '+injDur+'-minute signal';
+  }
 }
 window.injectSignal=injectSignal;
 function openStratPicker(){
@@ -1185,6 +1204,21 @@ window.openUnlock=openUnlock; window.closeUnlock=closeUnlock;
 function contactAdmin(){ window.open('https://t.me/ghostsupportbd','_blank'); }
 window.contactAdmin=contactAdmin;
 document.getElementById('unlockModal')?.addEventListener('click',e=>{ if(e.target.id==='unlockModal') closeUnlock(); });
+// News calendar + actual broadcast
+const NEWS_FALLBACK=[
+ {id:'nfp',time:'08:30',currency:'USD',impact:'HIGH',event:'Employment / Jobs Release',forecast:'—',actual:'—'},
+ {id:'cpi',time:'09:30',currency:'USD',impact:'HIGH',event:'Inflation / CPI',forecast:'—',actual:'—'},
+ {id:'retail',time:'10:00',currency:'USD',impact:'MEDIUM',event:'Retail Sales',forecast:'—',actual:'—'},
+ {id:'gdp',time:'11:00',currency:'EUR',impact:'HIGH',event:'GDP / Growth Release',forecast:'—',actual:'—'}
+];
+let ghostNewsEvents=[];
+function newsBias(ev){const a=parseFloat(ev.actual),f=parseFloat(ev.forecast);if(!Number.isFinite(a)||!Number.isFinite(f))return 'WAIT';if(Math.abs(a-f)<0.000001)return 'NEUTRAL';return a>f?'POSITIVE':'NEGATIVE';}
+function renderNewsCalendar(){const box=document.getElementById('newsCalendar'),sel=document.getElementById('broadcastEvent');if(!box)return;if(!ghostNewsEvents.length){box.innerHTML='<div class="newsContentCard"><p>No scheduled events returned by the news feed.</p></div>';return;}box.innerHTML=ghostNewsEvents.map(ev=>{const b=newsBias(ev);return `<div class="newsEvent"><div class="newsEventTop"><div class="newsEventName">${esc(ev.event||'Economic Event')} <span style="color:#8b8ba7">• ${esc(ev.currency||'')}</span></div><div class="newsEventTime">${esc(ev.time||'--:--')}</div></div><div class="newsEventMeta"><span class="newsChip impact-${String(ev.impact||'low').toLowerCase()}">${esc(ev.impact||'LOW')} IMPACT</span><span class="newsChip">Forecast: ${esc(String(ev.forecast??'—'))}</span><span class="newsChip">Actual: ${esc(String(ev.actual??'—'))}</span></div><div class="newsBias"><span>News bias</span><b>${b}</b></div></div>`}).join('');if(sel)sel.innerHTML=ghostNewsEvents.map((ev,i)=>`<option value="${i}">${esc(ev.time||'--:--')} • ${esc(ev.currency||'')} • ${esc(ev.event||'Event')}</option>`).join('');}
+function renderFundamentalFeed(){const box=document.getElementById('fundamentalFeed');if(!box)return;box.innerHTML=ghostNewsEvents.map(ev=>{const b=newsBias(ev);return `<div class="newsEvent"><div class="newsEventTop"><div class="newsEventName">${esc(ev.currency||'')} • ${esc(ev.event||'Event')}</div><div class="newsEventTime">${esc(ev.time||'--:--')}</div></div><div class="newsEventMeta"><span class="newsChip">Forecast ${esc(String(ev.forecast??'—'))}</span><span class="newsChip">Actual ${esc(String(ev.actual??'—'))}</span></div><div class="newsBias"><span>Directional read</span><b>${b}</b></div></div>`}).join('')||'<div class="newsContentCard"><p>Waiting for fundamental data.</p></div>';}
+async function loadNewsFeed(){const box=document.getElementById('newsCalendar');if(box)box.innerHTML='<div class="newsContentCard"><p>Loading economic calendar…</p></div>';try{const d=await api('/api/news/events');ghostNewsEvents=(d.events||d.news||[]).map((x,i)=>({...x,id:x.id||String(i)}));if(!ghostNewsEvents.length)throw new Error('empty');}catch{ghostNewsEvents=NEWS_FALLBACK.map(x=>({...x}));}renderNewsCalendar();renderFundamentalFeed();}
+function applyNewsBroadcast(){const sel=document.getElementById('broadcastEvent'),input=document.getElementById('broadcastActual'),out=document.getElementById('broadcastResult');const ev=ghostNewsEvents[Number(sel?.value||0)];if(!ev||!input)return;const v=input.value.trim();if(!v){if(out)out.textContent='Enter the Actual value first.';return;}ev.actual=v;const b=newsBias(ev);if(out)out.innerHTML=`${esc(ev.event)} • Actual <b>${esc(v)}</b> vs Forecast <b>${esc(String(ev.forecast??'—'))}</b> → <b>${b}</b>`;renderNewsCalendar();renderFundamentalFeed();}
+window.loadNewsFeed=loadNewsFeed;window.applyNewsBroadcast=applyNewsBroadcast;
+
 // Future Signals
 let futureSel=new Set(), futureCount=5;
 function renderFuture(){
@@ -1219,7 +1253,24 @@ function setSigCount(v){ futureCount=Number(v); document.getElementById('sigCoun
 function changeSigCount(d){ setSigCount(Math.min(20, Math.max(5, futureCount+d))); }
 window.setSigCount=setSigCount; window.changeSigCount=changeSigCount;
 function updateFutureGenTxt(){ const el=document.getElementById('futureGenTxt'); if(el) el.textContent=futureSel.size+' pair • '+futureCount+' signals'; }
-function generateFuture(){ if(window._ghostIsOwner){ const r=document.getElementById('futureResult'); if(r) r.innerHTML='<div class="newsContentCard"><h3>Owner Engine Active</h3><p>Future signal generation is enabled for the owner. The server signal-generation endpoint is required to return live results.</p></div>'; return; } openUnlock(); }
+async function generateFuture(){
+  if(!window._ghostIsOwner){ openUnlock(); return; }
+  const r=document.getElementById('futureResult'); if(!r) return;
+  if(!futureSel.size){ r.innerHTML='<div class="newsContentCard"><h3>Select a market first</h3><p>Choose at least one pair before generating future signals.</p></div>'; return; }
+  r.innerHTML='<div class="newsContentCard"><div class="newsPanelSub">Generating future signal data…</div></div>';
+  try{
+    const d=await api('/api/future-signals',{method:'POST',headers:{'X-Ghost-Owner':'1','X-Ghost-Role':'owner'},body:{markets:[...futureSel],count:futureCount,market_type:cur}});
+    const list=d.signals||d.results||[];
+    if(!list.length) throw new Error('Future signal feed returned no data.');
+    r.innerHTML='<div class="futureResults">'+list.map((x,i)=>{
+      const dir=String(x.direction||x.signal||'WAIT').toUpperCase(); const conf=Number(x.confidence||x.conf||0); const market=x.market||x.pair||[...futureSel][i%futureSel.size];
+      const entry=x.entry_time||x.entry||'--'; const expiry=x.expiry||x.duration||'1 MIN'; const type=x.market_type||cur.toUpperCase();
+      return `<div class="futureSignalCard ${dir==='CALL'?'call':dir==='PUT'?'put':'wait'}"><div class="futureSignalTop"><div><b>${esc(market)}</b><span>${esc(type)} • ${esc(String(expiry))}</span></div><span class="futureSignalTime">${esc(String(entry))}</span></div><div class="futureSignalMain"><strong>${esc(dir)}</strong><div><span>CONFIDENCE</span><b>${conf}%</b></div></div><div class="futureSignalMeta"><span>ENTRY ${esc(String(entry))}</span><span>${esc(String(x.strategy||'Ghost SmartFlow'))}</span></div></div>`;
+    }).join('')+'</div>';
+  }catch(e){
+    r.innerHTML='<div class="newsContentCard"><h3>Future signal feed unavailable</h3><p>Connect the server <b>/api/future-signals</b> endpoint to return live future signal data. The UI is ready and will render the returned signals automatically.</p></div>';
+  }
+}
 window.generateFuture=generateFuture;
 document.getElementById('futureSearch')?.addEventListener('input', renderFuture);
 // Management
@@ -1299,12 +1350,12 @@ function applyOwnerAccessUI(){
   const planVal=document.querySelector('.planTop .val'); if(planVal) planVal.textContent='OWNER';
   const reset=document.querySelector('.planReset'); if(reset) reset.innerHTML='<span style="color:#00ff88;font-weight:900">●</span> Unlimited engine access';
   const unlock=document.querySelector('.accessSheet .unlockBtn'); if(unlock) unlock.style.display='none';
-  const qsub=document.querySelector('.accessSheet .quotaSub'); if(qsub) qsub.textContent='All engine tools are active for the owner.';
+  const qsub=document.querySelector('.accessSheet .quotaSub'); if(qsub) qsub.textContent='Engine access';
   const engine=document.querySelector('.unlockEngineCard'); if(engine) engine.style.display='none';
   document.querySelectorAll('.quotaCard').forEach(card=>{
     card.removeAttribute('onclick'); card.style.cursor='default';
     const lock=card.querySelector('.lockWrap'); if(lock) lock.style.display='none';
-    const up=card.querySelector('.upTxt'); if(up){ up.textContent='ACTIVE'; up.classList.add('ownerActive'); }
+    const up=card.querySelector('.upTxt'); if(up){ up.textContent=''; up.classList.remove('ownerActive'); up.style.display='none'; }
   });
   const locked=document.getElementById('newsLockedView'); if(locked) locked.style.display='none';
   const ownerNews=document.getElementById('newsOwnerView'); if(ownerNews) ownerNews.style.display='block';
@@ -1354,7 +1405,7 @@ async function loadUserPlan(){
     const planVal=document.querySelector('.planTop .val'); if(planVal) planVal.textContent=window._ghostIsOwner?'OWNER':(plan?plan.plan_name:'Free');
     let expEl=document.getElementById('planExpiry'); if(!expEl){ const ucard=document.querySelector('.ucard'); if(ucard){ expEl=document.createElement('div'); expEl.id='planExpiry'; expEl.style.cssText='font-size:9px;color:#8b8ba7;margin-top:4px'; ucard.appendChild(expEl);} }
     if(expEl){
-      if(window._ghostIsOwner) expEl.textContent='PLAN: OWNER • STATUS: ACTIVE • UNLIMITED ENGINE ACCESS';
+      if(window._ghostIsOwner) expEl.textContent='';
       else if(plan && plan.expiry_date){ const dt=new Date(plan.expiry_date); expEl.textContent='PLAN: '+plan.plan_name+' • STATUS: '+(d.active_plan?'ACTIVE':'INACTIVE')+' • EXPIRES: '+dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase(); }
       else if(plan){ expEl.textContent='PLAN: '+plan.plan_name+' • STATUS: '+(d.active_plan?'ACTIVE':'FREE - NO SIGNAL'); }
     }
