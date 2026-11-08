@@ -9,8 +9,8 @@
 body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display:flex;justify-content:center;min-height:100vh}
 .app{width:100%;max-width:390px;height:100vh;background:linear-gradient(180deg,#1e1250 0%,#150c3d 40%,#0d0928 100%);display:flex;flex-direction:column;overflow:hidden;position:relative}
 @media(min-width:420px){.app{margin:12px 0;border-radius:28px;border:1px solid #221544;box-shadow:0 30px 80px rgba(0,0,0,.8);height:calc(100vh - 24px);max-height:860px}body{background:#02010a}}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.page{display:none;flex:1;overflow-y:auto;padding:12px 12px 84px} .page.on{display:block}
+.main{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.page{display:none;flex:1;min-height:0;overflow-y:auto;padding:12px 12px 104px;scroll-padding-bottom:104px;-webkit-overflow-scrolling:touch} .page.on{display:block}
 .page::-webkit-scrollbar{width:0}
 .hdr{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(124,58,237,.12);flex-shrink:0}
 .logo{font-weight:900;color:white;letter-spacing:.02em;font-size:13px;display:flex;align-items:center;gap:8px}
@@ -392,7 +392,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .quotaCard{background:white;border:1px solid #eef0ff;border-radius:14px;padding:12px;text-align:center;position:relative;overflow:hidden;cursor:pointer;transition:.2s;box-shadow:0 2px 10px rgba(0,0,0,.04)}
 .quotaCard:active{transform:scale(.97)}
 .quotaCard .qcIc{width:32px;height:32px;border-radius:9px;margin:0 auto;display:grid;place-items:center}
-.quotaCard .qcTi{font-size:11px;font-weight:800;color:#111827;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quotaCard .qcTi{font-size:10px;font-weight:800;color:#111827;margin-top:8px;min-height:26px;display:flex;align-items:center;justify-content:center;line-height:1.15;white-space:normal;overflow:visible;text-overflow:clip}
 .quotaCard .lockWrap{margin:10px auto 0;width:56px;height:56px;border-radius:50%;background:#f3f4f6;display:grid;place-items:center;position:relative}
 .quotaCard .lockWrap::after{content:'LOCKED';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);background:#111827;color:white;font-size:6px;font-weight:900;letter-spacing:.08em;padding:2px 5px;border-radius:8px;white-space:nowrap}
 .quotaCard .lockWrap svg{width:24px;height:24px;stroke:#9ca3af;stroke-width:1.8;fill:none}
@@ -590,7 +590,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .mItem{animation:futCardIn .4s ease both}
 
 /* COCO STYLE FLOATING PILL NAV - CSS + JS ANIMATED */
-.bnav{margin:0 12px 8px;border-radius:24px;background:linear-gradient(180deg,#241848 0%,#170e38 50%,#120a2e 100%);border:1px solid rgba(255,255,255,.10);box-shadow:0 -2px 20px rgba(0,0,0,.25),0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.14);display:grid;grid-template-columns:1fr 1fr 1.25fr 1fr 1fr;align-items:center;padding:6px 6px calc(6px + env(safe-area-inset-bottom));flex-shrink:0;position:relative;overflow:visible;height:58px;animation:navIn .5s ease-out}
+.bnav{margin:0 12px 8px;border-radius:24px;background:linear-gradient(180deg,#241848 0%,#170e38 50%,#120a2e 100%);border:1px solid rgba(255,255,255,.10);box-shadow:0 -2px 20px rgba(0,0,0,.25),0 14px 32px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.14);display:grid;grid-template-columns:1fr 1fr 1.25fr 1fr 1fr;align-items:center;padding:6px 6px calc(6px + env(safe-area-inset-bottom));flex-shrink:0;position:relative;overflow:visible;height:58px;z-index:20;animation:navIn .5s ease-out}
 .bnav::before{content:'';position:absolute;top:-1px;left:22%;right:22%;height:1.5px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);border-radius:2px;pointer-events:none}
 .bnav::after{content:'';position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:110px;height:22px;background:radial-gradient(ellipse at center,rgba(167,139,250,.35),transparent 70%);filter:blur(6px);pointer-events:none}
 @keyframes navIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -615,7 +615,14 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .login{position:absolute;inset:0;background:#0f0a2e;display:flex;align-items:center;justify-content:center;padding:20px;z-index:100}
 .lbBox{width:100%;max-width:340px;background:#111827;border:1px solid #1f2937;border-radius:24px;padding:26px 20px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .ip{width:100%;padding:13px 14px;background:#0a0e1a;border:1px solid #1f2937;border-radius:12px;color:white;margin:6px 0;font-size:13px}
-.hide{display:none!important}
+ .hide{display:none!important}
+.ownerOnly{display:none!important}
+body.owner .ownerOnly{display:block!important}
+body.owner .ownerOnly.ownerFlex{display:flex!important}
+.ownerActive{font-size:8px;letter-spacing:.12em;color:#00ff88;font-weight:900;margin-top:4px}
+.newsContentCard{background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px;margin-top:10px}
+.newsContentCard h3{font-size:15px;font-weight:900;color:white}
+.newsContentCard p{font-size:10.5px;color:#8b8ba7;line-height:1.5;margin-top:6px}
 </style>
 </head>
 <body>
@@ -667,10 +674,10 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="quotaSub">Generating results stays locked on the Free plan.</div>
 <div class="unlockEngineCard" onclick="openUnlock()"><div class="ueIc"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span></div><div class="ueTx"><div class="ueTi">Unlock your engine</div><div class="ueSu">Every tool below opens with a daily allowance.</div></div><div style="color:#c4b5fd">→</div></div>
 <div class="quotaGrid">
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#ede9fe;color:#7c3aed"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg></span></div><div class="qcTi">OTC Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dcfce7;color:#16a34a"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-6 4 3 6-8"/><path d="M14 6h4v4"/></svg></span></div><div class="qcTi">Real Char...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#fef3c7;color:#d97706"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 20h8 M10 21h4 M12 3v2"/></svg></span></div><div class="qcTi">Future Si...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
-<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dbeafe;color:#2563eb"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M8.5 8.5a5 5 0 0 1 7 0 M6 6a9 9 0 0 1 12 0 M3.5 3.5a13 13 0 0 1 17 0"/></svg></span></div><div class="qcTi">Live Sign...</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#ede9fe;color:#7c3aed"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg></span></div><div class="qcTi">OTC Chart</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dcfce7;color:#16a34a"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l5-6 4 3 6-8"/><path d="M14 6h4v4"/></svg></span></div><div class="qcTi">Real Chart</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#fef3c7;color:#d97706"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 20h8 M10 21h4 M12 3v2"/></svg></span></div><div class="qcTi">Future Signals</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
+<div class="quotaCard" onclick="openUnlock()"><div class="qcIc" style="background:#dbeafe;color:#2563eb"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M8.5 8.5a5 5 0 0 1 7 0 M6 6a9 9 0 0 1 12 0 M3.5 3.5a13 13 0 0 1 17 0"/></svg></span></div><div class="qcTi">Live Signals</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
 <div class="quotaCard full" onclick="openUnlock()"><div class="qcIc" style="background:#f3e8ff;color:#9333ea"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg></span></div><div class="qcTi">Ghost Injector</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
 </div>
 </div>
@@ -678,7 +685,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 
 <div class="page" id="pg-live">
 <div class="ghostBrokerCard" id="ghostBrokerCard" onclick="openBrokerModal()" role="button" aria-label="Choose your broker">
-  <div class="gb-logo" id="gbLogo"><img id="gbLogoImg" class="gb-logoImg" src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex logo" onerror="this.style.display='none';document.getElementById('gbLogoFallback').style.display='grid'"/><span id="gbLogoFallback" class="gb-logoFallback" class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
+  <div class="gb-logo" id="gbLogo"><img id="gbLogoImg" class="gb-logoImg" src="https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480" alt="Quotex logo" onerror="this.style.display='none';document.getElementById('gbLogoFallback').style.display='grid'"/><span id="gbLogoFallback" class="gb-logoFallback" class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
   <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" id="gbName">Quotex</div><div class="gb-sub" id="gbSub">GHOST AI • Connected for signals</div></div>
   <div class="gb-change">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
 </div>
@@ -732,7 +739,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div id="fileInfo" style="font-size:9px;color:#a78bfa;margin-top:6px;display:none"></div>
 </div>
 <div class="ghostBrokerCard" onclick="openBrokerModal()" role="button" aria-label="Choose your broker" style="padding:10px 12px;margin-top:10px">
-  <div class="gb-logo" style="width:44px;height:44px;border-radius:12px"><img class="gb-logoImg" src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logoFallback gb-logo-fallback" style="display:none">QUOTEX</span></div>
+  <div class="gb-logo" style="width:44px;height:44px;border-radius:12px"><img class="gb-logoImg" src="https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480" alt="Quotex logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logoFallback gb-logo-fallback" style="display:none">QUOTEX</span></div>
   <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" style="font-size:17px">Quotex</div></div>
   <div class="gb-change">Change</div>
 </div>
@@ -818,12 +825,20 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="page" id="pg-news">
-<div class="newsTabs"><div class="ntab on"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span> Today's Events</div><div class="ntab"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg></span> Fundamental</div></div>
-<div class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span> Unlock engine</button></div>
+<div class="newsTabs">
+<div class="ntab on" data-news-tab="events"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span> Today's Events</div>
+<div class="ntab" data-news-tab="fundamental"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10 M10 20V4 M16 20v-8 M22 20H2"/></svg></span> Fundamental</div>
+</div>
+<div id="newsLockedView" class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span> Unlock engine</button></div>
+<div id="newsOwnerView" class="ownerOnly">
+<div id="newsEventsPanel" class="newsContentCard"><h3>Today's Events</h3><p>News engine is active for the owner. Economic events and signal bias will appear here when the news feed is available.</p></div>
+<div id="newsFundamentalPanel" class="newsContentCard" style="display:none"><h3>Fundamental</h3><p>Fundamental analysis is active for the owner. Switch between tabs above without any plan or unlock prompt.</p></div>
+</div>
 </div>
 
 <div class="page" id="pg-management">
-<div class="mgmtTabs"><div class="mtab on">Management</div><div class="mtab">Sheet</div></div>
+<div class="mgmtTabs"><div class="mtab on" data-mgmt-tab="management">Management</div><div class="mtab" data-mgmt-tab="sheet">Sheet</div></div>
+<div id="mgmtFormPanel">
 <div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;margin-bottom:12px"><div style="display:flex;gap:10px;align-items:center"><div style="width:36px;height:36px;border-radius:10px;background:rgba(167,139,250,.15);display:grid;place-items:center;color:#c4b5fd"><span class="cssDot"></span></div><div><div style="font-size:8px;letter-spacing:.16em;color:#8b8ba7;font-weight:800">SESSION PLANNER</div><div style="font-size:16px;font-weight:900;color:white;margin-top:2px">Plan your session</div></div></div></div>
 <div class="planBox" id="capBox"><div class="pbLabel"><span class="pbIc" style="background:#1e3a8a;color:#93c5fd"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 6H9a3 3 0 0 0 0 6h6a3 3 0 0 1 0 6H7"/></svg></span></span> INITIAL CAPITAL</div><input id="mgmtCap" type="number" placeholder="$ 0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">$</span><div class="err"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r="0.8" fill="currentColor"/></svg></span> Initial capital must be greater than 10 to generate a sheet.</div></div>
 <div class="planBox"><div class="pbLabel"><span class="pbIc" style="background:#14532d;color:#86efac"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span></span> AVERAGE PAYOUT</div><input id="mgmtPayout" type="number" placeholder="0" inputmode="numeric" oninput="validateMgmt()"/><span class="unit">%</span></div>
@@ -834,13 +849,17 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 <div class="genHint" id="genHint">Fill in all fields to generate your trade sheet.</div>
 <div class="sheetResult" id="sheetResult"></div>
 </div>
+<div id="mgmtSheetPanel" style="display:none">
+<div class="newsContentCard"><h3>Trade Sheet</h3><p id="sheetEmptyText">Fill the Management fields and generate a sheet. Your generated sheet will automatically open in this tab.</p><div id="sheetTabResult"></div></div>
+</div>
+</div>
 
 <div class="page" id="pg-more">
 <div style="font-size:8px;letter-spacing:.18em;color:#8b8ba7;font-weight:800;margin:6px 2px 10px">SIGNAL TOOLS &nbsp; 3</div>
 <div class="mItem" onclick="nav('future')"><div class="mIc live1"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 20h8 M10 21h4 M12 3v2"/></svg></span></span></div><div class="mTx"><div class="mTi">Future Signals</div><div class="mSu">Batch-generate upcoming entries</div></div><div style="color:#6b7280">01 ›</div></div>
 <div class="mItem" onclick="nav('news')"><div class="mIc live2"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h5"/></svg></span></span></div><div class="mTx"><div class="mTi">News Signals</div><div class="mSu">Economic events and bias calls</div></div><div style="color:#6b7280">02 ›</div></div>
 <div class="mItem" onclick="nav('management')"><div class="mIc live3"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span></span></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Capital plan and MTG tracker</div></div><div style="color:#6b7280">03 ›</div></div>
-<div class="adminBox">
+<div class="adminBox ownerOnly">
 <div style="font-size:10px;font-weight:900;color:white;display:flex;align-items:center;gap:8px"><div class="mIc live2" style="width:28px;height:28px;border-radius:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3" fill="white"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none"/></svg></div> Add User</div>
 <div style="display:flex;gap:6px;margin-top:6px">
 <input id="newE" placeholder="email"/>
@@ -849,22 +868,18 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 </div>
 
 <div class="mItem" onclick="nav('live')"><div class="mIc live1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="white"/><path d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.5 4.5l2.2 2.2 M17.3 17.3l2.2 2.2 M17.3 6.7l2.2-2.2 M4.5 19.5l2.2-2.2"/></svg></div><div class="mTx"><div class="mTi">Live</div><div class="mSu">OTC • Real</div></div><div style="color:#6b7280">›</div></div>
-<div class="mItem" onclick="showBox('news')"><div class="mIc live2"><svg viewBox="0 0 24 24"><path d="M4 4h12v16H4z" fill="white" opacity=".9"/><path d="M16 8h4v12H8" fill="none"/><path d="M7 8h6 M7 12h6 M7 16h4" stroke="#4f46e5" stroke-width="1.2"/></svg></div><div class="mTx"><div class="mTi">News</div><div class="mSu">Economic</div></div><div style="color:#6b7280">›</div></div>
-<div class="mItem" onclick="showBox('mgmt')"><div class="mIc live3"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1" fill="white"/><rect x="10" y="8" width="4" height="13" rx="1" fill="white" opacity=".7"/><rect x="17" y="4" width="4" height="17" rx="1" fill="white" opacity=".4"/></svg></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Plan</div></div><div style="color:#6b7280">›</div></div>
 <div class="mItem" onclick="logout()"><div class="mIc premium"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none"/><polyline points="16,17 21,12 16,7" fill="none"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div><div class="mTx"><div class="mTi">Logout</div></div><div style="color:#6b7280">›</div></div>
 
-<div id="newsBox" style="display:none;margin-top:10px;background:rgba(28,20,75,.9);border:1px solid rgba(124,58,237,.15);border-radius:14px;padding:16px;text-align:center"><div style="font-size:12px;font-weight:800;color:white">Locked</div></div>
-<div id="mgmtBox" style="display:none;margin-top:10px;background:rgba(28,20,75,.9);border:1px solid rgba(124,58,237,.15);border-radius:14px;padding:14px"><div style="font-size:10px;font-weight:800;color:white">Plan</div></div>
 
 
-<div class="adminCard" id="adminPanel" style="display:none">
+<div class="adminCard ownerOnly" id="adminPanel" style="display:none">
 <div style="font-size:12px;font-weight:900;color:white;margin-bottom:8px">GHOST AI Admin Panel</div>
 <div id="adminSummary" style="margin-bottom:10px"></div>
 <div class="adminTabs"><button data-tab="users" class="on" onclick="adminLoadTab('users')">USERS</button><button data-tab="plans" onclick="adminLoadTab('plans')">PLANS</button><button data-tab="signals" onclick="adminLoadTab('signals')">SIGNALS</button></div>
 <div id="adminBody"></div>
 </div>
 
-<div style="margin-top:10px;background:rgba(28,20,75,.6);border:1px solid rgba(124,58,237,.14);border-radius:12px;padding:10px">
+<div class="ownerOnly" style="margin-top:10px;background:rgba(28,20,75,.6);border:1px solid rgba(124,58,237,.14);border-radius:12px;padding:10px">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:10px;font-weight:900;color:white">Users</div><button onclick="lu()" style="background:rgba(255,255,255,.08);border:0;color:#c4b5fd;padding:3px 8px;border-radius:12px;font-size:8px">Refresh</button></div>
 <div id="ul" style="font-size:9px;color:#6b7280;max-height:260px;overflow-y:auto">Loading...</div>
 </div>
@@ -1018,9 +1033,9 @@ $('an').addEventListener('click',async()=>{
   const fd=new FormData(); fd.append('image',file,file.name||'chart.png'); fd.append('broker', window.GHOST_BROKER || localStorage.getItem('ghost_ai_broker') || 'Quotex'); fd.append('market_type', window.GHOST_BROKER || 'Quotex');
   ghostShowAnalyzing(res);
   await new Promise(r=>setTimeout(r,1100));
-  const d=await api('/api/analyze-image',{method:'POST',body:fd});
+  const d=await api('/api/analyze-image',{method:'POST',headers:{'X-Ghost-Owner':window._ghostIsOwner?'1':'0','X-Ghost-Role':window._ghostIsOwner?'owner':'user'},body:fd});
   await new Promise(r=>setTimeout(r,350));
-  if(d.locked){ showSignalLocked(); throw new Error('SIGNAL ACCESS LOCKED - Your account does not have an active signal plan.'); }
+  if(d.locked){ if(window._ghostIsOwner){ throw new Error('OWNER ACCESS IS ACTIVE, BUT THE SIGNAL API IS STILL RETURNING LOCKED. The backend must allow owner/admin accounts.'); } showSignalLocked(); throw new Error('SIGNAL ACCESS LOCKED - Your account does not have an active signal plan.'); }
   if(d.quality_too_low){ res.innerHTML=`<div class="ghostTerm nosignal newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live" style="color:#fbbf24"><span class="gt-dot" style="background:#fbbf24;box-shadow:0 0 10px #fbbf24"></span> QUALITY CHECK</div></div><div style="text-align:center;margin-top:14px"><div class="gt-nsIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px;height:28px"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r=".8" fill="currentColor"/></svg></div><div class="gt-market" style="font-size:22px;color:#fbbf24">SCREENSHOT QUALITY TOO LOW</div></div><div class="gt-analysis" style="text-align:center">Please upload a clearer chart screenshot with visible candles, timeframe and market information.<br><span style="color:#8b8ba7">Image Quality: ${d.image_quality||0}/100 • Issues: ${(d.issues||[]).join(', ')}</span></div><button onclick="document.getElementById('shotInp')?.click();document.querySelector('input[type=file]')?.click()" style="width:100%;margin-top:12px;padding:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;font-weight:900;cursor:pointer">UPLOAD CLEARER SCREENSHOT</button></div>`; throw new Error('Quality too low'); }
   const a=d.analysis; let dir=(a.direction||'NO TRADE').toUpperCase(); if(dir==='NO TRADE') dir='NO SIGNAL'; const conf=Number(a.confidence||0); const confl=a.confluences||[];
   if(dir==='NO SIGNAL' || dir==='NO TRADE'){
@@ -1030,6 +1045,27 @@ $('an').addEventListener('click',async()=>{
   ghostRenderTerminal(res, d, a, dir, conf, confl); await loadSignalHistory();
  }catch(e){$('shotRes').innerHTML=`<div style="color:#ff3b5c;font-size:10px;padding:10px;background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.15);border-radius:10px">${esc(e.message)}</div>`}finally{btn.disabled=false;btn.textContent='Analyze'; setTimeout(()=>flow.classList.remove('on'),7000)}
 });
+function initFeatureTabs(){
+  document.querySelectorAll('.newsTabs .ntab').forEach(tab=>tab.addEventListener('click',()=>{
+    document.querySelectorAll('.newsTabs .ntab').forEach(t=>t.classList.remove('on')); tab.classList.add('on');
+    const mode=tab.dataset.newsTab;
+    const ev=document.getElementById('newsEventsPanel'), fu=document.getElementById('newsFundamentalPanel');
+    if(ev) ev.style.display=mode==='events'?'block':'none'; if(fu) fu.style.display=mode==='fundamental'?'block':'none';
+  }));
+  document.querySelectorAll('.mgmtTabs .mtab').forEach(tab=>tab.addEventListener('click',()=>{
+    document.querySelectorAll('.mgmtTabs .mtab').forEach(t=>t.classList.remove('on')); tab.classList.add('on');
+    const mode=tab.dataset.mgmtTab;
+    const form=document.getElementById('mgmtFormPanel'), sheet=document.getElementById('mgmtSheetPanel');
+    if(form) form.style.display=mode==='management'?'block':'none'; if(sheet) sheet.style.display=mode==='sheet'?'block':'none';
+  }));
+}
+function openManagementSheetTab(){
+  document.querySelectorAll('.mgmtTabs .mtab').forEach(t=>t.classList.toggle('on',t.dataset.mgmtTab==='sheet'));
+  const form=document.getElementById('mgmtFormPanel'), sheet=document.getElementById('mgmtSheetPanel');
+  if(form) form.style.display='none'; if(sheet) sheet.style.display='block';
+}
+window.openManagementSheetTab=openManagementSheetTab;
+
 function showBox(id){['newsBox','mgmtBox'].forEach(b=>{const el=$(b); if(b===id)el.style.display=el.style.display==='none'?'block':'none'; else el.style.display='none'});}
 window.showBox=showBox;
 async function ld(){try{const d=await api('/api/stats'); $('w').textContent=d.wins||0; $('l').textContent=d.losses||0; const me=await api('/api/auth/me'); if(me.user&&$('uMail'))$('uMail').textContent=me.user.email; if(me.user&&$('uName'))$('uName').textContent=me.user.email.split('@')[0]}catch{}}
@@ -1046,11 +1082,12 @@ async function toggleAccess(id,en){if(!confirm(en?'Enable?':'Suspend?'))return; 
 async function deleteUser(id,email){if(!confirm('Delete '+email+'?'))return; try{await api('/api/auth/admin/users/'+id,{method:'DELETE'}); lu()}catch(e){alert(e.message)}}
 async function resendEmail(id){try{await api('/api/auth/admin/users/'+id+'/resend',{method:'POST'}); alert('Resent')}catch(e){alert(e.message)}}
 window.toggleAccess=toggleAccess; window.deleteUser=deleteUser; window.resendEmail=resendEmail; window.createU=createU;
-function showApp(){ $('log').classList.add('hide'); ld(); nav('dashboard'); setTimeout(async()=>{ try{ const me=await api('/api/auth/me'); if(me.user && me.user.is_admin){ const ap=document.getElementById('adminPanel'); if(ap){ ap.style.display='block'; loadAdminSummary(); adminLoadTab('users'); } } }catch{} },500); }
+function showApp(){ $('log').classList.add('hide'); ld(); loadUserPlan(); nav('dashboard'); setTimeout(async()=>{ try{ const me=await api('/api/auth/me'); window._ghostIsOwner=ghostIsOwnerUser(me.user); applyOwnerAccessUI(); if(me.user && me.user.is_admin){ const ap=document.getElementById('adminPanel'); if(ap){ ap.style.display='block'; loadAdminSummary(); adminLoadTab('users'); } } }catch{} },300); }
 function showLog(){ $('log').classList.remove('hide')}
 async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch{} showLog()}
 window.logout=logout;
 $('lb').addEventListener('click',async()=>{const em=$('em').value.trim(), pw=$('pw').value, m=$('msg'); if(!em||!pw){m.style.display='block';m.textContent='Email/pass lagbe';return} m.style.display='block';m.textContent='...'; try{await api('/api/auth/login',{method:'POST',body:{email:em,password:pw}}); m.style.display='none'; showApp()}catch(e){m.textContent=e.message; m.style.display='block'}});
+initFeatureTabs();
 (async()=>{try{const d=await api('/api/auth/me'); if(d.authenticated)showApp(); else showLog()}catch{showLog()}})();
 
 // === GHOST INJECTOR - COCO FLOW ===
@@ -1142,7 +1179,7 @@ function selectStrat(i){
 
 
 // === GHOST - ACCESS TIER + UNLOCK + FUTURE + NEWS + MANAGEMENT ===
-function openUnlock(){ document.getElementById('unlockModal').classList.add('on'); }
+function openUnlock(){ if(window._ghostIsOwner) return; document.getElementById('unlockModal').classList.add('on'); }
 function closeUnlock(){ document.getElementById('unlockModal').classList.remove('on'); }
 window.openUnlock=openUnlock; window.closeUnlock=closeUnlock;
 function contactAdmin(){ window.open('https://t.me/ghostsupportbd','_blank'); }
@@ -1182,7 +1219,7 @@ function setSigCount(v){ futureCount=Number(v); document.getElementById('sigCoun
 function changeSigCount(d){ setSigCount(Math.min(20, Math.max(5, futureCount+d))); }
 window.setSigCount=setSigCount; window.changeSigCount=changeSigCount;
 function updateFutureGenTxt(){ const el=document.getElementById('futureGenTxt'); if(el) el.textContent=futureSel.size+' pair • '+futureCount+' signals'; }
-function generateFuture(){ openUnlock(); }
+function generateFuture(){ if(window._ghostIsOwner){ const r=document.getElementById('futureResult'); if(r) r.innerHTML='<div class="newsContentCard"><h3>Owner Engine Active</h3><p>Future signal generation is enabled for the owner. The server signal-generation endpoint is required to return live results.</p></div>'; return; } openUnlock(); }
 window.generateFuture=generateFuture;
 document.getElementById('futureSearch')?.addEventListener('input', renderFuture);
 // Management
@@ -1209,7 +1246,11 @@ function generateSheet(){
   const stake=cap*risk/100; const targetAmt=cap*prof/100; const trades=Math.ceil(targetAmt/(stake*pay/100));
   const res=document.getElementById('sheetResult');
   res.innerHTML=`<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(167,139,250,.3);border-radius:14px;padding:14px"><div style="font-size:12px;font-weight:900;color:white">Your Trade Sheet</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:11px"><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">STAKE / TRADE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${stake.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">TARGET PROFIT</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${targetAmt.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">EST. TRADES</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${trades}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">MARTINGALE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${mtgOn?'YES':'NO'}</div></div></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px">Capital $${cap} • Payout ${pay}% • Risk ${risk}% • MTG ${mtgOn?'ON - stake doubles after loss':'OFF'}</div></div>`;
-  res.classList.add('on'); res.scrollIntoView({behavior:'smooth',block:'center'});
+  res.classList.add('on');
+  const tabResult=document.getElementById('sheetTabResult'); if(tabResult) tabResult.innerHTML=res.innerHTML;
+  const empty=document.getElementById('sheetEmptyText'); if(empty) empty.style.display='none';
+  openManagementSheetTab();
+  res.scrollIntoView({behavior:'smooth',block:'center'});
 }
 window.generateSheet=generateSheet;
 // Init future on nav
@@ -1244,6 +1285,33 @@ document.getElementById('plansModal')?.addEventListener('click',e=>{ if(e.target
 
 
 // === GHOST AI - AUTH + PLANS + SIGNAL LOCK + ADMIN ===
+// === OWNER ACCESS / UI STATE ===
+function ghostIsOwnerUser(user){
+  if(!user) return false;
+  const role=String(user.role||'').toLowerCase();
+  return !!(user.is_admin || user.is_owner || role==='owner' || role==='admin' || role==='administrator');
+}
+function applyOwnerAccessUI(){
+  const owner=!!window._ghostIsOwner;
+  document.body.classList.toggle('owner', owner);
+  if(!owner) return;
+  const badge=document.querySelector('.free'); if(badge){ badge.textContent='OWNER'; badge.style.background='#00ff88'; badge.style.color='#000'; }
+  const planVal=document.querySelector('.planTop .val'); if(planVal) planVal.textContent='OWNER';
+  const reset=document.querySelector('.planReset'); if(reset) reset.innerHTML='<span style="color:#00ff88;font-weight:900">●</span> Unlimited engine access';
+  const unlock=document.querySelector('.accessSheet .unlockBtn'); if(unlock) unlock.style.display='none';
+  const qsub=document.querySelector('.accessSheet .quotaSub'); if(qsub) qsub.textContent='All engine tools are active for the owner.';
+  const engine=document.querySelector('.unlockEngineCard'); if(engine) engine.style.display='none';
+  document.querySelectorAll('.quotaCard').forEach(card=>{
+    card.removeAttribute('onclick'); card.style.cursor='default';
+    const lock=card.querySelector('.lockWrap'); if(lock) lock.style.display='none';
+    const up=card.querySelector('.upTxt'); if(up){ up.textContent='ACTIVE'; up.classList.add('ownerActive'); }
+  });
+  const locked=document.getElementById('newsLockedView'); if(locked) locked.style.display='none';
+  const ownerNews=document.getElementById('newsOwnerView'); if(ownerNews) ownerNews.style.display='block';
+}
+window.ghostIsOwnerUser=ghostIsOwnerUser;
+window.applyOwnerAccessUI=applyOwnerAccessUI;
+
 const AFFILIATE_URL = "https://broker-qx.pro/sign-up/?lid=2384783";
 const GHOST_AI_NAME = "GHOST AI";
 function switchAuthTab(tab){
@@ -1278,19 +1346,21 @@ window.doRegister=doRegister;
 // Override login button to handle new flow - keep old listener but add register support
 async function loadUserPlan(){
   try{
+    let me=null; try{ const md=await api('/api/auth/me'); me=md.user||null; }catch{}
+    window._ghostIsOwner=ghostIsOwnerUser(me);
     const d=await api('/api/user/plan');
-    const plan=d.plan; const el=document.querySelector('.free'); if(el && plan){ el.textContent=plan.plan_name; el.style.background= d.active_plan?'#00ff88':'#2a2f45'; el.style.color= d.active_plan?'#000':'#c4b5fd'; }
-    // Update Access Tier plan card
-    const planVal=document.querySelector('.planTop .val'); if(planVal && plan){ planVal.textContent=plan.plan_name; }
-    // Show plan expiry in dashboard
+    const plan=d.plan; const effectiveActive=window._ghostIsOwner ? true : !!d.active_plan;
+    const el=document.querySelector('.free'); if(el){ el.textContent=window._ghostIsOwner?'OWNER':(plan?plan.plan_name:'FREE'); el.style.background=effectiveActive?'#00ff88':'#2a2f45'; el.style.color=effectiveActive?'#000':'#c4b5fd'; }
+    const planVal=document.querySelector('.planTop .val'); if(planVal) planVal.textContent=window._ghostIsOwner?'OWNER':(plan?plan.plan_name:'Free');
     let expEl=document.getElementById('planExpiry'); if(!expEl){ const ucard=document.querySelector('.ucard'); if(ucard){ expEl=document.createElement('div'); expEl.id='planExpiry'; expEl.style.cssText='font-size:9px;color:#8b8ba7;margin-top:4px'; ucard.appendChild(expEl);} }
     if(expEl){
-      if(plan && plan.expiry_date){ const dt=new Date(plan.expiry_date); expEl.textContent='PLAN: '+plan.plan_name+' • STATUS: '+(d.active_plan?'ACTIVE':'INACTIVE')+' • EXPIRES: '+dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase(); }
+      if(window._ghostIsOwner) expEl.textContent='PLAN: OWNER • STATUS: ACTIVE • UNLIMITED ENGINE ACCESS';
+      else if(plan && plan.expiry_date){ const dt=new Date(plan.expiry_date); expEl.textContent='PLAN: '+plan.plan_name+' • STATUS: '+(d.active_plan?'ACTIVE':'INACTIVE')+' • EXPIRES: '+dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase(); }
       else if(plan){ expEl.textContent='PLAN: '+plan.plan_name+' • STATUS: '+(d.active_plan?'ACTIVE':'FREE - NO SIGNAL'); }
     }
-    // If no active plan, show locked banner in analyzer/live pages
-    window._ghostHasPlan = d.active_plan;
-    return d;
+    window._ghostHasPlan=effectiveActive;
+    applyOwnerAccessUI();
+    return {...d, active_plan:effectiveActive};
   }catch(e){ return null; }
 }
 window.loadUserPlan=loadUserPlan;
@@ -1416,10 +1486,10 @@ window.ghostEntryTime = ghostEntryTime;
 
 // === GHOST AI - BROKER SELECTOR LOGIC ===
 const GHOST_BROKERS = {
-  'Quotex': { logo: 'https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp', fallback: 'QUOTEX', sub: 'GHOST AI • Connected for signals' },
-  'Binolla': { logo: 'https://binollainfo.com/img/binolla-logo.png', fallback: 'BINOLLA', sub: 'GHOST AI • Connected for signals' },
-  'Pocket Option': { logo: 'https://pocketoption-pt.com/images/logo-pocketoption.png', fallback: 'POCKET OPTION', sub: 'GHOST AI • Connected for signals' },
-  'Olymptrade': { logo: 'https://www.binoption.net/wp-content/uploads/2019/01/olymp-trade-logo.png', fallback: 'OLYMP TRADE', sub: 'GHOST AI • Connected for signals' }
+  'Quotex': { logo: 'https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480', fallback: 'QUOTEX', sub: '' },
+  'Binolla': { logo: 'https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480', fallback: 'BINOLLA', sub: '' },
+  'Pocket Option': { logo: 'https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480', fallback: 'POCKET OPTION', sub: '' },
+  'Olymptrade': { logo: 'https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480', fallback: 'OLYMP TRADE', sub: '' }
 };
 let GHOST_BROKER = 'Quotex';
 try{ const saved = localStorage.getItem('ghost_ai_broker'); if(saved && GHOST_BROKERS[saved]) GHOST_BROKER = saved; }catch(e){}
@@ -1478,23 +1548,23 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
     <div class="gb-modalSub">Select your preferred trading platform</div>
     <div class="gb-list" id="gbList">
       <div class="gb-item" data-broker="Quotex" onclick="selectBroker('Quotex')">
-        <div class="gb-item-logo"><img src="https://horizons-cdn.hostinger.com/a472cd5a-3787-46ae-8fab-93a32ad656f8/76cc4daab2b27badc26dac10c196307a.webp" alt="Quotex official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub">Fast execution • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480" alt="Quotex official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
       <div class="gb-item" data-broker="Binolla" onclick="selectBroker('Binolla')">
-        <div class="gb-item-logo"><img src="https://binollainfo.com/img/binolla-logo.png" alt="Binolla official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOLLA</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Binolla</div><div class="gb-item-sub">Smart binary • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Binolla" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480" alt="Binolla official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOLLA</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Binolla</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Binolla" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
       <div class="gb-item" data-broker="Pocket Option" onclick="selectBroker('Pocket Option')">
-        <div class="gb-item-logo"><img src="https://pocketoption-pt.com/images/logo-pocketoption.png" alt="Pocket Option official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">POCKET<br>OPTION</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub">Social trading • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480" alt="Pocket Option official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">POCKET<br>OPTION</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
       <div class="gb-item" data-broker="Olymptrade" onclick="selectBroker('Olymptrade')">
-        <div class="gb-item-logo"><img src="https://www.binoption.net/wp-content/uploads/2019/01/olymp-trade-logo.png" alt="Olymptrade official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">OLYMP<br>TRADE</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Olymptrade</div><div class="gb-item-sub">Trusted platform • 1 MIN • OTC + Real</div><span class="gb-selectedLabel" data-sel="Olymptrade" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480" alt="Olymptrade official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">OLYMP<br>TRADE</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Olymptrade</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Olymptrade" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
     </div>
