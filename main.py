@@ -629,7 +629,7 @@ def _otc_symbol(pair: str) -> str:
     return raw + "_otc"
 
 def _otc_tf_seconds(timeframe: str) -> int:
-    return {"1 MIN":60,"5 MIN":300,"15 MIN":900,"30 MIN":1800,"1 HOUR":3600}.get(_normalize_timeframe(timeframe),60)
+    return {"1 MIN":60,"2 MIN":120,"5 MIN":300,"10 MIN":600,"15 MIN":900,"30 MIN":1800,"1 HOUR":3600}.get(_normalize_timeframe(timeframe),60)
 
 def _otcharts_client():
     if not OTCHARTS_API_KEY or OTChartsClient is None:
@@ -748,7 +748,7 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
 
     age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
     tf_norm = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
-    tf_minutes = {"1 MIN":1,"5 MIN":5,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
+    tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
     max_age = max(MAX_SIGNAL_AGE_SECONDS, tf_minutes * 60 * 3)
     if age < -120 or age > max_age:
         return {
@@ -878,6 +878,36 @@ def backtest_ema(candles: list[dict[str, Any]]) -> dict[str, Any]:
             "note": "Historical candle simulation only; not Quotex-verified and not a guarantee."}
 
 # --------------------------- Scanner logic ---------------------------
+def _aggregate_timeframe(candles: list[dict[str, Any]], minutes: int) -> list[dict[str, Any]]:
+    """Aggregate sorted 1-minute candles into an exact minute timeframe.
+    Buckets are aligned to UTC epoch so 2/10 minute selections never silently fall back to 1M.
+    """
+    if minutes <= 1:
+        return candles
+    from collections import defaultdict
+    buckets: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    step = minutes * 60
+    for c in candles:
+        t = c.get("time")
+        if not isinstance(t, datetime):
+            continue
+        ts = int(t.astimezone(timezone.utc).timestamp())
+        bucket = ts - (ts % step)
+        buckets[bucket].append(c)
+    out=[]
+    for bucket in sorted(buckets):
+        rows=sorted(buckets[bucket], key=lambda x:x["time"])
+        if not rows:
+            continue
+        out.append({
+            "time": datetime.fromtimestamp(bucket, tz=timezone.utc),
+            "open": rows[0]["open"],
+            "high": max(x["high"] for x in rows),
+            "low": min(x["low"] for x in rows),
+            "close": rows[-1]["close"],
+        })
+    return out
+
 def bd_time(value: Any) -> str:
     if isinstance(value, datetime):
         if value.tzinfo is None:
@@ -887,13 +917,23 @@ def bd_time(value: Any) -> str:
 
 
 def scan_one_symbol(symbol: str, timeframe: str = "1 MIN") -> dict[str, Any]:
-    timeframe = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
-    interval = {"1 MIN":"1min","5 MIN":"5min","15 MIN":"15min","30 MIN":"30min","1 HOUR":"1h"}.get(timeframe,"1min")
-    payload = twelve_get("time_series", {
-        "symbol": symbol, "interval": interval, "outputsize": HISTORY_OUTPUTSIZE,
-        "order": "desc", "format": "JSON", "timezone": "UTC",
-    })
-    candles = parse_candles(payload)
+    timeframe = _normalize_timeframe(timeframe)
+    # Twelve Data has native intervals for common frames. For 2M/10M we fetch M1
+    # and aggregate server-side so the selected timeframe is the actual analysis timeframe.
+    if timeframe in ("2 MIN", "10 MIN"):
+        payload = twelve_get("time_series", {
+            "symbol": symbol, "interval": "1min", "outputsize": min(HISTORY_OUTPUTSIZE, 1500),
+            "order": "desc", "format": "JSON", "timezone": "UTC",
+        })
+        raw = parse_candles(payload)
+        candles = _aggregate_timeframe(raw, 2 if timeframe == "2 MIN" else 10)
+    else:
+        interval = {"1 MIN":"1min","5 MIN":"5min","15 MIN":"15min","30 MIN":"30min","1 HOUR":"1h"}.get(timeframe,"1min")
+        payload = twelve_get("time_series", {
+            "symbol": symbol, "interval": interval, "outputsize": HISTORY_OUTPUTSIZE,
+            "order": "desc", "format": "JSON", "timezone": "UTC",
+        })
+        candles = parse_candles(payload)
     result = analyze_candles(symbol, candles, timeframe)
     result["timeframe"] = timeframe
     result["backtest"] = backtest_ema(candles)
@@ -903,70 +943,7 @@ def scan_one_symbol(symbol: str, timeframe: str = "1 MIN") -> dict[str, Any]:
         result["signal_id"] = save_signal(symbol, result["direction"], result["candle"]["time"], result["price"], result["reason"])
     return result
 
-
-def format_signal(result: dict[str, Any]) -> str:
-    candle = result.get("candle") or {}
-    candle_time = bd_time(candle.get("time"))
-    generated = bd_time(datetime.now(timezone.utc))
-    direction = result.get("direction", "NO TRADE")
-    icon = "🟢" if direction == "CALL" else "🔴"
-    meaning = "CALL মানে সম্ভাব্য ঊর্ধ্বমুখী দিক" if direction == "CALL" else "PUT মানে সম্ভাব্য নিম্নমুখী দিক"
-    return (
-        "👻 GHOST MATRIX V2.0\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        f"{icon} সম্ভাব্য সিগনাল: {direction}\n"
-        f"💱 মার্কেট: {result.get('symbol', 'Unknown')}\n"
-        f"💵 বাইরের ফিডের দাম: {result.get('price', 'N/A')}\n"
-        f"🕯️ Candle time (বাংলাদেশ): {candle_time} UTC+6\n"
-        f"📨 সিগনাল তৈরি: {generated} UTC+6\n"
-        f"🧾 Signal ID: {result.get('signal_id', 'N/A')}\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        f"📘 সহজ ব্যাখ্যা: {result.get('reason', '')}\n"
-        f"➡️ এর মানে: {meaning}; নিশ্চিত ফল নয়।\n\n"
-        "⚠️ ডেটা: Twelve Data (external), Quotex-verified নয়।\n"
-        f"ফল জানাতে: /win {result.get('signal_id', '')} অথবা /loss {result.get('signal_id', '')}"
-    )
-
-
-def format_future_batch(results: list[dict[str, Any]], scanned: int) -> str:
-    signals = [r for r in results if r.get("direction") in ("CALL", "PUT")]
-    now_text = bd_time(datetime.now(timezone.utc))
-    lines = [
-        "👻 GHOST MATRIX V2.0 — MANUAL SCAN",
-        f"🕒 বাংলাদেশ সময়: {now_text} UTC+6",
-        f"🔎 স্ক্যান: {scanned}টি নির্বাচিত pair",
-        "━━━━━━━━━━━━━━━━━━",
-    ]
-    if not signals:
-        lines.append("📭 এই স্ক্যানে কোনো সেটআপের শর্ত মেলেনি — NO TRADE।")
-        lines.append("জোর করে CALL/PUT তৈরি করা হয়নি। পরে আবার /future দিতে পারো।")
-    else:
-        lines.append(f"📋 সম্ভাব্য সেটআপ: {len(signals)}টি\n")
-        for n, r in enumerate(signals, 1):
-            direction = r.get("direction")
-            icon = "🟢 CALL" if direction == "CALL" else "🔴 PUT"
-            candle = (r.get("candle") or {}).get("time")
-            lines.append(
-                f"{n}. {r.get('symbol')} — {icon}\n"
-                f"   💵 বাইরের দাম: {r.get('price', 'N/A')}\n"
-                f"   🕯️ Candle (BD): {bd_time(candle)} UTC+6\n"
-                f"   🧾 ID: {r.get('signal_id', 'N/A')}\n"
-                f"   📘 কেন: {r.get('reason', '')}\n"
-                f"   ফল দিতে: /win {r.get('signal_id', '')} বা /loss {r.get('signal_id', '')}"
-            )
-    lines += [
-        "━━━━━━━━━━━━━━━━━━",
-        "⚠️ Twelve Data external feed; Quotex-verified নয়। Quotex-এর একই pair ও candle মিলিয়ে দেখো।",
-        "📌 /signals = আগের সেটআপ | /stats = তোমার দেওয়া WIN/LOSS হিসাব | /learn = শেখার গাইড",
-    ]
-    return "\n".join(lines)
-
-
-def scanner_loop() -> None:
-    """Disabled by design: signals are generated only when the user sends /future."""
-    while True:
-        time.sleep(3600)
-
+#
 # ----------------------------- AI helpers ----------------------------
 def ai_answer(prompt: str) -> str:
     if not AI_API_KEY:
@@ -3120,29 +3097,65 @@ def api_future_signals():
     count=max(5,min(20,int(body.get("count",5) or 5)))
     timeframe=_normalize_timeframe(body.get("timeframe") or "1 MIN")
     if not markets: return jsonify({"error":"At least one market is required."}),400
+
+    is_otc = ("OTC" in market_type)
+    if is_otc:
+        # Selected OTC pairs are first; then the configured OTC candidate pool is used
+        # only to reach the requested number of independently analysed candidates.
+        pool = list(dict.fromkeys(markets + OTC_FUTURE_SYMBOLS))
+    else:
+        configured=[str(x.get("symbol","")).upper() for x in get_catalog()]
+        pool=list(dict.fromkeys(markets + configured))
+
     results=[]; scanned=0
-    for market in list(dict.fromkeys(markets))[:20]:
+    for market in pool[:40]:
+        if len(results) >= count:
+            break
         try:
-            is_otc=("OTC" in market_type or "(OTC)" in market)
             if is_otc:
                 if not OTCHARTS_API_KEY: break
                 if not _api_allowed("otc_future",2,60): break
-                candles,meta=_otc_candles(market,timeframe,300); r=analyze_candles(market.replace(" (OTC)",""),candles,timeframe); source=meta["source"]
+                candles,meta=_otc_candles(market,timeframe,300)
+                r=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
+                source=meta["source"]
             else:
                 if not TWELVE_DATA_API_KEY: break
                 if not _api_allowed("future",2,60): break
-                symbol=market.replace(" (OTC)",""); allowed={str(x.get("symbol","")).upper() for x in get_catalog()}
+                symbol=market.replace(" (OTC)","")
+                allowed={str(x.get("symbol","" )).upper() for x in get_catalog()}
                 if symbol not in allowed: continue
                 r=scan_one_symbol(symbol,timeframe); source="Twelve Data external feed"
             scanned+=1
             if r.get("direction") in ("CALL","PUT"):
-                candle=r.get("candle") or {}; entry=candle.get("time") or datetime.now(timezone.utc)
-                if isinstance(entry,str): entry=datetime.fromisoformat(entry.replace("Z","+00:00"))
-                tf_minutes={"1 MIN":1,"5 MIN":5,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1)
-                next_window=(entry+timedelta(minutes=tf_minutes)).astimezone(BANGLADESH_TZ).isoformat()
-                results.append({"market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],"confidence":_setup_confidence(r),"price":r.get("price"),"entry_time":next_window,"expiry":f"{tf_minutes} MIN","reason":r.get("reason"),"strategy":"GHOST Setup Engine","source":source,"timeframe":timeframe,"verified_quotex":False})
-        except Exception as exc: log.warning("Future candidate scan failed for %s: %s",market,exc)
-    return jsonify({"available":bool(results),"signals":results[:count],"requested":count,"scanned":scanned,"market_type":"OTC" if "OTC" in market_type else "REAL","timeframe":timeframe,"mode":"next setup candidates from current confirmed candles","warning":"Future entries are setup windows, not guaranteed future prices or outcomes."}),200
+                candle=r.get("candle") or {}
+                base_time=candle.get("time")
+                if isinstance(base_time,str):
+                    base_time=datetime.fromisoformat(base_time.replace("Z","+00:00"))
+                if not isinstance(base_time,datetime):
+                    base_time=datetime.now(timezone.utc)
+                tf_minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1)
+                # Always schedule after the candle being analysed. This prevents a future card
+                # from being stamped with the current candle's start time.
+                next_window=base_time + timedelta(minutes=tf_minutes)
+                now_utc=datetime.now(timezone.utc)
+                while next_window <= now_utc:
+                    next_window += timedelta(minutes=tf_minutes)
+                results.append({
+                    "market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],
+                    "confidence":_setup_confidence(r),"price":r.get("price"),
+                    "entry_time":next_window.astimezone(BANGLADESH_TZ).isoformat(),
+                    "expiry":f"{tf_minutes} MIN","reason":r.get("reason"),
+                    "strategy":"GHOST Future Setup Engine","source":source,"timeframe":timeframe,
+                    "verified_quotex":False,"status":"FUTURE CANDIDATE"
+                })
+        except Exception as exc:
+            log.warning("Future candidate scan failed for %s: %s",market,exc)
+
+    results.sort(key=lambda x:(-int(x.get("confidence",0)), x.get("entry_time", "")))
+    return jsonify({"available":bool(results),"signals":results[:count],"requested":count,"scanned":scanned,
+                    "market_type":"OTC" if is_otc else "REAL","timeframe":timeframe,
+                    "mode":"future setup candidates scheduled after the analysed candle",
+                    "warning":"Future candidates are watch/setup windows, not guaranteed future prices or outcomes. No current-candle timestamp is returned as a future entry."}),200
 
 @app.get("/api/news/events")
 @login_required
@@ -3288,13 +3301,13 @@ def api_news_analyze():
 
 # --------------------------- GHOST MATRIX PRO API ---------------------------
 TIMEFRAME_MAP = {
-    "1 MIN": "1min", "5 MIN": "5min", "15 MIN": "15min", "30 MIN": "30min", "1 HOUR": "1h", "1H": "1h",
+    "1 MIN": "1min", "2 MIN": "1min", "5 MIN": "5min", "10 MIN": "1min", "15 MIN": "15min", "30 MIN": "30min", "1 HOUR": "1h", "1H": "1h",
 }
 
 
 def _normalize_timeframe(value: str) -> str:
     v = str(value or "1 MIN").strip().upper().replace("MINUTE", "MIN").replace("MINUTES", "MIN")
-    aliases = {"1M":"1 MIN", "5M":"5 MIN", "15M":"15 MIN", "30M":"30 MIN", "60M":"1 HOUR", "1HR":"1 HOUR", "1 H":"1 HOUR"}
+    aliases = {"1M":"1 MIN", "2M":"2 MIN", "5M":"5 MIN", "10M":"10 MIN", "15M":"15 MIN", "30M":"30 MIN", "60M":"1 HOUR", "1HR":"1 HOUR", "1 H":"1 HOUR"}
     return aliases.get(v, v if v in TIMEFRAME_MAP else "1 MIN")
 
 
@@ -3385,7 +3398,7 @@ def api_risk_update():
 
 @app.get("/api/timeframes")
 @login_required
-def api_timeframes(): return jsonify({"timeframes":["1 MIN","5 MIN","15 MIN","30 MIN","1 HOUR"],"default":"1 MIN"})
+def api_timeframes(): return jsonify({"timeframes":["1 MIN","2 MIN","5 MIN","10 MIN","15 MIN","30 MIN","1 HOUR"],"default":"1 MIN"})
 
 
 @app.get("/api/live")
