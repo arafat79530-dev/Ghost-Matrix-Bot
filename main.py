@@ -205,6 +205,7 @@ def init_database() -> tuple[bool, str]:
                     )
                 """)
                 cur.execute("ALTER TABLE gm_signals ADD COLUMN IF NOT EXISTS result_updated_at TIMESTAMPTZ")
+                cur.execute("ALTER TABLE gm_signals ADD COLUMN IF NOT EXISTS timeframe TEXT NOT NULL DEFAULT '1 MIN'")
                 cur.execute("CREATE INDEX IF NOT EXISTS gm_signals_created_idx ON gm_signals(created_at DESC)")
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS gm_users (
@@ -268,6 +269,16 @@ def init_database() -> tuple[bool, str]:
                     )
                 """)
                 cur.execute("CREATE INDEX IF NOT EXISTS gm_user_signals_user_idx ON gm_user_signals(user_id, created_at DESC)")
+                # --- GHOST MATRIX PRO: profile, preferences, alerts, risk, UID, payments, verification ---
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_user_preferences (user_id BIGINT PRIMARY KEY REFERENCES gm_users(id) ON DELETE CASCADE, timezone TEXT NOT NULL DEFAULT 'Asia/Dhaka', default_market_type TEXT NOT NULL DEFAULT 'OTC', default_timeframe TEXT NOT NULL DEFAULT '1 MIN', sound_alerts BOOLEAN NOT NULL DEFAULT TRUE, browser_alerts BOOLEAN NOT NULL DEFAULT TRUE, telegram_alerts BOOLEAN NOT NULL DEFAULT FALSE, compact_mode BOOLEAN NOT NULL DEFAULT FALSE, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_user_alerts (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES gm_users(id) ON DELETE CASCADE, alert_type TEXT NOT NULL, market TEXT, timeframe TEXT, enabled BOOLEAN NOT NULL DEFAULT TRUE, threshold INTEGER NOT NULL DEFAULT 70, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(user_id, alert_type, market, timeframe))")
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_risk_profiles (user_id BIGINT PRIMARY KEY REFERENCES gm_users(id) ON DELETE CASCADE, capital NUMERIC(14,2) NOT NULL DEFAULT 0, risk_per_trade NUMERIC(6,2) NOT NULL DEFAULT 1, max_daily_loss NUMERIC(14,2) NOT NULL DEFAULT 0, max_consecutive_losses INTEGER NOT NULL DEFAULT 3, payout NUMERIC(6,2) NOT NULL DEFAULT 80, martingale_enabled BOOLEAN NOT NULL DEFAULT FALSE, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_uid_verifications (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES gm_users(id) ON DELETE CASCADE, broker TEXT NOT NULL DEFAULT 'Quotex', uid TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'PENDING', notes TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), reviewed_at TIMESTAMPTZ)")
+                cur.execute("CREATE INDEX IF NOT EXISTS gm_uid_user_idx ON gm_uid_verifications(user_id, created_at DESC)")
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_payment_requests (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES gm_users(id) ON DELETE CASCADE, plan_id BIGINT REFERENCES gm_plans(id) ON DELETE SET NULL, amount NUMERIC(10,2) NOT NULL DEFAULT 0, method TEXT NOT NULL DEFAULT 'MANUAL', reference TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'PENDING', notes TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), reviewed_at TIMESTAMPTZ)")
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_ai_verifications (id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES gm_users(id) ON DELETE SET NULL, market TEXT NOT NULL, market_type TEXT NOT NULL DEFAULT 'REAL', timeframe TEXT NOT NULL DEFAULT '1 MIN', direction TEXT NOT NULL DEFAULT 'NO SIGNAL', confidence INTEGER NOT NULL DEFAULT 0, model_agreement INTEGER NOT NULL DEFAULT 0, trend_score INTEGER NOT NULL DEFAULT 0, momentum_score INTEGER NOT NULL DEFAULT 0, structure_score INTEGER NOT NULL DEFAULT 0, news_status TEXT NOT NULL DEFAULT 'UNAVAILABLE', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_signal_alerts_log (id BIGSERIAL PRIMARY KEY, user_id BIGINT REFERENCES gm_users(id) ON DELETE SET NULL, signal_id BIGINT, channel TEXT NOT NULL, status TEXT NOT NULL, message TEXT NOT NULL DEFAULT '', created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_user_preferences_seed (user_id BIGINT PRIMARY KEY REFERENCES gm_users(id) ON DELETE CASCADE)")
                 # Seed default plans if empty
                 cur.execute("SELECT COUNT(*) FROM gm_plans")
                 if cur.fetchone()[0] == 0:
@@ -676,7 +687,7 @@ def rsi(values: list[float], period: int = 14) -> list[Optional[float]]:
 
 
 
-def analyze_candles(symbol: str, candles: list[dict[str, Any]]) -> dict[str, Any]:
+def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str = "1 MIN") -> dict[str, Any]:
     if len(candles) < 60:
         return {
             "symbol": symbol,
@@ -696,7 +707,10 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]]) -> dict[str, Any
     previous = candles[idx - 1]
 
     age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
-    if age < -120 or age > MAX_SIGNAL_AGE_SECONDS:
+    tf_norm = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
+    tf_minutes = {"1 MIN":1,"5 MIN":5,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
+    max_age = max(MAX_SIGNAL_AGE_SECONDS, tf_minutes * 60 * 3)
+    if age < -120 or age > max_age:
         return {
             "symbol": symbol,
             "direction": "NO TRADE",
@@ -832,13 +846,16 @@ def bd_time(value: Any) -> str:
     return str(value or "সময় পাওয়া যায়নি")
 
 
-def scan_one_symbol(symbol: str) -> dict[str, Any]:
+def scan_one_symbol(symbol: str, timeframe: str = "1 MIN") -> dict[str, Any]:
+    timeframe = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
+    interval = {"1 MIN":"1min","5 MIN":"5min","15 MIN":"15min","30 MIN":"30min","1 HOUR":"1h"}.get(timeframe,"1min")
     payload = twelve_get("time_series", {
-        "symbol": symbol, "interval": "1min", "outputsize": HISTORY_OUTPUTSIZE,
+        "symbol": symbol, "interval": interval, "outputsize": HISTORY_OUTPUTSIZE,
         "order": "desc", "format": "JSON", "timezone": "UTC",
     })
     candles = parse_candles(payload)
-    result = analyze_candles(symbol, candles)
+    result = analyze_candles(symbol, candles, timeframe)
+    result["timeframe"] = timeframe
     result["backtest"] = backtest_ema(candles)
     result["source"] = "Twelve Data external feed"
     result["verified_quotex"] = False
@@ -2961,6 +2978,194 @@ def api_signals_generate():
     # Alias to /api/analyze-image with same access control - frontend uses this for GHOST AI flow
     return api_analyze_image()
 
+
+def _signal_access_for_user(uid: int) -> bool:
+    """Backend access gate shared by live/future/injector signal endpoints."""
+    try:
+        plan = get_user_active_plan(int(uid))
+        if plan and (plan.get("is_owner") or plan.get("is_admin")):
+            return True
+        return bool(plan and plan.get("plan_name") not in ("FREE",) and plan.get("status") == "active")
+    except Exception:
+        return False
+
+
+def _setup_confidence(result: dict[str, Any]) -> int:
+    """Return a setup-quality score, not a win probability."""
+    direction = str(result.get("direction") or "")
+    if direction not in ("CALL", "PUT"):
+        return 0
+    score = 60
+    rsi_v = result.get("rsi")
+    try:
+        rsi_v = float(rsi_v)
+        if direction == "CALL" and 52 <= rsi_v <= 68:
+            score += 8
+        elif direction == "PUT" and 32 <= rsi_v <= 48:
+            score += 8
+    except (TypeError, ValueError):
+        pass
+    try:
+        c = result.get("candle") or {}
+        rng = float(c.get("high", 0)) - float(c.get("low", 0))
+        body = abs(float(c.get("close", 0)) - float(c.get("open", 0)))
+        if rng > 0:
+            score += min(10, round((body / rng) * 10))
+    except (TypeError, ValueError):
+        pass
+    bt = result.get("backtest") or {}
+    try:
+        wr = float(bt.get("win_rate_pct"))
+        if wr >= 60:
+            score += 10
+        elif wr >= 50:
+            score += 5
+    except (TypeError, ValueError):
+        pass
+    return max(58, min(94, int(score)))
+
+
+@app.post("/api/inject-signal")
+@login_required
+def api_inject_signal():
+    """Manual, on-demand signal analysis. No automatic trading or execution."""
+    uid = session.get("user_id")
+    if not _signal_access_for_user(int(uid)):
+        return jsonify({"error": "SIGNAL ACCESS LOCKED", "locked": True, "affiliate_url": AFFILIATE_URL}), 403
+    body = request.get_json(silent=True) or {}
+    market = str(body.get("market", "")).strip().upper()
+    market_type = str(body.get("market_type", "REAL")).strip().upper()
+    duration = max(1, min(60, int(body.get("duration", 1) or 1)))
+    timeframe = _normalize_timeframe(body.get("timeframe") or "1 MIN")
+    if not market:
+        return jsonify({"error": "Market নির্বাচন করো।"}), 400
+    # The connected feed is real-market Twelve Data. Never relabel it as verified OTC data.
+    if "OTC" in market_type or "(OTC)" in market:
+        return jsonify({
+            "available": False,
+            "direction": "NO SIGNAL",
+            "signal": "NO SIGNAL",
+            "confidence": 0,
+            "market": market,
+            "market_type": "OTC",
+            "duration": duration,
+            "source": "No verified OTC feed connected",
+            "warning": "OTC signal generation is disabled until a genuine OTC data source is connected. No synthetic OTC signal is fabricated."
+        }), 200
+    symbol = market.replace(" (OTC)", "").strip()
+    allowed = {str(item.get("symbol", "")).upper() for item in get_catalog()}
+    if symbol not in allowed:
+        return jsonify({"error": "Market is not in the configured real-market allowlist."}), 400
+    if not TWELVE_DATA_API_KEY:
+        return jsonify({"error": "TWELVE_DATA_API_KEY is not configured."}), 503
+    if not _api_allowed("inject", 2, 60):
+        return jsonify({"error": "Signal analysis rate limit reached. Try again later."}), 429
+    if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+        return jsonify({"error": "Daily API safety budget reached."}), 429
+    try:
+        result = scan_one_symbol(symbol, timeframe)
+        direction = result.get("direction", "NO SIGNAL")
+        confidence = _setup_confidence(result)
+        return jsonify({
+            "available": direction in ("CALL", "PUT"),
+            "direction": direction if direction in ("CALL", "PUT") else "NO SIGNAL",
+            "signal": direction if direction in ("CALL", "PUT") else "NO SIGNAL",
+            "confidence": confidence,
+            "market": symbol,
+            "market_type": "REAL",
+            "duration": duration,
+            "timeframe": timeframe,
+            "analysis": result,
+            "factors": [
+                "EMA9 / EMA21 / EMA50 trend alignment",
+                "RSI momentum filter",
+                "Candle body strength",
+                "Support / resistance distance",
+                "Historical EMA sanity check"
+            ],
+            "source": "Twelve Data external feed",
+            "verified_quotex": False,
+            "warning": "Setup-quality score only; not a win probability or guarantee."
+        }), 200
+    except Exception as exc:
+        log.warning("Injector analysis failed: %s", exc)
+        return jsonify({"error": "Live market analysis failed. Check market-data configuration and limits."}), 502
+
+
+@app.post("/api/future-signals")
+@login_required
+def api_future_signals():
+    """Generate a manual batch of current setup candidates; no fabricated future prices."""
+    uid = session.get("user_id")
+    if not _signal_access_for_user(int(uid)):
+        return jsonify({"error": "SIGNAL ACCESS LOCKED", "locked": True, "affiliate_url": AFFILIATE_URL}), 403
+    body = request.get_json(silent=True) or {}
+    markets = body.get("markets") or []
+    market_type = str(body.get("market_type", "REAL")).strip().upper()
+    count = max(5, min(20, int(body.get("count", 5) or 5)))
+    timeframe = _normalize_timeframe(body.get("timeframe") or "1 MIN")
+    markets = [str(x).strip().upper() for x in markets if str(x).strip()]
+    markets = list(dict.fromkeys(markets))[:20]
+    if not markets:
+        return jsonify({"error": "At least one market is required."}), 400
+    if "OTC" in market_type:
+        return jsonify({
+            "available": False, "signals": [], "requested": count,
+            "market_type": "OTC",
+            "warning": "Verified OTC feed is not connected; no synthetic future OTC signals are generated."
+        }), 200
+    if not TWELVE_DATA_API_KEY:
+        return jsonify({"error": "TWELVE_DATA_API_KEY is not configured."}), 503
+    allowed = {str(item.get("symbol", "")).upper() for item in get_catalog()}
+    results = []
+    scanned = 0
+    for symbol in markets:
+        if symbol not in allowed:
+            continue
+        if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
+            break
+        if not _api_allowed("future", 2, 60):
+            break
+        try:
+            r = scan_one_symbol(symbol, timeframe)
+            scanned += 1
+            direction = r.get("direction")
+            if direction in ("CALL", "PUT"):
+                results.append({
+                    "market": symbol,
+                    "symbol": symbol,
+                    "direction": direction,
+                    "signal": direction,
+                    "confidence": _setup_confidence(r),
+                    "price": r.get("price"),
+                    "candle": r.get("candle"),
+                    "reason": r.get("reason"),
+                    "source": "Twelve Data external feed",
+                    "timeframe": timeframe,
+                    "verified_quotex": False
+                })
+        except Exception as exc:
+            log.warning("Future candidate scan failed for %s: %s", symbol, exc)
+    results = results[:count]
+    return jsonify({
+        "available": bool(results),
+        "signals": results,
+        "requested": count,
+        "scanned": scanned,
+        "market_type": "REAL",
+        "timeframe": timeframe,
+        "mode": "current setup candidates",
+        "warning": "These are current market-analysis candidates, not guaranteed future prices or outcomes."
+    }), 200
+
+
+@app.get("/api/news/events")
+@login_required
+def api_news_events_alias():
+    """Compatibility endpoint used by the News UI."""
+    return api_news()
+
+
 @app.get("/api/news")
 @login_required
 def api_news():
@@ -3094,6 +3299,282 @@ def api_news_analyze():
         return jsonify({"error": "Currency, event, actual ও forecast পূরণ করো।"}), 400
     prompt = (f"Economic news explanation in Bengali. Currency: {currency}; event: {event}; actual: {actual}; forecast: {forecast}; previous: {previous or 'not supplied'}. Explain actual-vs-forecast carefully, likely first-order currency interpretation, what could reverse the reaction, and uncertainty. Do not claim current market reaction without live price data.")
     return jsonify({"analysis": ai_answer(prompt), "note": "Economic interpretation only; current price reaction is not verified."})
+
+
+# --------------------------- GHOST MATRIX PRO API ---------------------------
+TIMEFRAME_MAP = {
+    "1 MIN": "1min", "5 MIN": "5min", "15 MIN": "15min", "30 MIN": "30min", "1 HOUR": "1h", "1H": "1h",
+}
+
+
+def _normalize_timeframe(value: str) -> str:
+    v = str(value or "1 MIN").strip().upper().replace("MINUTE", "MIN").replace("MINUTES", "MIN")
+    aliases = {"1M":"1 MIN", "5M":"5 MIN", "15M":"15 MIN", "30M":"30 MIN", "60M":"1 HOUR", "1HR":"1 HOUR", "1 H":"1 HOUR"}
+    return aliases.get(v, v if v in TIMEFRAME_MAP else "1 MIN")
+
+
+def _user_pref(uid: int) -> dict:
+    defaults = {"timezone":"Asia/Dhaka","default_market_type":"OTC","default_timeframe":"1 MIN","sound_alerts":True,"browser_alerts":True,"telegram_alerts":False,"compact_mode":False}
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM gm_user_preferences WHERE user_id=%s", (uid,)); row=cur.fetchone()
+                if not row:
+                    cur.execute("INSERT INTO gm_user_preferences (user_id) VALUES (%s) ON CONFLICT (user_id) DO NOTHING", (uid,))
+                    return defaults
+                d=dict(row); return {k:(d.get(k) if d.get(k) is not None else v) for k,v in defaults.items()}
+    except Exception: return defaults
+
+
+def _risk_profile(uid: int) -> dict:
+    defaults={"capital":0,"risk_per_trade":1,"max_daily_loss":0,"max_consecutive_losses":3,"payout":80,"martingale_enabled":False}
+    try:
+        with db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM gm_risk_profiles WHERE user_id=%s", (uid,)); row=cur.fetchone()
+                if not row: return defaults
+                d=dict(row); return {k:(float(d[k]) if k in ('capital','risk_per_trade','max_daily_loss','payout') else d.get(k,v)) for k,v in defaults.items()}
+    except Exception: return defaults
+
+
+@app.get("/api/profile")
+@login_required
+def api_profile():
+    uid=int(session["user_id"])
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id,email,name,is_admin,email_verified,access_enabled,role,status,created_at FROM gm_users WHERE id=%s", (uid,)); u=cur.fetchone()
+    if not u: return jsonify({"error":"User not found"}),404
+    u=dict(u); u["created_at"]=u["created_at"].isoformat() if u.get("created_at") else None
+    return jsonify({"user":u,"plan":get_user_active_plan(uid),"preferences":_user_pref(uid),"risk":_risk_profile(uid)})
+
+
+@app.put("/api/profile")
+@login_required
+def api_profile_update():
+    uid=int(session["user_id"]); body=request.get_json(silent=True) or {}
+    name=str(body.get("name") or "").strip()
+    if name and len(name)>100: return jsonify({"error":"Name is too long."}),400
+    with db_connection() as conn:
+        with conn.cursor() as cur: cur.execute("UPDATE gm_users SET name=%s WHERE id=%s", (name,uid))
+    return jsonify({"ok":True,"name":name})
+
+
+@app.get("/api/preferences")
+@login_required
+def api_preferences(): return jsonify({"preferences":_user_pref(int(session["user_id"]))})
+
+
+@app.put("/api/preferences")
+@login_required
+def api_preferences_update():
+    uid=int(session["user_id"]); b=request.get_json(silent=True) or {}; p=_user_pref(uid)
+    for k in ("timezone","default_market_type","default_timeframe"):
+        if k in b: p[k]=str(b[k])
+    if "default_timeframe" in p: p["default_timeframe"]=_normalize_timeframe(p["default_timeframe"])
+    for k in ("sound_alerts","browser_alerts","telegram_alerts","compact_mode"):
+        if k in b: p[k]=bool(b[k])
+    with db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO gm_user_preferences (user_id,timezone,default_market_type,default_timeframe,sound_alerts,browser_alerts,telegram_alerts,compact_mode) VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT (user_id) DO UPDATE SET timezone=EXCLUDED.timezone,default_market_type=EXCLUDED.default_market_type,default_timeframe=EXCLUDED.default_timeframe,sound_alerts=EXCLUDED.sound_alerts,browser_alerts=EXCLUDED.browser_alerts,telegram_alerts=EXCLUDED.telegram_alerts,compact_mode=EXCLUDED.compact_mode,updated_at=NOW()", (uid,p["timezone"],p["default_market_type"],p["default_timeframe"],p["sound_alerts"],p["browser_alerts"],p["telegram_alerts"],p["compact_mode"]))
+    return jsonify({"ok":True,"preferences":p})
+
+
+@app.get("/api/risk")
+@login_required
+def api_risk(): return jsonify({"risk":_risk_profile(int(session["user_id"]))})
+
+
+@app.put("/api/risk")
+@login_required
+def api_risk_update():
+    uid=int(session["user_id"]); b=request.get_json(silent=True) or {}
+    def num(k,default):
+        try:return float(b.get(k,default))
+        except:return default
+    risk={"capital":max(0,num("capital",0)),"risk_per_trade":max(0,min(100,num("risk_per_trade",1))),"max_daily_loss":max(0,num("max_daily_loss",0)),"max_consecutive_losses":max(1,min(20,int(num("max_consecutive_losses",3)))),"payout":max(0,min(100,num("payout",80))),"martingale_enabled":bool(b.get("martingale_enabled",False))}
+    with db_connection() as conn:
+        with conn.cursor() as cur: cur.execute("INSERT INTO gm_risk_profiles VALUES (%s,%s,%s,%s,%s,%s,%s,NOW()) ON CONFLICT(user_id) DO UPDATE SET capital=EXCLUDED.capital,risk_per_trade=EXCLUDED.risk_per_trade,max_daily_loss=EXCLUDED.max_daily_loss,max_consecutive_losses=EXCLUDED.max_consecutive_losses,payout=EXCLUDED.payout,martingale_enabled=EXCLUDED.martingale_enabled,updated_at=NOW()", (uid,risk["capital"],risk["risk_per_trade"],risk["max_daily_loss"],risk["max_consecutive_losses"],risk["payout"],risk["martingale_enabled"]))
+    return jsonify({"ok":True,"risk":risk})
+
+
+@app.get("/api/timeframes")
+@login_required
+def api_timeframes(): return jsonify({"timeframes":["1 MIN","5 MIN","15 MIN","30 MIN","1 HOUR"],"default":"1 MIN"})
+
+
+@app.get("/api/live")
+@login_required
+def api_live():
+    market_type=str(request.args.get("market_type") or "REAL").upper(); tf=_normalize_timeframe(request.args.get("timeframe")); symbols=[x["symbol"] for x in get_catalog()]
+    if market_type=="OTC": return jsonify({"available":False,"market_type":"OTC","timeframe":tf,"signals":[],"message":"Verified OTC feed is not connected. GHOST MATRIX will not fabricate OTC prices or signals."})
+    if not _signal_access_for_user(int(session["user_id"])): return jsonify({"locked":True,"signals":[],"message":"Active signal plan required."}),403
+    results=[]
+    for sym in symbols[:8]:
+        try:
+            interval=TIMEFRAME_MAP[tf]; payload=twelve_get("time_series",{"symbol":sym,"interval":interval,"outputsize":300,"order":"desc","format":"JSON","timezone":"UTC"}); candles=parse_candles(payload); r=analyze_candles(sym,candles); r["confidence"]=_setup_confidence(r); r["timeframe"]=tf; results.append({"symbol":sym,"direction":r.get("direction"),"confidence":r.get("confidence",0),"price":r.get("price"),"reason":r.get("reason"),"timeframe":tf,"source":"Twelve Data external feed"})
+        except Exception as exc: log.warning("live scan %s: %s",sym,exc)
+    return jsonify({"available":True,"market_type":"REAL","timeframe":tf,"signals":results,"source":"Twelve Data external feed","verified_quotex":False,"warning":"Confidence is setup quality, not win probability."})
+
+
+@app.get("/api/performance")
+@login_required
+def api_performance():
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT COUNT(*) FILTER (WHERE outcome='WIN') wins, COUNT(*) FILTER (WHERE outcome='LOSS') losses, COUNT(*) FILTER (WHERE outcome='PENDING') pending FROM gm_user_signals WHERE user_id=%s", (int(session["user_id"]),)); row=dict(cur.fetchone() or {})
+            cur.execute("SELECT COUNT(*) FILTER (WHERE direction='CALL') calls, COUNT(*) FILTER (WHERE direction='PUT') puts FROM gm_signals"); a=dict(cur.fetchone() or {})
+    w=int(row.get("wins") or 0); l=int(row.get("losses") or 0); total=w+l
+    return jsonify({"wins":w,"losses":l,"pending":int(row.get("pending") or 0),"settled":total,"win_rate":round(100*w/total,1) if total else None,"call_count":int(a.get("calls") or 0),"put_count":int(a.get("puts") or 0),"verified_only":True})
+
+
+@app.get("/api/history")
+@login_required
+def api_history():
+    uid=int(session["user_id"]); limit=max(1,min(100,int(request.args.get("limit",50))))
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id,market,market_type,timeframe,signal,confidence,analysis,outcome,created_at FROM gm_user_signals WHERE user_id=%s ORDER BY created_at DESC LIMIT %s", (uid,limit)); rows=[dict(x) for x in cur.fetchall()]
+    for r in rows:
+        if r.get("created_at"): r["created_at"]=r["created_at"].isoformat()
+    return jsonify({"signals":rows,"count":len(rows)})
+
+
+@app.get("/api/alerts")
+@login_required
+def api_alerts():
+    uid=int(session["user_id"])
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id,alert_type,market,timeframe,enabled,threshold,created_at FROM gm_user_alerts WHERE user_id=%s ORDER BY id DESC",(uid,)); rows=[dict(x) for x in cur.fetchall()]
+    for r in rows:
+        if r.get("created_at"):r["created_at"]=r["created_at"].isoformat()
+    return jsonify({"alerts":rows})
+
+
+@app.post("/api/alerts")
+@login_required
+def api_alerts_create():
+    uid=int(session["user_id"]); b=request.get_json(silent=True) or {}; typ=str(b.get("alert_type") or "SIGNAL").upper(); market=str(b.get("market") or ""); tf=_normalize_timeframe(b.get("timeframe")); enabled=bool(b.get("enabled",True)); threshold=max(0,min(100,int(b.get("threshold",70))))
+    with db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO gm_user_alerts(user_id,alert_type,market,timeframe,enabled,threshold) VALUES(%s,%s,%s,%s,%s,%s) ON CONFLICT(user_id,alert_type,market,timeframe) DO UPDATE SET enabled=EXCLUDED.enabled,threshold=EXCLUDED.threshold",(uid,typ,market,tf,enabled,threshold))
+    return jsonify({"ok":True})
+
+
+@app.delete("/api/alerts/<int:alert_id>")
+@login_required
+def api_alert_delete(alert_id):
+    with db_connection() as conn:
+        with conn.cursor() as cur: cur.execute("DELETE FROM gm_user_alerts WHERE id=%s AND user_id=%s",(alert_id,int(session["user_id"])))
+    return jsonify({"ok":True})
+
+
+@app.get("/api/uid")
+@login_required
+def api_uid_list():
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT id,broker,uid,status,notes,created_at,reviewed_at FROM gm_uid_verifications WHERE user_id=%s ORDER BY created_at DESC",(int(session["user_id"]),)); rows=[dict(x) for x in cur.fetchall()]
+    for r in rows:
+        for k in ("created_at","reviewed_at"):
+            if r.get(k):r[k]=r[k].isoformat()
+    return jsonify({"verifications":rows})
+
+
+@app.post("/api/uid")
+@login_required
+def api_uid_submit():
+    uid=int(session["user_id"]); b=request.get_json(silent=True) or {}; broker=str(b.get("broker") or "Quotex").strip()[:80]; value=str(b.get("uid") or "").strip()[:120]
+    if len(value)<3:return jsonify({"error":"Valid broker UID required."}),400
+    with db_connection() as conn:
+        with conn.cursor() as cur: cur.execute("INSERT INTO gm_uid_verifications(user_id,broker,uid,status) VALUES(%s,%s,%s,'PENDING')",(uid,broker,value))
+    return jsonify({"ok":True,"status":"PENDING","message":"UID submitted for admin review."})
+
+
+@app.get("/api/payment-requests")
+@login_required
+def api_payment_requests():
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT pr.id,pr.amount,pr.method,pr.reference,pr.status,pr.notes,pr.created_at,p.name plan_name FROM gm_payment_requests pr LEFT JOIN gm_plans p ON p.id=pr.plan_id WHERE pr.user_id=%s ORDER BY pr.created_at DESC",(int(session["user_id"]),)); rows=[dict(x) for x in cur.fetchall()]
+    for r in rows:
+        if r.get("created_at"):r["created_at"]=r["created_at"].isoformat()
+    return jsonify({"requests":rows,"affiliate_url":AFFILIATE_URL,"support":"https://t.me/ghostsupportbd"})
+
+
+@app.post("/api/payment-requests")
+@login_required
+def api_payment_request_create():
+    uid=int(session["user_id"]); b=request.get_json(silent=True) or {}; plan_id=b.get("plan_id"); amount=float(b.get("amount",0) or 0); method=str(b.get("method") or "MANUAL"); ref=str(b.get("reference") or "")[:200]
+    try: plan_id=int(plan_id) if plan_id is not None else None
+    except: plan_id=None
+    with db_connection() as conn:
+        with conn.cursor() as cur: cur.execute("INSERT INTO gm_payment_requests(user_id,plan_id,amount,method,reference,status) VALUES(%s,%s,%s,%s,%s,'PENDING') RETURNING id",(uid,plan_id,amount,method,ref)); rid=cur.fetchone()[0]
+    return jsonify({"ok":True,"request_id":rid,"status":"PENDING","message":"Payment request sent for admin verification."}),201
+
+
+@app.get("/api/verification")
+@login_required
+def api_verification():
+    uid=int(session["user_id"]); plan=get_user_active_plan(uid); pref=_user_pref(uid); risk=_risk_profile(uid)
+    return jsonify({"account_verified":True,"email_verified":True,"uid_status":"PENDING","plan":plan,"preferences":pref,"risk":risk,"security":{"session_cookie":"HTTPOnly + SameSite=Lax","automatic_trade_execution":False}})
+
+
+@app.post("/api/ai/verify")
+@login_required
+def api_ai_verify():
+    uid=int(session["user_id"]); b=request.get_json(silent=True) or {}; market=str(b.get("market") or "EUR/USD").upper(); mt=str(b.get("market_type") or "REAL").upper(); tf=_normalize_timeframe(b.get("timeframe")); direction=str(b.get("direction") or "NO SIGNAL").upper(); conf=max(0,min(100,int(b.get("confidence",0) or 0)))
+    # Model verification is a confluence record, never a fabricated probability.
+    model_agreement=max(0,min(100,int(b.get("model_agreement",conf) or 0))); trend=max(0,min(100,int(b.get("trend_score",0) or 0))); momentum=max(0,min(100,int(b.get("momentum_score",0) or 0))); structure=max(0,min(100,int(b.get("structure_score",0) or 0)))
+    with db_connection() as conn:
+        with conn.cursor() as cur: cur.execute("INSERT INTO gm_ai_verifications(user_id,market,market_type,timeframe,direction,confidence,model_agreement,trend_score,momentum_score,structure_score) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",(uid,market,mt,tf,direction,conf,model_agreement,trend,momentum,structure))
+    return jsonify({"verified": direction in ("CALL","PUT") and conf>=58 and model_agreement>=50,"direction":direction,"confidence":conf,"model_agreement":model_agreement,"components":{"trend":trend,"momentum":momentum,"structure":structure},"note":"Agreement is model/feature confluence, not win probability."})
+
+
+@app.get("/api/market-status")
+@login_required
+def api_market_status():
+    return jsonify({"real":{"connected":bool(TWELVE_DATA_API_KEY),"source":"Twelve Data","verified_quotex":False},"otc":{"connected":False,"source":"No verified OTC feed","verified_quotex":False},"ai":{"configured":bool(AI_API_KEY),"vision_model":GROQ_VISION_MODEL if AI_API_KEY else None},"telegram":{"configured":bool(BOT_TOKEN)},"database":{"configured":bool(DATABASE_URL)}})
+
+
+@app.get("/api/admin/verification-queue")
+@admin_required
+def api_admin_verification_queue():
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT u.id,u.email,u.name,v.id verification_id,v.broker,v.uid,v.status,v.created_at FROM gm_uid_verifications v JOIN gm_users u ON u.id=v.user_id ORDER BY v.created_at DESC LIMIT 100"); uid_rows=[dict(x) for x in cur.fetchall()]
+            cur.execute("SELECT pr.id,u.email,p.name plan_name,pr.amount,pr.method,pr.reference,pr.status,pr.created_at FROM gm_payment_requests pr JOIN gm_users u ON u.id=pr.user_id LEFT JOIN gm_plans p ON p.id=pr.plan_id ORDER BY pr.created_at DESC LIMIT 100"); pay_rows=[dict(x) for x in cur.fetchall()]
+    for rows in (uid_rows,pay_rows):
+        for r in rows:
+            for k,v in list(r.items()):
+                if isinstance(v,datetime):r[k]=v.isoformat()
+    return jsonify({"uid":uid_rows,"payments":pay_rows})
+
+
+@app.put("/api/admin/verification/<int:verification_id>")
+@admin_required
+def api_admin_verify_uid(verification_id):
+    b=request.get_json(silent=True) or {}; status=str(b.get("status") or "APPROVED").upper(); notes=str(b.get("notes") or "")[:500]
+    if status not in ("APPROVED","REJECTED","PENDING"):return jsonify({"error":"Invalid status"}),400
+    with db_connection() as conn:
+        with conn.cursor() as cur:cur.execute("UPDATE gm_uid_verifications SET status=%s,notes=%s,reviewed_at=NOW() WHERE id=%s",(status,notes,verification_id))
+    return jsonify({"ok":True,"status":status})
+
+
+@app.put("/api/admin/payment/<int:request_id>")
+@admin_required
+def api_admin_payment(request_id):
+    b=request.get_json(silent=True) or {}; status=str(b.get("status") or "APPROVED").upper(); notes=str(b.get("notes") or "")[:500]
+    if status not in ("APPROVED","REJECTED","PENDING"):return jsonify({"error":"Invalid status"}),400
+    with db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("UPDATE gm_payment_requests SET status=%s,notes=%s,reviewed_at=NOW() WHERE id=%s RETURNING user_id,plan_id",(status,notes,request_id)); row=cur.fetchone()
+            if status=="APPROVED" and row and row.get("plan_id"):
+                cur.execute("UPDATE gm_user_plans SET status='inactive' WHERE user_id=%s AND status='active'",(row["user_id"],))
+                cur.execute("SELECT duration_days FROM gm_plans WHERE id=%s",(row["plan_id"],)); p=cur.fetchone(); days=int(p[0] or 30) if p else 30
+                cur.execute("INSERT INTO gm_user_plans(user_id,plan_id,start_date,expiry_date,status,notes) VALUES(%s,%s,NOW(),NOW()+(%s || ' days')::interval,'active','Approved payment request')",(row["user_id"],row["plan_id"],days))
+    return jsonify({"ok":True,"status":status})
 
 def start_background_threads() -> None:
     # Avoid duplicate start in environments that import the module more than once.

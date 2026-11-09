@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<title>GHOST AI</title>
+<title>GHOST MATRIX</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display:flex;justify-content:center;min-height:100vh}
@@ -625,6 +625,9 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 .newsContentCard{background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px;margin-top:10px}
 .newsContentCard h3{font-size:15px;font-weight:900;color:white}
 .newsContentCard p{font-size:10.5px;color:#8b8ba7;line-height:1.5;margin-top:6px}
+
+/* GHOST MATRIX PRO CENTER */
+.proGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.proCard{background:linear-gradient(180deg,rgba(30,21,64,.92),rgba(16,12,35,.92));border:1px solid rgba(167,139,250,.15);border-radius:14px;padding:11px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.16)}.proCard h3{font-size:10px;margin:0 0 7px;letter-spacing:.08em}.proValue{font-size:20px;font-weight:950}.proSub{font-size:8px;color:#9ca3af;margin-top:4px;line-height:1.45}.proTabs{display:flex;gap:5px;overflow:auto;padding:3px 0 7px}.proTabs button{flex:0 0 auto;border:1px solid rgba(255,255,255,.08);background:#171126;color:#a5a0b8;border-radius:9px;padding:7px 9px;font-size:8px;font-weight:900}.proTabs button.on{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff}.proPanel{display:none}.proPanel.on{display:block}.proInput{width:100%;box-sizing:border-box;background:#0d0a19;border:1px solid rgba(255,255,255,.08);color:#fff;border-radius:9px;padding:9px;font-size:10px;margin:4px 0}.proBtn{border:0;border-radius:9px;padding:9px 11px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:9px;font-weight:900}.proBtn.alt{background:#171126;border:1px solid rgba(255,255,255,.08)}.proRow{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:9px}.proPill{padding:4px 7px;border-radius:999px;background:rgba(167,139,250,.12);color:#c4b5fd;font-size:8px;font-weight:900}.proList{max-height:260px;overflow:auto}.proNotice{font-size:9px;line-height:1.5;color:#a9a4b7;background:rgba(255,255,255,.035);border-radius:10px;padding:9px;margin-top:8px}.proLock{color:#fbbf24}.proOk{color:#86efac}.proBad{color:#fca5a5}
 </style>
 </head>
 <body>
@@ -688,7 +691,7 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 <div class="page" id="pg-live">
 <div class="ghostBrokerCard" id="ghostBrokerCard" onclick="openBrokerModal()" role="button" aria-label="Choose your broker">
   <div class="gb-logo" id="gbLogo"><img id="gbLogoImg" class="gb-logoImg" src="https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480" alt="Quotex logo" onerror="this.style.display='none';document.getElementById('gbLogoFallback').style.display='grid'"/><span id="gbLogoFallback" class="gb-logoFallback" class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
-  <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" id="gbName">Quotex</div><div class="gb-sub" id="gbSub">GHOST AI • Connected for signals</div></div>
+  <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" id="gbName">Quotex</div><div class="gb-sub" id="gbSub">GHOST MATRIX • Connected for analysis</div></div>
   <div class="gb-change">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
 </div>
 <div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
@@ -784,7 +787,7 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 <div id="injListView">
 <div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
 <div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input placeholder="Search pair (e.g. EUR/USD)" id="search2"/></div>
-<div class="mlist" id="ml2" class="mlist"></div>
+<div class="mlist" id="ml2"></div>
 </div>
 <div class="injDetail" id="injDetail">
 <div class="injHeader"><div class="flags" id="injFlags"></div><div class="injHeaderInfo"><div class="mpair" id="injPair">NZD/CHF (OTC)</div><div class="mtype" id="injSub">OTC MARKET</div></div><button class="injChangeBtn" onclick="backToInjList()">‹ Change</button></div>
@@ -867,8 +870,25 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 </div>
 </div>
 
+<div class="page" id="pg-pro">
+<div class="proTabs" id="proTabs">
+<button class="on" data-pro="overview">OVERVIEW</button><button data-pro="history">HISTORY</button><button data-pro="alerts">ALERTS</button><button data-pro="risk">RISK</button><button data-pro="account">ACCOUNT</button><button data-pro="settings">SETTINGS</button>
+</div>
+<div class="proPanel on" id="pro-overview">
+<div class="proGrid"><div class="proCard"><h3>ACCOUNT STATUS</h3><div class="proValue" id="proPlan">—</div><div class="proSub" id="proAccess">Loading…</div></div><div class="proCard"><h3>VERIFIED PERFORMANCE</h3><div class="proValue" id="proWinRate">—</div><div class="proSub" id="proWL">Wins 0 • Losses 0</div></div><div class="proCard"><h3>REAL MARKET</h3><div class="proValue" id="proReal">—</div><div class="proSub">Twelve Data external feed</div></div><div class="proCard"><h3>AI / VISION</h3><div class="proValue" id="proAI">—</div><div class="proSub">Setup quality • model confluence</div></div></div>
+<div class="proCard" style="margin-top:8px"><h3>TIMEFRAME ENGINE</h3><div style="display:flex;gap:5px;flex-wrap:wrap" id="tfButtons"></div><div class="proNotice">1 MIN is the default. Higher timeframes use the same external-feed analysis framework. OTC remains unavailable unless a verified OTC data source is connected.</div></div>
+<div class="proCard" style="margin-top:8px"><h3>LIVE SIGNAL VERIFICATION</h3><div id="proLiveList" class="proList"><div class="proSub">Tap Refresh to scan current REAL-market candidates.</div></div><button class="proBtn" style="margin-top:8px" onclick="proLiveScan()">Refresh Live Candidates</button></div>
+</div>
+<div class="proPanel" id="pro-history"><div class="proCard"><h3>SIGNAL HISTORY</h3><div id="proHistory" class="proList">Loading…</div></div></div>
+<div class="proPanel" id="pro-alerts"><div class="proCard"><h3>ALERTS & NOTIFICATIONS</h3><input class="proInput" id="alertMarket" placeholder="Market e.g. EUR/USD"><div style="display:flex;gap:5px"><select class="proInput" id="alertTf"><option>1 MIN</option><option>5 MIN</option><option>15 MIN</option><option>30 MIN</option><option>1 HOUR</option></select><input class="proInput" id="alertThreshold" type="number" value="70" min="0" max="100" placeholder="Confidence"></div><button class="proBtn" onclick="proAddAlert()">Add Signal Alert</button><div id="proAlerts" class="proList" style="margin-top:8px"></div><div class="proNotice">Browser/sound/Telegram alert preferences are controlled in Settings. Alerts do not execute trades automatically.</div></div></div>
+<div class="proPanel" id="pro-risk"><div class="proCard"><h3>RISK & CAPITAL GUARD</h3><input class="proInput" id="riskCapital" type="number" placeholder="Capital"><input class="proInput" id="riskPct" type="number" step="0.1" placeholder="Risk per trade %"><input class="proInput" id="riskDaily" type="number" placeholder="Max daily loss"><input class="proInput" id="riskLosses" type="number" placeholder="Max consecutive losses"><input class="proInput" id="riskPayout" type="number" placeholder="Average payout %"><div class="proRow"><span>Martingale</span><button class="proBtn alt" id="riskMtg" onclick="this.dataset.on=this.dataset.on==='1'?'0':'1';this.textContent=this.dataset.on==='1'?'ON':'OFF'">OFF</button></div><button class="proBtn" onclick="proSaveRisk()">Save Risk Guard</button><div id="riskCalc" class="proNotice"></div></div></div>
+<div class="proPanel" id="pro-account"><div class="proCard"><h3>PROFILE & ACCESS</h3><input class="proInput" id="proName" placeholder="Full name"><input class="proInput" id="proEmail" disabled><button class="proBtn" onclick="proSaveProfile()">Save Profile</button><div class="proRow"><span>Plan</span><span class="proPill" id="proPlan2">—</span></div><div class="proRow"><span>Email verification</span><span class="proPill proOk">VERIFIED</span></div></div><div class="proCard" style="margin-top:8px"><h3>BROKER UID VERIFICATION</h3><input class="proInput" id="uidBroker" value="Quotex" placeholder="Broker"><input class="proInput" id="uidValue" placeholder="Broker UID"><button class="proBtn" onclick="proSubmitUid()">Submit UID</button><div id="uidList" class="proList" style="margin-top:8px"></div></div><div class="proCard" style="margin-top:8px"><h3>ACCESS / PAYMENT REQUEST</h3><select class="proInput" id="payPlan"></select><input class="proInput" id="payRef" placeholder="Payment/reference note (optional)"><button class="proBtn" onclick="proPaymentRequest()">Send Verification Request</button><div class="proNotice">Manual admin verification is supported. No fake payment confirmation is generated.</div></div></div>
+<div class="proPanel" id="pro-settings"><div class="proCard"><h3>APP SETTINGS</h3><select class="proInput" id="setMarket"><option>OTC</option><option>REAL</option></select><select class="proInput" id="setTf"><option>1 MIN</option><option>5 MIN</option><option>15 MIN</option><option>30 MIN</option><option>1 HOUR</option></select><input class="proInput" id="setTz" value="Asia/Dhaka" placeholder="Timezone"><div class="proRow"><span>Sound alerts</span><button class="proBtn alt" id="setSound" onclick="proToggle('setSound')">ON</button></div><div class="proRow"><span>Browser alerts</span><button class="proBtn alt" id="setBrowser" onclick="proToggle('setBrowser')">ON</button></div><div class="proRow"><span>Telegram alerts</span><button class="proBtn alt" id="setTelegram" onclick="proToggle('setTelegram')">OFF</button></div><button class="proBtn" onclick="proSaveSettings()">Save Settings</button></div><div class="proCard" style="margin-top:8px"><h3>SYSTEM STATUS</h3><div id="proStatus" class="proList">Loading…</div></div></div>
+</div>
+
 <div class="page" id="pg-more">
 <div style="font-size:8px;letter-spacing:.18em;color:#8b8ba7;font-weight:800;margin:6px 2px 10px">SIGNAL TOOLS &nbsp; 3</div>
+<div class="mItem" onclick="nav('pro')"><div class="mIc live1"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span></div><div class="mTx"><div class="mTi">Control Center</div><div class="mSu">Profile • Risk • Alerts • UID • History</div></div><div style="color:#6b7280">00 ›</div></div>
 <div class="mItem" onclick="nav('future')"><div class="mIc live1"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"/><path d="M8 20h8 M10 21h4 M12 3v2"/></svg></span></span></div><div class="mTx"><div class="mTi">Future Signals</div><div class="mSu">Batch-generate upcoming entries</div></div><div style="color:#6b7280">01 ›</div></div>
 <div class="mItem" onclick="nav('news')"><div class="mIc live2"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10 M7 12h10 M7 16h5"/></svg></span></span></div><div class="mTx"><div class="mTi">News Signals</div><div class="mSu">Economic events and bias calls</div></div><div style="color:#6b7280">02 ›</div></div>
 <div class="mItem" onclick="nav('management')"><div class="mIc live3"><span><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 12h6 M9 16h6"/></svg></span></span></div><div class="mTx"><div class="mTi">Management</div><div class="mSu">Capital plan and MTG tracker</div></div><div style="color:#6b7280">03 ›</div></div>
@@ -886,9 +906,9 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 
 
 <div class="adminCard ownerOnly" id="adminPanel" style="display:none">
-<div style="font-size:12px;font-weight:900;color:white;margin-bottom:8px">GHOST AI Admin Panel</div>
+<div style="font-size:12px;font-weight:900;color:white;margin-bottom:8px">GHOST MATRIX Admin Panel</div>
 <div id="adminSummary" style="margin-bottom:10px"></div>
-<div class="adminTabs"><button data-tab="users" class="on" onclick="adminLoadTab('users')">USERS</button><button data-tab="plans" onclick="adminLoadTab('plans')">PLANS</button><button data-tab="signals" onclick="adminLoadTab('signals')">SIGNALS</button></div>
+<div class="adminTabs"><button data-tab="users" class="on" onclick="adminLoadTab('users')">USERS</button><button data-tab="plans" onclick="adminLoadTab('plans')">PLANS</button><button data-tab="signals" onclick="adminLoadTab('signals')">SIGNALS</button><button data-tab="verify" onclick="adminLoadTab('verify')">VERIFY</button></div>
 <div id="adminBody"></div>
 </div>
 
@@ -956,7 +976,7 @@ const MARKETS={otc:["EUR/USD (OTC)","GBP/USD (OTC)","USD/JPY (OTC)","AUD/USD (OT
 let file=null, cur='otc', selPair=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);let d={};try{d=await r.json()}catch{const t=await r.text().catch(()=> ''); throw new Error(t||'Error '+r.status)}if(!r.ok)throw new Error(d.error||'Failed');return d}
-function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='more')lu()}
+function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='more')lu(); if(p==='pro')proLoad()}
 // COCO STYLE ANIMATED NAV - ripple + pop + bounce
 document.querySelectorAll('.bi').forEach(b=>{
   b.addEventListener('click',()=>{
@@ -1095,6 +1115,27 @@ async function toggleAccess(id,en){if(!confirm(en?'Enable?':'Suspend?'))return; 
 async function deleteUser(id,email){if(!confirm('Delete '+email+'?'))return; try{await api('/api/auth/admin/users/'+id,{method:'DELETE'}); lu()}catch(e){alert(e.message)}}
 async function resendEmail(id){try{await api('/api/auth/admin/users/'+id+'/resend',{method:'POST'}); alert('Resent')}catch(e){alert(e.message)}}
 window.toggleAccess=toggleAccess; window.deleteUser=deleteUser; window.resendEmail=resendEmail; window.createU=createU;
+
+// ---------------- GHOST MATRIX PRO CENTER ----------------
+let proTf='1 MIN';
+function proTab(name){document.querySelectorAll('#proTabs button').forEach(b=>b.classList.toggle('on',b.dataset.pro===name));document.querySelectorAll('.proPanel').forEach(p=>p.classList.toggle('on',p.id==='pro-'+name));if(name==='history')proHistory();if(name==='alerts')proAlerts();if(name==='risk')proRisk();if(name==='account')proAccount();if(name==='settings')proSettings()}
+document.addEventListener('click',e=>{const b=e.target.closest('#proTabs button');if(b)proTab(b.dataset.pro)});
+async function proLoad(){try{const [pl,perf,st,tf]=await Promise.all([api('/api/user/plan'),api('/api/performance'),api('/api/market-status'),api('/api/timeframes')]);$('proPlan').textContent=pl.display_plan||'FREE';$('proPlan2').textContent=pl.display_plan||'FREE';$('proAccess').textContent=pl.has_access?'FULL SIGNAL ACCESS':'LIMITED • SIGNAL PLAN REQUIRED';$('proWinRate').textContent=perf.win_rate==null?'—':perf.win_rate+'%';$('proWL').textContent=`Wins ${perf.wins} • Losses ${perf.losses} • Pending ${perf.pending}`;$('proReal').textContent=st.real.connected?'CONNECTED':'OFFLINE';$('proAI').textContent=st.ai.configured?'READY':'NOT CONFIGURED';$('tfButtons').innerHTML=(tf.timeframes||[]).map(x=>`<button class="proBtn alt" style="margin:2px" onclick="proSetTf('${x}')">${x}</button>`).join('');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill proBad">${st.otc.connected?'CONNECTED':'NOT CONNECTED'}</span></div><div class="proRow"><span>AI</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div><div class="proRow"><span>Telegram bot</span><span class="proPill">${st.telegram.configured?'CONFIGURED':'NOT CONFIGURED'}</span></div>`;proLiveScan();}catch(e){if($('proAccess'))$('proAccess').textContent=e.message}}
+function proSetTf(tf){proTf=tf;document.querySelectorAll('#tfButtons button').forEach(b=>b.classList.toggle('on',b.textContent===tf));proLiveScan()}
+async function proLiveScan(){const box=$('proLiveList');if(!box)return;box.innerHTML='<div class="proSub">Scanning current REAL-market candidates…</div>';try{const d=await api('/api/live?market_type=REAL&timeframe='+encodeURIComponent(proTf));box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.symbol)}</b><div class="proSub">${esc(x.reason||'')}</div></div><span class="proPill">${esc(x.direction||'NO TRADE')} • ${x.confidence||0}</span></div>`).join('')||'<div class="proSub">No current candidates.</div>'}catch(e){box.innerHTML=`<div class="proNotice proLock">${esc(e.message)}</div>`}}
+async function proHistory(){const box=$('proHistory');try{const d=await api('/api/history');box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.market)}</b><div class="proSub">${esc(x.market_type)} • ${esc(x.timeframe)} • ${esc((x.created_at||'').replace('T',' ').slice(0,16))}</div></div><span class="proPill">${esc(x.signal)} • ${x.confidence||0} • ${esc(x.outcome)}</span></div>`).join('')||'<div class="proSub">No signal history yet.</div>'}catch(e){box.textContent=e.message}}
+async function proAlerts(){const box=$('proAlerts');try{const d=await api('/api/alerts');box.innerHTML=(d.alerts||[]).map(x=>`<div class="proRow"><span>${esc(x.market||'ALL')} • ${esc(x.timeframe)} • ≥${x.threshold}</span><button class="proBtn alt" onclick="proDeleteAlert(${x.id})">Delete</button></div>`).join('')||'<div class="proSub">No alerts configured.</div>'}catch(e){box.textContent=e.message}}
+async function proAddAlert(){try{await api('/api/alerts',{method:'POST',body:{market:$('alertMarket').value.trim().toUpperCase(),timeframe:$('alertTf').value,threshold:Number($('alertThreshold').value||70),alert_type:'SIGNAL'}});proAlerts()}catch(e){alert(e.message)}}
+async function proDeleteAlert(id){try{await api('/api/alerts/'+id,{method:'DELETE'});proAlerts()}catch(e){alert(e.message)}}
+async function proRisk(){try{const d=await api('/api/risk'),r=d.risk;$('riskCapital').value=r.capital;$('riskPct').value=r.risk_per_trade;$('riskDaily').value=r.max_daily_loss;$('riskLosses').value=r.max_consecutive_losses;$('riskPayout').value=r.payout;$('riskMtg').textContent=r.martingale_enabled?'ON':'OFF';$('riskMtg').dataset.on=r.martingale_enabled?'1':'0';$('riskCalc').textContent=r.capital?`Suggested max stake at ${r.risk_per_trade}% = ${(Number(r.capital)*Number(r.risk_per_trade)/100).toFixed(2)}. This is a risk-control estimate, not a trading instruction.`:'Set capital and risk limits to calculate a guard.'}catch(e){}}
+async function proSaveRisk(){try{await api('/api/risk',{method:'PUT',body:{capital:Number($('riskCapital').value||0),risk_per_trade:Number($('riskPct').value||1),max_daily_loss:Number($('riskDaily').value||0),max_consecutive_losses:Number($('riskLosses').value||3),payout:Number($('riskPayout').value||80),martingale_enabled:$('riskMtg').dataset.on==='1'}});proRisk();alert('Risk guard saved.')}catch(e){alert(e.message)}}
+async function proAccount(){try{const d=await api('/api/profile');$('proName').value=d.user.name||'';$('proEmail').value=d.user.email||'';$('proPlan2').textContent=(d.plan&&d.plan.display_plan)||'FREE';const u=await api('/api/uid');$('uidList').innerHTML=(u.verifications||[]).map(x=>`<div class="proRow"><span>${esc(x.broker)} • ${esc(x.uid)}</span><span class="proPill">${esc(x.status)}</span></div>`).join('')||'<div class="proSub">No UID submission.</div>';const plans=await api('/api/plans');$('payPlan').innerHTML=(plans.plans||[]).filter(x=>x.name!=='FREE').map(x=>`<option value="${x.id}">${esc(x.name)} • $${x.price}</option>`).join('')}catch(e){}}
+async function proSaveProfile(){try{await api('/api/profile',{method:'PUT',body:{name:$('proName').value.trim()}});alert('Profile saved.')}catch(e){alert(e.message)}}
+async function proSubmitUid(){try{await api('/api/uid',{method:'POST',body:{broker:$('uidBroker').value.trim(),uid:$('uidValue').value.trim()}});$('uidValue').value='';proAccount();alert('UID submitted for admin review.')}catch(e){alert(e.message)}}
+async function proPaymentRequest(){try{await api('/api/payment-requests',{method:'POST',body:{plan_id:Number($('payPlan').value),reference:$('payRef').value.trim()}});alert('Verification request sent.')}catch(e){alert(e.message)}}
+function proToggle(id){const b=$(id);b.dataset.on=b.dataset.on==='1'?'0':'1';b.textContent=b.dataset.on==='1'?'ON':'OFF'}
+async function proSettings(){try{const d=await api('/api/preferences');const p=d.preferences;$('setMarket').value=p.default_market_type||'OTC';$('setTf').value=p.default_timeframe||'1 MIN';$('setTz').value=p.timezone||'Asia/Dhaka';[['setSound',p.sound_alerts],['setBrowser',p.browser_alerts],['setTelegram',p.telegram_alerts]].forEach(([id,v])=>{$(id).dataset.on=v?'1':'0';$(id).textContent=v?'ON':'OFF'});const st=await api('/api/market-status');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill proBad">NOT CONNECTED</span></div><div class="proRow"><span>AI vision</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div>`}catch(e){}}
+async function proSaveSettings(){try{await api('/api/preferences',{method:'PUT',body:{default_market_type:$('setMarket').value,default_timeframe:$('setTf').value,timezone:$('setTz').value,sound_alerts:$('setSound').dataset.on==='1',browser_alerts:$('setBrowser').dataset.on==='1',telegram_alerts:$('setTelegram').dataset.on==='1'}});alert('Settings saved.')}catch(e){alert(e.message)}}
 function showApp(){ $('log').classList.add('hide'); ld(); loadUserPlan(); nav('dashboard'); setTimeout(async()=>{ try{ const me=await api('/api/auth/me'); window._ghostIsOwner=ghostIsOwnerUser(me.user); applyOwnerAccessUI(); if(me.user && me.user.is_admin){ const ap=document.getElementById('adminPanel'); if(ap){ ap.style.display='block'; loadAdminSummary(); adminLoadTab('users'); } } }catch{} },300); }
 function showLog(){ $('log').classList.remove('hide')}
 async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch{} showLog()}
@@ -1456,7 +1497,7 @@ window.showSignalLocked=showSignalLocked;
 const _origLd = ld;
 ld = async function(){ try{ await _origLd(); }catch{} try{ await loadUserPlan(); await loadSignalHistory(); }catch{} };
 window.ld=ld;
-// Admin - GHOST AI Admin Panel (USERS / PLANS / SIGNALS)
+// Admin - GHOST MATRIX Admin Panel (USERS / PLANS / SIGNALS)
 async function loadAdminSummary(){
   try{
     const d=await api('/api/admin/summary');
@@ -1480,6 +1521,11 @@ async function adminLoadTab(tab){
       const d=await api('/api/admin/signals'); const sigs=d.signals||[];
       body.innerHTML=sigs.map(s=>`<div class="adminCard"><div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font-size:11px;font-weight:900;color:white">${s.market} • ${s.signal} • ${s.confidence}%</div><div style="font-size:9px;color:#8b8ba7">${s.user_email||'Unknown'} • ${s.market_type} • 1 MIN • Quality ${s.image_quality}/100 • ${new Date(s.created_at).toLocaleString()}</div><div style="font-size:9px;color:#c4b5fd;margin-top:4px">${s.analysis||''}</div></div><div style="display:flex;flex-direction:column;gap:4px"><select id="sigOut-${s.id}" style="padding:6px;border-radius:8px;background:#111827;color:white;border:1px solid #2a2f45;font-size:10px"><option value="">Outcome</option><option>WIN</option><option>LOSS</option><option>EXPIRED</option></select><button onclick="adminMarkSignal(${s.id})" style="padding:6px;border:0;border-radius:8px;background:#a78bfa;color:white;font-weight:800;font-size:10px">Mark</button></div></div></div>`).join('')||'No signals';
     }
+    else if(tab==='verify'){
+      const d=await api('/api/admin/verification-queue');
+      const u=d.uid||[], p=d.payments||[];
+      body.innerHTML='<div style="font-size:10px;font-weight:900;color:#c4b5fd;margin-bottom:6px">UID VERIFICATION</div>'+ (u.map(x=>`<div class="adminCard"><div style="font-size:10px;color:white"><b>${x.email}</b> • ${x.broker} • ${x.uid}</div><div style="font-size:9px;color:#8b8ba7;margin:4px 0">${x.status}</div><button onclick="adminVerifyUID(${x.verification_id},'APPROVED')" style="padding:6px;border:0;border-radius:8px;background:#00ff88;color:#000;font-weight:900;font-size:9px">Approve UID</button> <button onclick="adminVerifyUID(${x.verification_id},'REJECTED')" style="padding:6px;border:0;border-radius:8px;background:#ff3b5c;color:#fff;font-weight:900;font-size:9px">Reject</button></div>`).join('')||'<div class="proSub">No UID requests.</div>')+'<div style="font-size:10px;font-weight:900;color:#c4b5fd;margin:10px 0 6px">PAYMENT / PLAN REQUESTS</div>'+ (p.map(x=>`<div class="adminCard"><div style="font-size:10px;color:white"><b>${x.email}</b> • ${x.plan_name||'Plan'} • $${x.amount}</div><div style="font-size:9px;color:#8b8ba7;margin:4px 0">${x.method} • ${x.reference||'No reference'} • ${x.status}</div><button onclick="adminVerifyPayment(${x.id},'APPROVED')" style="padding:6px;border:0;border-radius:8px;background:#00ff88;color:#000;font-weight:900;font-size:9px">Approve</button> <button onclick="adminVerifyPayment(${x.id},'REJECTED')" style="padding:6px;border:0;border-radius:8px;background:#ff3b5c;color:#fff;font-weight:900;font-size:9px">Reject</button></div>`).join('')||'<div class="proSub">No payment requests.</div>');
+    }
   }catch(e){ body.innerHTML='Error: '+e.message; }
 }
 window.adminLoadTab=adminLoadTab;
@@ -1489,6 +1535,9 @@ async function adminCreatePlan(){ const n=document.getElementById('newPlanName')
 async function adminTogglePlan(pid,st){ try{ await api('/api/admin/plans/'+pid,{method:'PUT',body:{status:st}}); adminLoadTab('plans'); }catch(e){ alert(e.message); } }
 async function adminMarkSignal(sid){ const v=document.getElementById('sigOut-'+sid).value; if(!v) return alert('Select outcome'); try{ await api('/api/admin/signals/'+sid+'/outcome',{method:'PUT',body:{outcome:v}}); adminLoadTab('signals'); }catch(e){ alert(e.message); } }
 window.adminAssignPlan=adminAssignPlan; window.adminToggleUser=adminToggleUser; window.adminCreatePlan=adminCreatePlan; window.adminTogglePlan=adminTogglePlan; window.adminMarkSignal=adminMarkSignal;
+async function adminVerifyUID(id,status){try{await api('/api/admin/verification/'+id,{method:'PUT',body:{status}});adminLoadTab('verify')}catch(e){alert(e.message)}}
+async function adminVerifyPayment(id,status){try{await api('/api/admin/payment/'+id,{method:'PUT',body:{status}});adminLoadTab('verify')}catch(e){alert(e.message)}}
+window.adminVerifyUID=adminVerifyUID;window.adminVerifyPayment=adminVerifyPayment;
 
 
 // === GHOST AI TERMINAL - Result Card ===
@@ -1624,5 +1673,5 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
   </div>
 </div>
 
-</body>
+<div aria-hidden="true" style="position:fixed;left:-9999px">GHOST MATRIX • Decision-support only.</div></body>
 </html>
