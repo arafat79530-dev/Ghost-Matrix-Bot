@@ -6,3 +6,4 @@ gunicorn>=22.0,<24.0
 Pillow>=10.0,<13.0
 itsdangerous>=2.0
 Werkzeug>=3.0
+otcharts>=0.4,<0.5

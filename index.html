@@ -1033,7 +1033,7 @@ function render(){
    // Injector cards -> open detail like Coco
    document.querySelectorAll('#ml2 .mcard').forEach(el=>{
      el.addEventListener('click',()=>{
-       const pair = el.querySelector('.mpair')?.textContent || 'NZD/CHF (OTC)';
+       const pair = el.querySelector('.mpair')?.textContent || 'EUR/USD';
        const flags = el.querySelector('.flags')?.innerHTML || '';
        openInjDetail(pair, flags);
      });
@@ -1052,9 +1052,11 @@ $('liveAn').addEventListener('click',async()=>{
  flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='...'; $('livePairTxt').textContent=selPair;
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
-  await new Promise(r=>setTimeout(r,1800));
-  const dir=Math.random()>0.46?'CALL':'PUT'; const conf=62+Math.floor(Math.random()*24);
-  ghostShowAnalyzing(res); await new Promise(r=>setTimeout(r,900)); ghostRenderTerminal(res, {market:selPair, market_type:'REAL', image_quality:88, verified_accuracy:null}, {summary:'Trend + structure confirmation from live feed. Confidence is setup quality, not a win probability.'}, dir, conf, ['BOS','OB','FVG']);
+  const d=await api('/api/inject-signal',{method:'POST',body:{market:selPair,duration:1,timeframe:'1 MIN',market_type:'REAL'}});
+  const dir=String(d.direction||'NO SIGNAL').toUpperCase(); const conf=Number(d.confidence||0);
+  ghostShowAnalyzing(res);
+  if(dir==='CALL'||dir==='PUT') ghostRenderTerminal(res,{market:selPair,market_type:'REAL',verified_accuracy:null},d.analysis||d,dir,conf,d.factors||[]);
+  else ghostRenderTerminal(res,{market:selPair,market_type:'REAL'},d.analysis||d,'NO SIGNAL',conf,d.factors||[]);
  }finally{btn.disabled=false;btn.textContent='Analyze →'; setTimeout(()=>flow.classList.remove('on'),7000)}
 });
 $('an').addEventListener('click',async()=>{
@@ -1065,9 +1067,7 @@ $('an').addEventListener('click',async()=>{
  try{
   const fd=new FormData(); fd.append('image',file,file.name||'chart.png'); fd.append('broker', window.GHOST_BROKER || localStorage.getItem('ghost_ai_broker') || 'Quotex'); fd.append('market_type', window.GHOST_BROKER || 'Quotex');
   ghostShowAnalyzing(res);
-  await new Promise(r=>setTimeout(r,1100));
   const d=await api('/api/analyze-image',{method:'POST',headers:{'X-Ghost-Owner':window._ghostIsOwner?'1':'0','X-Ghost-Role':window._ghostIsOwner?'owner':'user'},body:fd});
-  await new Promise(r=>setTimeout(r,350));
   if(d.locked){ if(window._ghostIsOwner){ throw new Error('OWNER ACCESS IS ACTIVE, BUT THE SIGNAL API IS STILL RETURNING LOCKED. The backend must allow owner/admin accounts.'); } showSignalLocked(); throw new Error('SIGNAL ACCESS LOCKED - Your account does not have an active signal plan.'); }
   if(d.quality_too_low){ res.innerHTML=`<div class="ghostTerm nosignal newSignal"><div class="gt-particles"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="gt-scan"></div><div class="gt-top"><div class="gt-brand">GHOST AI</div><div class="gt-live" style="color:#fbbf24"><span class="gt-dot" style="background:#fbbf24;box-shadow:0 0 10px #fbbf24"></span> QUALITY CHECK</div></div><div style="text-align:center;margin-top:14px"><div class="gt-nsIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:28px;height:28px"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r=".8" fill="currentColor"/></svg></div><div class="gt-market" style="font-size:22px;color:#fbbf24">SCREENSHOT QUALITY TOO LOW</div></div><div class="gt-analysis" style="text-align:center">Please upload a clearer chart screenshot with visible candles, timeframe and market information.<br><span style="color:#8b8ba7">Image Quality: ${d.image_quality||0}/100 • Issues: ${(d.issues||[]).join(', ')}</span></div><button onclick="document.getElementById('shotInp')?.click();document.querySelector('input[type=file]')?.click()" style="width:100%;margin-top:12px;padding:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#000;font-weight:900;cursor:pointer">UPLOAD CLEARER SCREENSHOT</button></div>`; throw new Error('Quality too low'); }
   const a=d.analysis; let dir=(a.direction||'NO TRADE').toUpperCase(); if(dir==='NO TRADE') dir='NO SIGNAL'; const conf=Number(a.confidence||0); const confl=a.confluences||[];
@@ -1134,7 +1134,7 @@ async function proSaveProfile(){try{await api('/api/profile',{method:'PUT',body:
 async function proSubmitUid(){try{await api('/api/uid',{method:'POST',body:{broker:$('uidBroker').value.trim(),uid:$('uidValue').value.trim()}});$('uidValue').value='';proAccount();alert('UID submitted for admin review.')}catch(e){alert(e.message)}}
 async function proPaymentRequest(){try{await api('/api/payment-requests',{method:'POST',body:{plan_id:Number($('payPlan').value),reference:$('payRef').value.trim()}});alert('Verification request sent.')}catch(e){alert(e.message)}}
 function proToggle(id){const b=$(id);b.dataset.on=b.dataset.on==='1'?'0':'1';b.textContent=b.dataset.on==='1'?'ON':'OFF'}
-async function proSettings(){try{const d=await api('/api/preferences');const p=d.preferences;$('setMarket').value=p.default_market_type||'OTC';$('setTf').value=p.default_timeframe||'1 MIN';$('setTz').value=p.timezone||'Asia/Dhaka';[['setSound',p.sound_alerts],['setBrowser',p.browser_alerts],['setTelegram',p.telegram_alerts]].forEach(([id,v])=>{$(id).dataset.on=v?'1':'0';$(id).textContent=v?'ON':'OFF'});const st=await api('/api/market-status');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill proBad">NOT CONNECTED</span></div><div class="proRow"><span>AI vision</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div>`}catch(e){}}
+async function proSettings(){try{const d=await api('/api/preferences');const p=d.preferences;$('setMarket').value=p.default_market_type||'OTC';$('setTf').value=p.default_timeframe||'1 MIN';$('setTz').value=p.timezone||'Asia/Dhaka';[['setSound',p.sound_alerts],['setBrowser',p.browser_alerts],['setTelegram',p.telegram_alerts]].forEach(([id,v])=>{$(id).dataset.on=v?'1':'0';$(id).textContent=v?'ON':'OFF'});const st=await api('/api/market-status');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill ${st.otc.connected?'proOk':'proBad'}">${st.otc.connected?'CONNECTED':'NOT CONNECTED'}</span></div><div class="proRow"><span>AI vision</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div>`}catch(e){}}
 async function proSaveSettings(){try{await api('/api/preferences',{method:'PUT',body:{default_market_type:$('setMarket').value,default_timeframe:$('setTf').value,timezone:$('setTz').value,sound_alerts:$('setSound').dataset.on==='1',browser_alerts:$('setBrowser').dataset.on==='1',telegram_alerts:$('setTelegram').dataset.on==='1'}});alert('Settings saved.')}catch(e){alert(e.message)}}
 function showApp(){ $('log').classList.add('hide'); ld(); loadUserPlan(); nav('dashboard'); setTimeout(async()=>{ try{ const me=await api('/api/auth/me'); window._ghostIsOwner=ghostIsOwnerUser(me.user); applyOwnerAccessUI(); if(me.user && me.user.is_admin){ const ap=document.getElementById('adminPanel'); if(ap){ ap.style.display='block'; loadAdminSummary(); adminLoadTab('users'); } } }catch{} },300); }
 function showLog(){ $('log').classList.remove('hide')}
@@ -1145,7 +1145,7 @@ initFeatureTabs(); loadNewsFeed();
 (async()=>{try{const d=await api('/api/auth/me'); if(d.authenticated)showApp(); else showLog()}catch{showLog()}})();
 
 // === GHOST INJECTOR - COCO FLOW ===
-let injPair='NZD/CHF (OTC)', injDur=0, injStratIdx=0;
+let injPair='EUR/USD', injDur=0, injStratIdx=0;
 const GHOST_STRATS=[
  {name:'Ghost SmartFlow',sub:'MOMENTUM FLOW READ',desc:'Follows the dominant liquidity stream and rides confirmed momentum.',svg:'<svg viewBox="0 0 100 100"><path d="M5 60 Q 25 30 45 50 T 95 30" stroke="#a78bfa" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M5 70 Q 30 45 55 60 T 95 45" stroke="#7c3aed" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></svg>'},
  {name:'Ghost Algoryx',sub:'ALGORITHMIC CORE',desc:'Algorithmic core that scans structure, order flow and volatility for high-probability setups.',svg:'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="22" fill="none" stroke="#f59e0b" stroke-width="2"/><circle cx="50" cy="50" r="10" fill="#f59e0b"/><path d="M20 30 L 35 45 M80 30 L 65 45 M20 70 L 35 55 M80 70 L 65 55" stroke="#f59e0b" stroke-width="1.5"/></svg>'},
@@ -1157,7 +1157,7 @@ function openInjDetail(pair, flagsHTML){
   injPair=pair; injDur=0;
   document.getElementById('injListView').style.display='none';
   const d=document.getElementById('injDetail'); d.classList.add('on');
-  document.getElementById('injPair').textContent = pair.includes('(OTC)')? pair : pair+' (OTC)';
+  document.getElementById('injPair').textContent = pair;
   document.getElementById('injSub').textContent = pair.includes('(OTC)')?'OTC MARKET':'REAL MARKET';
   document.getElementById('injFlags').innerHTML = flagsHTML || '';
   document.querySelectorAll('.durCard').forEach(c=>c.classList.remove('sel'));
@@ -1269,7 +1269,7 @@ function renderFuture(){
   const f=list.filter(x=>x.toLowerCase().includes(q));
   grid.innerHTML=f.slice(0,20).map(m=>{
     const [f1,f2c]=flagImgs(m); const sel=futureSel.has(m);
-    return `<div class="futureCard ${sel?'sel':''}" data-m="${m}"><div class="check">${sel?'✓':''}</div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div class="mpair" style="margin-top:8px">${m.replace(' (OTC)','')} (OTC)</div></div>`;
+    return `<div class="futureCard ${sel?'sel':''}" data-m="${m}"><div class="check">${sel?'✓':''}</div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div class="mpair" style="margin-top:8px">${cur==='otc'?m.replace(' (OTC)','')+' (OTC)':m}</div></div>`;
   }).join('');
   grid.querySelectorAll('.futureCard').forEach(el=>el.addEventListener('click',()=>{
     const m=el.dataset.m; if(futureSel.has(m)) futureSel.delete(m); else futureSel.add(m); renderFuture(); updateFutureBar();
@@ -1279,13 +1279,13 @@ function renderFuture(){
 function updateFutureBar(){
   const n=futureSel.size; const txt=document.getElementById('futureSelTxt'); const sub=document.getElementById('futureSelSub'); const btn=document.getElementById('futureNext');
   if(txt) txt.textContent = n===0?'No markets yet': n+' pair'+(n>1?'s':'')+' selected';
-  if(sub) sub.textContent = n===0?'STEP 1 OF 2 • PICK AT LEAST ONE':'STEP 1 OF 2 • OTC MARKET';
+  if(sub) sub.textContent = n===0?'STEP 1 OF 2 • PICK AT LEAST ONE':('STEP 1 OF 2 • '+(cur==='otc'?'OTC MARKET':'REAL MARKET'));
   if(btn) btn.disabled = n===0;
 }
 function goFutureStep2(){
   document.getElementById('futureStep1').style.display='none'; document.getElementById('futureStep2').style.display='block';
   document.getElementById('futureCount').textContent=futureSel.size;
-  document.getElementById('futureSelList').innerHTML=[...futureSel].map(m=>`<span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:6px 10px;font-size:10px;font-weight:800;color:#e9d5ff;display:flex;align-items:center;gap:6px">${m.replace(' (OTC)','')} <span style="color:#a78bfa"><span class="cssIco" style="width:12px;height:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></span></span>`).join('');
+  document.getElementById('futureSelList').innerHTML=[...futureSel].map(m=>`<span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:6px 10px;font-size:10px;font-weight:800;color:#e9d5ff;display:flex;align-items:center;gap:6px">${m.replace(' (OTC)','')} <span style="color:#a78bfa">${cur==='otc'?'OTC':''}</span></span>`).join('');
   updateFutureGenTxt();
 }
 function backFutureStep1(){ document.getElementById('futureStep2').style.display='none'; document.getElementById('futureStep1').style.display='block'; }
@@ -1300,7 +1300,7 @@ async function generateFuture(){
   if(!futureSel.size){ r.innerHTML='<div class="newsContentCard"><h3>Select a market first</h3><p>Choose at least one pair before generating future signals.</p></div>'; return; }
   r.innerHTML='<div class="newsContentCard"><div class="newsPanelSub">Generating future signal data…</div></div>';
   try{
-    const d=await api('/api/future-signals',{method:'POST',headers:{'X-Ghost-Owner':'1','X-Ghost-Role':'owner'},body:{markets:[...futureSel],count:futureCount,market_type:cur}});
+    const d=await api('/api/future-signals',{method:'POST',body:{markets:[...futureSel],count:futureCount,market_type:cur,timeframe:'1 MIN'}});
     const list=d.signals||d.results||[];
     if(!list.length) throw new Error('Future signal feed returned no data.');
     r.innerHTML='<div class="futureResults">'+list.map((x,i)=>{

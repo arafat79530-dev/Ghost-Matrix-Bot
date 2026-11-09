@@ -26,6 +26,11 @@ from zoneinfo import ZoneInfo
 from typing import Any, Optional
 
 import requests
+
+try:
+    from otcharts import Client as OTChartsClient
+except Exception:
+    OTChartsClient = None
 from flask import Flask, jsonify, request, send_from_directory, session
 from PIL import Image, ImageDraw, ImageFont
 
@@ -57,6 +62,7 @@ APP_NAME = "GHOST AI"
 AFFILIATE_URL = "https://broker-qx.pro/sign-up/?lid=2384783"
 TELEGRAM_ADMIN = "https://t.me/ghostsupportbd"
 GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b").strip()
+OTCHARTS_API_KEY = os.getenv("OTCHARTS_API_KEY", "").strip()
 # Optional comma-separated Twelve Data symbols for non-FX Quotex assets.
 # Example format depends on Twelve Data's own symbol catalog; these are NOT
 # proof that the same instrument exists on Quotex.
@@ -617,6 +623,40 @@ def twelve_get(endpoint: str, params: dict, count_credit: bool = True) -> dict:
         raise RuntimeError(data.get("message", str(data)))
     return data
 
+
+def _otc_symbol(pair: str) -> str:
+    raw = str(pair or "").upper().replace("(OTC)", "").replace("/", "").replace("-", "").replace(" ", "")
+    return raw + "_otc"
+
+def _otc_tf_seconds(timeframe: str) -> int:
+    return {"1 MIN":60,"5 MIN":300,"15 MIN":900,"30 MIN":1800,"1 HOUR":3600}.get(_normalize_timeframe(timeframe),60)
+
+def _otcharts_client():
+    if not OTCHARTS_API_KEY or OTChartsClient is None:
+        raise RuntimeError("OTCHARTS_API_KEY is not configured or otcharts package is unavailable")
+    return OTChartsClient()
+
+def _otc_candles(pair: str, timeframe: str = "1 MIN", limit: int = 300):
+    client = _otcharts_client()
+    symbol = _otc_symbol(pair)
+    bars = client.candles("quotex", symbol, tf=_otc_tf_seconds(timeframe), limit=max(60, min(500, int(limit))))
+    raw = getattr(bars, "candles", bars)
+    candles = []
+    for item in raw or []:
+        def g(k, default=None):
+            return item.get(k, default) if isinstance(item, dict) else getattr(item, k, default)
+        try:
+            stamp = g("time")
+            if isinstance(stamp, (int,float)):
+                stamp = datetime.fromtimestamp(float(stamp), tz=timezone.utc)
+            elif isinstance(stamp, str):
+                stamp = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+                if stamp.tzinfo is None: stamp = stamp.replace(tzinfo=timezone.utc)
+            candles.append({"time":stamp,"open":float(g("open")),"high":float(g("high")),"low":float(g("low")),"close":float(g("close"))})
+        except (TypeError,ValueError):
+            continue
+    candles.sort(key=lambda x:x["time"])
+    return candles, {"symbol":symbol,"venue":"quotex","timeframe":_normalize_timeframe(timeframe),"source":"OTCharts Quotex OTC feed","verified_quotex":False}
 
 def get_catalog(force: bool = False) -> list[dict[str, str]]:
     """Return only the user's explicitly selected REAL-market candidates; never all 1399 symbols."""
@@ -2841,7 +2881,18 @@ def api_analyze_image():
         im = Image.open(io.BytesIO(raw))
         im.verify()
         mime = upload.mimetype if upload.mimetype in ("image/jpeg", "image/png", "image/webp") else "image/jpeg"
-        encoded = base64.b64encode(raw).decode("ascii")
+        # Reduce vision latency by resizing large screenshots before the model call.
+        vision_bytes = raw
+        try:
+            work = Image.open(io.BytesIO(raw)).convert("RGB")
+            work.thumbnail((1800, 1200), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            work.save(buf, format="JPEG", quality=84, optimize=True)
+            vision_bytes = buf.getvalue()
+            mime = "image/jpeg"
+        except Exception:
+            pass
+        encoded = base64.b64encode(vision_bytes).decode("ascii")
         system_prompt = '''You are GHOST TRADER V3 — elite SMC price action analyst with high accuracy + tradeable signals.
 
 MISSION: Analyze ONLY what is visible in the chart screenshot. Never hallucinate asset, timeframe, price.
@@ -2878,7 +2929,7 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
                 {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
             ]}
         ], "temperature": 0.05, "max_completion_tokens": 1400}
-        response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=50)
+        response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=28)
         response.raise_for_status()
         content = response.json()["choices"][0]["message"]["content"].strip()
         cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", content, flags=re.I).strip()
@@ -3028,136 +3079,70 @@ def _setup_confidence(result: dict[str, Any]) -> int:
 @app.post("/api/inject-signal")
 @login_required
 def api_inject_signal():
-    """Manual, on-demand signal analysis. No automatic trading or execution."""
     uid = session.get("user_id")
     if not _signal_access_for_user(int(uid)):
-        return jsonify({"error": "SIGNAL ACCESS LOCKED", "locked": True, "affiliate_url": AFFILIATE_URL}), 403
-    body = request.get_json(silent=True) or {}
-    market = str(body.get("market", "")).strip().upper()
-    market_type = str(body.get("market_type", "REAL")).strip().upper()
-    duration = max(1, min(60, int(body.get("duration", 1) or 1)))
-    timeframe = _normalize_timeframe(body.get("timeframe") or "1 MIN")
-    if not market:
-        return jsonify({"error": "Market নির্বাচন করো।"}), 400
-    # The connected feed is real-market Twelve Data. Never relabel it as verified OTC data.
-    if "OTC" in market_type or "(OTC)" in market:
-        return jsonify({
-            "available": False,
-            "direction": "NO SIGNAL",
-            "signal": "NO SIGNAL",
-            "confidence": 0,
-            "market": market,
-            "market_type": "OTC",
-            "duration": duration,
-            "source": "No verified OTC feed connected",
-            "warning": "OTC signal generation is disabled until a genuine OTC data source is connected. No synthetic OTC signal is fabricated."
-        }), 200
-    symbol = market.replace(" (OTC)", "").strip()
-    allowed = {str(item.get("symbol", "")).upper() for item in get_catalog()}
-    if symbol not in allowed:
-        return jsonify({"error": "Market is not in the configured real-market allowlist."}), 400
-    if not TWELVE_DATA_API_KEY:
-        return jsonify({"error": "TWELVE_DATA_API_KEY is not configured."}), 503
-    if not _api_allowed("inject", 2, 60):
-        return jsonify({"error": "Signal analysis rate limit reached. Try again later."}), 429
-    if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
-        return jsonify({"error": "Daily API safety budget reached."}), 429
+        return jsonify({"error":"SIGNAL ACCESS LOCKED","locked":True,"affiliate_url":AFFILIATE_URL}),403
+    body=request.get_json(silent=True) or {}
+    market=str(body.get("market","")).strip().upper()
+    market_type=str(body.get("market_type","REAL")).strip().upper()
+    duration=max(1,min(60,int(body.get("duration",1) or 1)))
+    timeframe=_normalize_timeframe(body.get("timeframe") or "1 MIN")
+    if not market: return jsonify({"error":"Market নির্বাচন করো।"}),400
     try:
-        result = scan_one_symbol(symbol, timeframe)
-        direction = result.get("direction", "NO SIGNAL")
-        confidence = _setup_confidence(result)
-        return jsonify({
-            "available": direction in ("CALL", "PUT"),
-            "direction": direction if direction in ("CALL", "PUT") else "NO SIGNAL",
-            "signal": direction if direction in ("CALL", "PUT") else "NO SIGNAL",
-            "confidence": confidence,
-            "market": symbol,
-            "market_type": "REAL",
-            "duration": duration,
-            "timeframe": timeframe,
-            "analysis": result,
-            "factors": [
-                "EMA9 / EMA21 / EMA50 trend alignment",
-                "RSI momentum filter",
-                "Candle body strength",
-                "Support / resistance distance",
-                "Historical EMA sanity check"
-            ],
-            "source": "Twelve Data external feed",
-            "verified_quotex": False,
-            "warning": "Setup-quality score only; not a win probability or guarantee."
-        }), 200
+        if "OTC" in market_type or "(OTC)" in market:
+            if not OTCHARTS_API_KEY: return jsonify({"error":"OTCHARTS_API_KEY is not configured."}),503
+            if not _api_allowed("otc_inject",2,60): return jsonify({"error":"OTC analysis rate limit reached."}),429
+            candles,meta=_otc_candles(market,timeframe,300)
+            result=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
+            result.update({"source":meta["source"],"verified_quotex":False,"market_type":"OTC","timeframe":timeframe,"backtest":backtest_ema(candles)})
+            direction=result.get("direction","NO TRADE"); confidence=_setup_confidence(result) if direction in ("CALL","PUT") else 0
+            return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":market,"market_type":"OTC","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["OTCharts Quotex OTC candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance"],"source":meta["source"],"verified_quotex":False}),200
+        symbol=market.replace(" (OTC)","").strip()
+        allowed={str(item.get("symbol","")).upper() for item in get_catalog()}
+        if symbol not in allowed: return jsonify({"error":"Market is not in the configured real-market allowlist."}),400
+        if not TWELVE_DATA_API_KEY: return jsonify({"error":"TWELVE_DATA_API_KEY is not configured."}),503
+        if not _api_allowed("inject",2,60): return jsonify({"error":"Signal analysis rate limit reached."}),429
+        result=scan_one_symbol(symbol,timeframe)
+        direction=result.get("direction","NO SIGNAL"); confidence=_setup_confidence(result) if direction in ("CALL","PUT") else 0
+        return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":symbol,"market_type":"REAL","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["Twelve Data live candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance","Historical EMA sanity check"],"source":"Twelve Data external feed","verified_quotex":False}),200
     except Exception as exc:
-        log.warning("Injector analysis failed: %s", exc)
-        return jsonify({"error": "Live market analysis failed. Check market-data configuration and limits."}), 502
-
+        log.warning("Injector analysis failed: %s",exc)
+        return jsonify({"error":"Live market analysis failed: %s" % str(exc)[:180]}),502
 
 @app.post("/api/future-signals")
 @login_required
 def api_future_signals():
-    """Generate a manual batch of current setup candidates; no fabricated future prices."""
-    uid = session.get("user_id")
-    if not _signal_access_for_user(int(uid)):
-        return jsonify({"error": "SIGNAL ACCESS LOCKED", "locked": True, "affiliate_url": AFFILIATE_URL}), 403
-    body = request.get_json(silent=True) or {}
-    markets = body.get("markets") or []
-    market_type = str(body.get("market_type", "REAL")).strip().upper()
-    count = max(5, min(20, int(body.get("count", 5) or 5)))
-    timeframe = _normalize_timeframe(body.get("timeframe") or "1 MIN")
-    markets = [str(x).strip().upper() for x in markets if str(x).strip()]
-    markets = list(dict.fromkeys(markets))[:20]
-    if not markets:
-        return jsonify({"error": "At least one market is required."}), 400
-    if "OTC" in market_type:
-        return jsonify({
-            "available": False, "signals": [], "requested": count,
-            "market_type": "OTC",
-            "warning": "Verified OTC feed is not connected; no synthetic future OTC signals are generated."
-        }), 200
-    if not TWELVE_DATA_API_KEY:
-        return jsonify({"error": "TWELVE_DATA_API_KEY is not configured."}), 503
-    allowed = {str(item.get("symbol", "")).upper() for item in get_catalog()}
-    results = []
-    scanned = 0
-    for symbol in markets:
-        if symbol not in allowed:
-            continue
-        if db_api_calls_today() >= DAILY_CREDIT_BUDGET:
-            break
-        if not _api_allowed("future", 2, 60):
-            break
+    uid=session.get("user_id")
+    if not _signal_access_for_user(int(uid)): return jsonify({"error":"SIGNAL ACCESS LOCKED","locked":True,"affiliate_url":AFFILIATE_URL}),403
+    body=request.get_json(silent=True) or {}
+    markets=[str(x).strip().upper() for x in (body.get("markets") or []) if str(x).strip()]
+    market_type=str(body.get("market_type","REAL")).strip().upper()
+    count=max(5,min(20,int(body.get("count",5) or 5)))
+    timeframe=_normalize_timeframe(body.get("timeframe") or "1 MIN")
+    if not markets: return jsonify({"error":"At least one market is required."}),400
+    results=[]; scanned=0
+    for market in list(dict.fromkeys(markets))[:20]:
         try:
-            r = scan_one_symbol(symbol, timeframe)
-            scanned += 1
-            direction = r.get("direction")
-            if direction in ("CALL", "PUT"):
-                results.append({
-                    "market": symbol,
-                    "symbol": symbol,
-                    "direction": direction,
-                    "signal": direction,
-                    "confidence": _setup_confidence(r),
-                    "price": r.get("price"),
-                    "candle": r.get("candle"),
-                    "reason": r.get("reason"),
-                    "source": "Twelve Data external feed",
-                    "timeframe": timeframe,
-                    "verified_quotex": False
-                })
-        except Exception as exc:
-            log.warning("Future candidate scan failed for %s: %s", symbol, exc)
-    results = results[:count]
-    return jsonify({
-        "available": bool(results),
-        "signals": results,
-        "requested": count,
-        "scanned": scanned,
-        "market_type": "REAL",
-        "timeframe": timeframe,
-        "mode": "current setup candidates",
-        "warning": "These are current market-analysis candidates, not guaranteed future prices or outcomes."
-    }), 200
-
+            is_otc=("OTC" in market_type or "(OTC)" in market)
+            if is_otc:
+                if not OTCHARTS_API_KEY: break
+                if not _api_allowed("otc_future",2,60): break
+                candles,meta=_otc_candles(market,timeframe,300); r=analyze_candles(market.replace(" (OTC)",""),candles,timeframe); source=meta["source"]
+            else:
+                if not TWELVE_DATA_API_KEY: break
+                if not _api_allowed("future",2,60): break
+                symbol=market.replace(" (OTC)",""); allowed={str(x.get("symbol","")).upper() for x in get_catalog()}
+                if symbol not in allowed: continue
+                r=scan_one_symbol(symbol,timeframe); source="Twelve Data external feed"
+            scanned+=1
+            if r.get("direction") in ("CALL","PUT"):
+                candle=r.get("candle") or {}; entry=candle.get("time") or datetime.now(timezone.utc)
+                if isinstance(entry,str): entry=datetime.fromisoformat(entry.replace("Z","+00:00"))
+                tf_minutes={"1 MIN":1,"5 MIN":5,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1)
+                next_window=(entry+timedelta(minutes=tf_minutes)).astimezone(BANGLADESH_TZ).isoformat()
+                results.append({"market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],"confidence":_setup_confidence(r),"price":r.get("price"),"entry_time":next_window,"expiry":f"{tf_minutes} MIN","reason":r.get("reason"),"strategy":"GHOST Setup Engine","source":source,"timeframe":timeframe,"verified_quotex":False})
+        except Exception as exc: log.warning("Future candidate scan failed for %s: %s",market,exc)
+    return jsonify({"available":bool(results),"signals":results[:count],"requested":count,"scanned":scanned,"market_type":"OTC" if "OTC" in market_type else "REAL","timeframe":timeframe,"mode":"next setup candidates from current confirmed candles","warning":"Future entries are setup windows, not guaranteed future prices or outcomes."}),200
 
 @app.get("/api/news/events")
 @login_required
@@ -3535,7 +3520,7 @@ def api_ai_verify():
 @app.get("/api/market-status")
 @login_required
 def api_market_status():
-    return jsonify({"real":{"connected":bool(TWELVE_DATA_API_KEY),"source":"Twelve Data","verified_quotex":False},"otc":{"connected":False,"source":"No verified OTC feed","verified_quotex":False},"ai":{"configured":bool(AI_API_KEY),"vision_model":GROQ_VISION_MODEL if AI_API_KEY else None},"telegram":{"configured":bool(BOT_TOKEN)},"database":{"configured":bool(DATABASE_URL)}})
+    return jsonify({"real":{"connected":bool(TWELVE_DATA_API_KEY),"source":"Twelve Data","verified_quotex":False},"otc":{"connected":bool(OTCHARTS_API_KEY and OTChartsClient is not None),"source":"OTCharts Quotex OTC feed" if OTCHARTS_API_KEY and OTChartsClient is not None else "OTC feed not configured","verified_quotex":False},"ai":{"configured":bool(AI_API_KEY),"vision_model":GROQ_VISION_MODEL if AI_API_KEY else None},"telegram":{"configured":bool(BOT_TOKEN)},"database":{"configured":bool(DATABASE_URL)}})
 
 
 @app.get("/api/admin/verification-queue")
