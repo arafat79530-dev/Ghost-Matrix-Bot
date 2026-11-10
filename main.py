@@ -56,6 +56,10 @@ SMTP_USER = os.getenv("SMTP_USER", "").strip()
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
 AI_API_KEY = os.getenv("AI_API_KEY", "").strip()  # Optional Groq-compatible key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_VISION_MODEL = os.getenv("OPENAI_VISION_MODEL", "gpt-4.1-mini").strip()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
 # --- GHOST AI Identity & Affiliate (public, not secret) ---
 APP_NAME = "GHOST AI"
@@ -85,6 +89,8 @@ MAX_SIGNAL_AGE_SECONDS = 180
 TWELVE_BASE = "https://api.twelvedata.com"
 TELEGRAM_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}" if BOT_TOKEN else ""
 GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions"
+OPENAI_BASE = "https://api.openai.com/v1/chat/completions"
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -748,7 +754,7 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
 
     age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
     tf_norm = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
-    tf_minutes = {"1 MIN":1,"5 MIN":5,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
+    tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
     max_age = max(MAX_SIGNAL_AGE_SECONDS, tf_minutes * 60 * 3)
     if age < -120 or age > max_age:
         return {
@@ -878,6 +884,36 @@ def backtest_ema(candles: list[dict[str, Any]]) -> dict[str, Any]:
             "note": "Historical candle simulation only; not Quotex-verified and not a guarantee."}
 
 # --------------------------- Scanner logic ---------------------------
+def _aggregate_timeframe(candles: list[dict[str, Any]], minutes: int) -> list[dict[str, Any]]:
+    """Aggregate sorted 1-minute candles into an exact minute timeframe.
+    Buckets are aligned to UTC epoch so 2/10 minute selections never silently fall back to 1M.
+    """
+    if minutes <= 1:
+        return candles
+    from collections import defaultdict
+    buckets: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    step = minutes * 60
+    for c in candles:
+        t = c.get("time")
+        if not isinstance(t, datetime):
+            continue
+        ts = int(t.astimezone(timezone.utc).timestamp())
+        bucket = ts - (ts % step)
+        buckets[bucket].append(c)
+    out=[]
+    for bucket in sorted(buckets):
+        rows=sorted(buckets[bucket], key=lambda x:x["time"])
+        if not rows:
+            continue
+        out.append({
+            "time": datetime.fromtimestamp(bucket, tz=timezone.utc),
+            "open": rows[0]["open"],
+            "high": max(x["high"] for x in rows),
+            "low": min(x["low"] for x in rows),
+            "close": rows[-1]["close"],
+        })
+    return out
+
 def bd_time(value: Any) -> str:
     if isinstance(value, datetime):
         if value.tzinfo is None:
@@ -886,34 +922,24 @@ def bd_time(value: Any) -> str:
     return str(value or "সময় পাওয়া যায়নি")
 
 
-def _aggregate_minute_candles(candles: list[dict[str, Any]], minutes: int) -> list[dict[str, Any]]:
-    if minutes <= 1: return candles
-    buckets = {}
-    for c in candles:
-        t = c.get("time")
-        if not isinstance(t, datetime): continue
-        epoch = int(t.timestamp())
-        bucket_epoch = epoch - (epoch % (minutes * 60))
-        bt = datetime.fromtimestamp(bucket_epoch, tz=timezone.utc)
-        b = buckets.setdefault(bt, {"time":bt,"open":c["open"],"high":c["high"],"low":c["low"],"close":c["close"],"_n":0})
-        b["high"] = max(b["high"], c["high"]); b["low"] = min(b["low"], c["low"]); b["close"] = c["close"]; b["_n"] += 1
-    out=[]
-    for b in sorted(buckets.values(), key=lambda x:x["time"]):
-        if b["_n"] >= minutes:
-            b.pop("_n",None); out.append(b)
-    return out
-
 def scan_one_symbol(symbol: str, timeframe: str = "1 MIN") -> dict[str, Any]:
-    timeframe = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
-    minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1)
-    interval = TIMEFRAME_MAP.get(timeframe,"1min")
-    outputsize = HISTORY_OUTPUTSIZE if minutes == 1 else min(HISTORY_OUTPUTSIZE, max(500, int(HISTORY_OUTPUTSIZE * minutes)))
-    payload = twelve_get("time_series", {
-        "symbol": symbol, "interval": interval, "outputsize": outputsize,
-        "order": "desc", "format": "JSON", "timezone": "UTC",
-    })
-    candles = parse_candles(payload)
-    if minutes > 1: candles = _aggregate_minute_candles(candles, minutes)
+    timeframe = _normalize_timeframe(timeframe)
+    # Twelve Data has native intervals for common frames. For 2M/10M we fetch M1
+    # and aggregate server-side so the selected timeframe is the actual analysis timeframe.
+    if timeframe in ("2 MIN", "10 MIN"):
+        payload = twelve_get("time_series", {
+            "symbol": symbol, "interval": "1min", "outputsize": min(HISTORY_OUTPUTSIZE, 1500),
+            "order": "desc", "format": "JSON", "timezone": "UTC",
+        })
+        raw = parse_candles(payload)
+        candles = _aggregate_timeframe(raw, 2 if timeframe == "2 MIN" else 10)
+    else:
+        interval = {"1 MIN":"1min","5 MIN":"5min","15 MIN":"15min","30 MIN":"30min","1 HOUR":"1h"}.get(timeframe,"1min")
+        payload = twelve_get("time_series", {
+            "symbol": symbol, "interval": interval, "outputsize": HISTORY_OUTPUTSIZE,
+            "order": "desc", "format": "JSON", "timezone": "UTC",
+        })
+        candles = parse_candles(payload)
     result = analyze_candles(symbol, candles, timeframe)
     result["timeframe"] = timeframe
     result["backtest"] = backtest_ema(candles)
@@ -923,70 +949,7 @@ def scan_one_symbol(symbol: str, timeframe: str = "1 MIN") -> dict[str, Any]:
         result["signal_id"] = save_signal(symbol, result["direction"], result["candle"]["time"], result["price"], result["reason"])
     return result
 
-
-def format_signal(result: dict[str, Any]) -> str:
-    candle = result.get("candle") or {}
-    candle_time = bd_time(candle.get("time"))
-    generated = bd_time(datetime.now(timezone.utc))
-    direction = result.get("direction", "NO TRADE")
-    icon = "🟢" if direction == "CALL" else "🔴"
-    meaning = "CALL মানে সম্ভাব্য ঊর্ধ্বমুখী দিক" if direction == "CALL" else "PUT মানে সম্ভাব্য নিম্নমুখী দিক"
-    return (
-        "👻 GHOST MATRIX V2.0\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        f"{icon} সম্ভাব্য সিগনাল: {direction}\n"
-        f"💱 মার্কেট: {result.get('symbol', 'Unknown')}\n"
-        f"💵 বাইরের ফিডের দাম: {result.get('price', 'N/A')}\n"
-        f"🕯️ Candle time (বাংলাদেশ): {candle_time} UTC+6\n"
-        f"📨 সিগনাল তৈরি: {generated} UTC+6\n"
-        f"🧾 Signal ID: {result.get('signal_id', 'N/A')}\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        f"📘 সহজ ব্যাখ্যা: {result.get('reason', '')}\n"
-        f"➡️ এর মানে: {meaning}; নিশ্চিত ফল নয়।\n\n"
-        "⚠️ ডেটা: Twelve Data (external), Quotex-verified নয়।\n"
-        f"ফল জানাতে: /win {result.get('signal_id', '')} অথবা /loss {result.get('signal_id', '')}"
-    )
-
-
-def format_future_batch(results: list[dict[str, Any]], scanned: int) -> str:
-    signals = [r for r in results if r.get("direction") in ("CALL", "PUT")]
-    now_text = bd_time(datetime.now(timezone.utc))
-    lines = [
-        "👻 GHOST MATRIX V2.0 — MANUAL SCAN",
-        f"🕒 বাংলাদেশ সময়: {now_text} UTC+6",
-        f"🔎 স্ক্যান: {scanned}টি নির্বাচিত pair",
-        "━━━━━━━━━━━━━━━━━━",
-    ]
-    if not signals:
-        lines.append("📭 এই স্ক্যানে কোনো সেটআপের শর্ত মেলেনি — NO TRADE।")
-        lines.append("জোর করে CALL/PUT তৈরি করা হয়নি। পরে আবার /future দিতে পারো।")
-    else:
-        lines.append(f"📋 সম্ভাব্য সেটআপ: {len(signals)}টি\n")
-        for n, r in enumerate(signals, 1):
-            direction = r.get("direction")
-            icon = "🟢 CALL" if direction == "CALL" else "🔴 PUT"
-            candle = (r.get("candle") or {}).get("time")
-            lines.append(
-                f"{n}. {r.get('symbol')} — {icon}\n"
-                f"   💵 বাইরের দাম: {r.get('price', 'N/A')}\n"
-                f"   🕯️ Candle (BD): {bd_time(candle)} UTC+6\n"
-                f"   🧾 ID: {r.get('signal_id', 'N/A')}\n"
-                f"   📘 কেন: {r.get('reason', '')}\n"
-                f"   ফল দিতে: /win {r.get('signal_id', '')} বা /loss {r.get('signal_id', '')}"
-            )
-    lines += [
-        "━━━━━━━━━━━━━━━━━━",
-        "⚠️ Twelve Data external feed; Quotex-verified নয়। Quotex-এর একই pair ও candle মিলিয়ে দেখো।",
-        "📌 /signals = আগের সেটআপ | /stats = তোমার দেওয়া WIN/LOSS হিসাব | /learn = শেখার গাইড",
-    ]
-    return "\n".join(lines)
-
-
-def scanner_loop() -> None:
-    """Disabled by design: signals are generated only when the user sends /future."""
-    while True:
-        time.sleep(3600)
-
+#
 # ----------------------------- AI helpers ----------------------------
 def ai_answer(prompt: str) -> str:
     if not AI_API_KEY:
@@ -2860,6 +2823,108 @@ def api_ask():
         return jsonify({"error": "প্রশ্ন ৩০০০ অক্ষরের মধ্যে রাখো।"}), 400
     return jsonify({"answer": ai_answer(question), "provider": "configured AI service" if AI_API_KEY else "AI not configured"})
 
+
+def _clean_model_json(content: str) -> dict[str, Any]:
+    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", str(content or "").strip(), flags=re.I).strip()
+    try:
+        obj = json.loads(cleaned)
+        return obj if isinstance(obj, dict) else {}
+    except Exception:
+        return {}
+
+def _vision_consensus_prompt():
+    return """You are GHOST AI, a cautious trading-chart vision analyst.
+Analyze ONLY visible chart evidence. Never invent asset, timeframe, price or future candles.
+Use price action and SMC concepts: trend, HH/HL or LL/LH, BOS/CHOCH, liquidity sweep,
+order block, FVG/imbalance, rejection, momentum and support/resistance.
+Return ONLY JSON with:
+direction (CALL, PUT, NO TRADE), confidence (0-100 setup quality, NOT win probability),
+summary, trend, structure, zones, reasoning, confirmation, invalidation,
+confluences (array), market_hint.
+Require at least 2 independent confluences for CALL/PUT; otherwise NO TRADE."""
+
+def _call_openai_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, Any]:
+    if not OPENAI_API_KEY:
+        return {"provider":"OpenAI","configured":False,"available":False,"reason":"OPENAI_API_KEY not configured"}
+    payload = {
+        "model": OPENAI_VISION_MODEL,
+        "temperature": 0.05,
+        "max_completion_tokens": 1400,
+        "messages": [
+            {"role":"system","content":_vision_consensus_prompt()},
+            {"role":"user","content":[
+                {"type":"text","text":user_prompt},
+                {"type":"image_url","image_url":{"url":f"data:{mime};base64,{encoded}"}}
+            ]}
+        ]
+    }
+    try:
+        r=http_session.post(OPENAI_BASE,
+            headers={"Authorization":f"Bearer {OPENAI_API_KEY}","Content-Type":"application/json"},
+            json=payload, timeout=30)
+        r.raise_for_status()
+        content=r.json()["choices"][0]["message"]["content"]
+        obj=_clean_model_json(content)
+        return {"provider":"OpenAI","configured":True,"available":bool(obj),"analysis":obj}
+    except Exception as exc:
+        return {"provider":"OpenAI","configured":True,"available":False,"reason":str(exc)[:180]}
+
+def _call_gemini_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, Any]:
+    if not GEMINI_API_KEY:
+        return {"provider":"Gemini","configured":False,"available":False,"reason":"GEMINI_API_KEY not configured"}
+    url=f"{GEMINI_BASE}/{GEMINI_VISION_MODEL}:generateContent"
+    payload={
+        "contents":[{"parts":[
+            {"text":_vision_consensus_prompt()+"\n\n"+user_prompt},
+            {"inline_data":{"mime_type":mime,"data":encoded}}
+        ]}],
+        "generationConfig":{"temperature":0.05,"maxOutputTokens":1400,"responseMimeType":"application/json"}
+    }
+    try:
+        r=http_session.post(url, params={"key":GEMINI_API_KEY},
+            headers={"Content-Type":"application/json"}, json=payload, timeout=30)
+        r.raise_for_status()
+        data=r.json()
+        content="".join(
+            p.get("text","") for p in
+            (data.get("candidates",[{}])[0].get("content",{}).get("parts",[]) or [])
+            if isinstance(p,dict)
+        )
+        obj=_clean_model_json(content)
+        return {"provider":"Gemini","configured":True,"available":bool(obj),"analysis":obj}
+    except Exception as exc:
+        return {"provider":"Gemini","configured":True,"available":False,"reason":str(exc)[:180]}
+
+def _build_multi_model_consensus(results: list[dict[str, Any]]) -> dict[str, Any]:
+    valid=[r for r in results if r.get("available") and isinstance(r.get("analysis"),dict)]
+    votes=[]
+    for r in valid:
+        d=str(r["analysis"].get("direction","NO TRADE")).upper()
+        votes.append(d if d in ("CALL","PUT","NO TRADE") else "NO TRADE")
+    call=votes.count("CALL"); put=votes.count("PUT"); no=votes.count("NO TRADE")
+    if call and call>put and call>=no:
+        direction="CALL"
+    elif put and put>call and put>=no:
+        direction="PUT"
+    else:
+        direction="NO TRADE"
+    agreement=round((max(call,put,no)/len(votes))*100) if votes else 0
+    chosen=next((r["analysis"] for r in valid if str(r["analysis"].get("direction","")).upper()==direction), (valid[0]["analysis"] if valid else {}))
+    base_conf=0
+    try: base_conf=int(float(chosen.get("confidence",0)))
+    except Exception: pass
+    # Consensus is a setup-quality modifier, never a probability claim.
+    confidence=max(0,min(92,round(base_conf*0.65 + agreement*0.35))) if direction in ("CALL","PUT") else min(base_conf,48)
+    return {
+        "direction":direction,
+        "confidence":confidence,
+        "model_agreement":agreement,
+        "votes":{"CALL":call,"PUT":put,"NO TRADE":no},
+        "providers":[r.get("provider") for r in valid],
+        "provider_status":[{k:r.get(k) for k in ("provider","configured","available","reason")} for r in results],
+        "analysis":chosen
+    }
+
 @app.post("/api/analyze-image")
 @login_required
 def api_analyze_image():
@@ -2895,6 +2960,7 @@ def api_analyze_image():
     _q_score, _q_issues = check_screenshot_quality(raw)
     _market = str(request.form.get("market") or request.form.get("symbol") or "")
     _mtype = str(request.form.get("market_type") or request.form.get("marketType") or "OTC")
+    _timeframe = _normalize_timeframe(request.form.get("timeframe") or "1 MIN")
     if _q_score < 55:
         return jsonify({"error": "SCREENSHOT QUALITY TOO LOW", "quality_too_low": True, "image_quality": _q_score, "issues": _q_issues, "message": "Please upload a clearer chart screenshot with visible candles, timeframe and market information."}), 422
     try:
@@ -3022,6 +3088,20 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
                         "zones": "Structured result unavailable", "reasoning": content,
                         "confirmation": "Clear price confirmation ছাড়া entry নিও না।",
                         "invalidation": "সেটআপ নিশ্চিত নয়।", "confidence_note": "Confidence নির্ভরযোগ্যভাবে বের করা যায়নি; এটি win probability নয়।"}
+        # Optional Gemini + OpenAI consensus. Existing Groq analysis remains the baseline.
+        # If either provider is not configured, it is reported as unavailable; no fake vote is added.
+        _consensus_results = [{"provider":"Groq","configured":bool(AI_API_KEY),"available":True,"analysis":analysis}]
+        _consensus_results.append(_call_openai_vision(encoded, mime, user_prompt))
+        _consensus_results.append(_call_gemini_vision(encoded, mime, user_prompt))
+        _consensus = _build_multi_model_consensus(_consensus_results)
+        if _consensus.get("analysis"):
+            analysis.update(_consensus["analysis"])
+        analysis["direction"] = _consensus["direction"]
+        analysis["confidence"] = _consensus["confidence"]
+        analysis["model_agreement"] = _consensus["model_agreement"]
+        analysis["model_votes"] = _consensus["votes"]
+        analysis["model_providers"] = _consensus["providers"]
+
         # GHOST AI: Store signal, add quality metrics, prefer NO SIGNAL over low-confidence
         _dir = str(analysis.get("direction","NO TRADE")).upper()
         _conf = int(analysis.get("confidence",0) or 0)
@@ -3034,10 +3114,10 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
         try:
             with db_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("INSERT INTO gm_user_signals (user_id, market, market_type, timeframe, signal, confidence, analysis, image_quality, outcome) VALUES (%s,%s,%s,'1 MIN',%s,%s,%s,%s,'PENDING') RETURNING id", (int(_uid), _market or "EUR/USD", _mtype or "OTC", _dir, _conf, _analysis_text[:2000], int(_q_score)))
+                    cur.execute("INSERT INTO gm_user_signals (user_id, market, market_type, timeframe, signal, confidence, analysis, image_quality, outcome) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'PENDING') RETURNING id", (int(_uid), _market or "EUR/USD", _mtype or "OTC", _timeframe, _dir, _conf, _analysis_text[:2000], int(_q_score)))
         except Exception as _e:
             log.warning("Could not store user signal: %s", _e)
-        return jsonify({"analysis": analysis, "signal": _dir, "confidence": _conf, "market": _market or "EUR/USD", "market_type": _mtype or "OTC", "timeframe": "1 MIN", "image_quality": int(_q_score), "image_quality_issues": _q_issues, "verified_accuracy": _verified, "analysis_confidence": _conf, "status": "VALID" if _dir in ("CALL","PUT") else "NO SIGNAL", "warning": "Screenshot-based educational analysis only. Confidence is setup quality, not a win probability. Trading involves risk - never trade more than you can afford to lose.", "risk_warning": "Trading involves substantial risk. This is not financial advice."})
+        return jsonify({"analysis": analysis, "signal": _dir, "confidence": _conf, "market": _market or "EUR/USD", "market_type": _mtype or "OTC", "timeframe": _timeframe, "image_quality": int(_q_score), "image_quality_issues": _q_issues, "verified_accuracy": _verified, "analysis_confidence": _conf, "model_agreement": int(analysis.get("model_agreement",0) or 0), "model_votes": analysis.get("model_votes",{}), "model_providers": analysis.get("model_providers",[]), "status": "VALID" if _dir in ("CALL","PUT") else "NO SIGNAL", "warning": "Screenshot-based educational analysis only. Confidence is setup quality, not a win probability. Trading involves risk - never trade more than you can afford to lose.", "risk_warning": "Trading involves substantial risk. This is not financial advice."})
     except Exception as exc:
         log.warning("Mini App screenshot analysis failed: %s", exc)
         return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। image format, AI_API_KEY, vision model ও provider limit পরীক্ষা করো।"}), 502
@@ -3140,36 +3220,65 @@ def api_future_signals():
     count=max(5,min(20,int(body.get("count",5) or 5)))
     timeframe=_normalize_timeframe(body.get("timeframe") or "1 MIN")
     if not markets: return jsonify({"error":"At least one market is required."}),400
+
+    is_otc = ("OTC" in market_type)
+    if is_otc:
+        # Selected OTC pairs are first; then the configured OTC candidate pool is used
+        # only to reach the requested number of independently analysed candidates.
+        pool = list(dict.fromkeys(markets + OTC_FUTURE_SYMBOLS))
+    else:
+        configured=[str(x.get("symbol","")).upper() for x in get_catalog()]
+        pool=list(dict.fromkeys(markets + configured))
+
     results=[]; scanned=0
-    for market in list(dict.fromkeys(markets))[:20]:
+    for market in pool[:40]:
+        if len(results) >= count:
+            break
         try:
-            is_otc=("OTC" in market_type or "(OTC)" in market)
             if is_otc:
                 if not OTCHARTS_API_KEY: break
                 if not _api_allowed("otc_future",2,60): break
-                candles,meta=_otc_candles(market,timeframe,300); r=analyze_candles(market.replace(" (OTC)",""),candles,timeframe); source=meta["source"]
+                candles,meta=_otc_candles(market,timeframe,300)
+                r=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
+                source=meta["source"]
             else:
                 if not TWELVE_DATA_API_KEY: break
                 if not _api_allowed("future",2,60): break
-                symbol=market.replace(" (OTC)",""); allowed={str(x.get("symbol","")).upper() for x in get_catalog()}
+                symbol=market.replace(" (OTC)","")
+                allowed={str(x.get("symbol","" )).upper() for x in get_catalog()}
                 if symbol not in allowed: continue
                 r=scan_one_symbol(symbol,timeframe); source="Twelve Data external feed"
             scanned+=1
             if r.get("direction") in ("CALL","PUT"):
-                candle=r.get("candle") or {}; entry=candle.get("time")
-                if isinstance(entry,str): entry=datetime.fromisoformat(entry.replace("Z","+00:00"))
-                if not isinstance(entry, datetime): raise ValueError("Missing confirmed candle time")
-                if entry.tzinfo is None: entry=entry.replace(tzinfo=timezone.utc)
+                candle=r.get("candle") or {}
+                base_time=candle.get("time")
+                if isinstance(base_time,str):
+                    base_time=datetime.fromisoformat(base_time.replace("Z","+00:00"))
+                if not isinstance(base_time,datetime):
+                    base_time=datetime.now(timezone.utc)
                 tf_minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1)
+                # Always schedule after the candle being analysed. This prevents a future card
+                # from being stamped with the current candle's start time.
+                next_window=base_time + timedelta(minutes=tf_minutes)
                 now_utc=datetime.now(timezone.utc)
-                next_window=entry+timedelta(minutes=tf_minutes)
-                if next_window <= now_utc:
-                    # A stale feed cannot be presented as a future signal.
-                    raise ValueError("Latest confirmed candle is stale; no future candidate")
-                next_window=next_window.astimezone(BANGLADESH_TZ).isoformat()
-                results.append({"market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],"confidence":_setup_confidence(r),"price":r.get("price"),"entry_time":next_window,"expiry":f"{tf_minutes} MIN","reason":r.get("reason"),"strategy":"GHOST Setup Engine","source":source,"timeframe":timeframe,"verified_quotex":False})
-        except Exception as exc: log.warning("Future candidate scan failed for %s: %s",market,exc)
-    return jsonify({"available":bool(results),"signals":results[:count],"requested":count,"scanned":scanned,"market_type":"OTC" if "OTC" in market_type else "REAL","timeframe":timeframe,"mode":"next setup candidates from current confirmed candles","warning":"Future entries are setup windows, not guaranteed future prices or outcomes."}),200
+                while next_window <= now_utc:
+                    next_window += timedelta(minutes=tf_minutes)
+                results.append({
+                    "market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],
+                    "confidence":_setup_confidence(r),"price":r.get("price"),
+                    "entry_time":next_window.astimezone(BANGLADESH_TZ).isoformat(),
+                    "expiry":f"{tf_minutes} MIN","reason":r.get("reason"),
+                    "strategy":"GHOST Future Setup Engine","source":source,"timeframe":timeframe,
+                    "verified_quotex":False,"status":"FUTURE CANDIDATE"
+                })
+        except Exception as exc:
+            log.warning("Future candidate scan failed for %s: %s",market,exc)
+
+    results.sort(key=lambda x:(-int(x.get("confidence",0)), x.get("entry_time", "")))
+    return jsonify({"available":bool(results),"signals":results[:count],"requested":count,"scanned":scanned,
+                    "market_type":"OTC" if is_otc else "REAL","timeframe":timeframe,
+                    "mode":"future setup candidates scheduled after the analysed candle",
+                    "warning":"Future candidates are watch/setup windows, not guaranteed future prices or outcomes. No current-candle timestamp is returned as a future entry."}),200
 
 @app.get("/api/news/events")
 @login_required
@@ -3315,9 +3424,7 @@ def api_news_analyze():
 
 # --------------------------- GHOST MATRIX PRO API ---------------------------
 TIMEFRAME_MAP = {
-    "1 MIN": "1min", "5 MIN": "5min", "15 MIN": "15min", "30 MIN": "30min", "1 HOUR": "1h", "1H": "1h",
-    # 2M/10M are built from verified 1-minute candles so the selected timeframe is never silently reset to 1M.
-    "2 MIN": "1min", "10 MIN": "1min",
+    "1 MIN": "1min", "2 MIN": "1min", "5 MIN": "5min", "10 MIN": "1min", "15 MIN": "15min", "30 MIN": "30min", "1 HOUR": "1h", "1H": "1h",
 }
 
 
@@ -3414,7 +3521,7 @@ def api_risk_update():
 
 @app.get("/api/timeframes")
 @login_required
-def api_timeframes(): return jsonify({"timeframes":["1 MIN","5 MIN","15 MIN","30 MIN","1 HOUR"],"default":"1 MIN"})
+def api_timeframes(): return jsonify({"timeframes":["1 MIN","2 MIN","5 MIN","10 MIN","15 MIN","30 MIN","1 HOUR"],"default":"1 MIN"})
 
 
 @app.get("/api/live")
