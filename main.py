@@ -1,4 +1,4 @@
-"""GHOST MATRIX V2.0 — cautious Telegram market-analysis bot.
+"""GHOST AI V2.0 — cautious Telegram market-analysis bot.
 
 Uses Twelve Data candles as an EXTERNAL data source. It does not connect to or
 verify prices against Quotex. No trade outcome or win rate is fabricated.
@@ -62,10 +62,6 @@ APP_NAME = "GHOST AI"
 AFFILIATE_URL = "https://broker-qx.pro/sign-up/?lid=2384783"
 TELEGRAM_ADMIN = "https://t.me/ghostsupportbd"
 GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b").strip()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-OPENAI_VISION_MODEL = os.getenv("OPENAI_VISION_MODEL", "gpt-4.1-mini").strip()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash").strip()
 OTCHARTS_API_KEY = os.getenv("OTCHARTS_API_KEY", "").strip()
 # Optional comma-separated Twelve Data symbols for non-FX Quotex assets.
 # Example format depends on Twelve Data's own symbol catalog; these are NOT
@@ -89,8 +85,6 @@ MAX_SIGNAL_AGE_SECONDS = 180
 TWELVE_BASE = "https://api.twelvedata.com"
 TELEGRAM_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}" if BOT_TOKEN else ""
 GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions"
-OPENAI_RESPONSES_BASE = "https://api.openai.com/v1/responses"
-GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -281,7 +275,7 @@ def init_database() -> tuple[bool, str]:
                     )
                 """)
                 cur.execute("CREATE INDEX IF NOT EXISTS gm_user_signals_user_idx ON gm_user_signals(user_id, created_at DESC)")
-                # --- GHOST MATRIX PRO: profile, preferences, alerts, risk, UID, payments, verification ---
+                # --- GHOST AI PRO: profile, preferences, alerts, risk, UID, payments, verification ---
                 cur.execute("CREATE TABLE IF NOT EXISTS gm_user_preferences (user_id BIGINT PRIMARY KEY REFERENCES gm_users(id) ON DELETE CASCADE, timezone TEXT NOT NULL DEFAULT 'Asia/Dhaka', default_market_type TEXT NOT NULL DEFAULT 'OTC', default_timeframe TEXT NOT NULL DEFAULT '1 MIN', sound_alerts BOOLEAN NOT NULL DEFAULT TRUE, browser_alerts BOOLEAN NOT NULL DEFAULT TRUE, telegram_alerts BOOLEAN NOT NULL DEFAULT FALSE, compact_mode BOOLEAN NOT NULL DEFAULT FALSE, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
                 cur.execute("CREATE TABLE IF NOT EXISTS gm_user_alerts (id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES gm_users(id) ON DELETE CASCADE, alert_type TEXT NOT NULL, market TEXT, timeframe TEXT, enabled BOOLEAN NOT NULL DEFAULT TRUE, threshold INTEGER NOT NULL DEFAULT 70, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(user_id, alert_type, market, timeframe))")
                 cur.execute("CREATE TABLE IF NOT EXISTS gm_risk_profiles (user_id BIGINT PRIMARY KEY REFERENCES gm_users(id) ON DELETE CASCADE, capital NUMERIC(14,2) NOT NULL DEFAULT 0, risk_per_trade NUMERIC(6,2) NOT NULL DEFAULT 1, max_daily_loss NUMERIC(14,2) NOT NULL DEFAULT 0, max_consecutive_losses INTEGER NOT NULL DEFAULT 3, payout NUMERIC(6,2) NOT NULL DEFAULT 80, martingale_enabled BOOLEAN NOT NULL DEFAULT FALSE, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW())")
@@ -1376,7 +1370,7 @@ def send_price_action_course(chat_id: str, reset: bool = False) -> None:
     lesson = PA_LESSONS[lesson_index]
     number = lesson_index + 1
     send_message(
-        "👻 GHOST MATRIX — PRICE ACTION LEARNING\n"
+        "👻 GHOST AI — PRICE ACTION LEARNING\n"
         f"📘 Lesson {number}/{len(PA_LESSONS)}\n\n"
         "এই /learn কমান্ডে শুধু একটি Lesson পাঠানো হবে।\n"
         "পরের Lesson পেতে আবার /learn লিখো।\n"
@@ -1445,13 +1439,16 @@ def _extract_number(value: Any) -> Optional[float]:
 
 
 def parse_manual_news_input(text: str) -> Optional[dict]:
-    """Accept a currency/event line followed by Actual, Forecast and Previous."""
+    """Parse PRE-NEWS data only: currency/event + Forecast + Previous.
+
+    Actual is intentionally not accepted or required. The analyzer is designed
+    to produce a pre-release bias from information available before the event.
+    """
     import re
     clean = (text or "").strip()
     if not clean or clean.startswith("/"):
         return None
     patterns = {
-        "actual": r"(?im)^\s*(?:act|actual)\s*[-:=]\s*([^\n]+)",
         "forecast": r"(?im)^\s*(?:for|forecast|fcst)\s*[-:=]\s*([^\n]+)",
         "previous": r"(?im)^\s*(?:pre|previous|prev)\s*[-:=]\s*([^\n]+)",
     }
@@ -1470,146 +1467,169 @@ def parse_manual_news_input(text: str) -> Optional[dict]:
     return {
         "currency": currency,
         "event": event or "Economic event not specified",
-        "actual_text": values["actual"],
         "forecast_text": values["forecast"],
         "previous_text": values["previous"],
-        "actual": _extract_number(values["actual"]),
         "forecast": _extract_number(values["forecast"]),
         "previous": _extract_number(values["previous"]),
+        "actual": None,
+        "actual_text": None,
     }
 
 
+def _news_profile(event: str) -> dict[str, Any]:
+    """Classify the event for a pre-release fundamental bias model."""
+    e = (event or "").lower()
+    profiles = [
+        ("inflation", ("cpi", "inflation", "pce", "price index", "core price"), 1.0),
+        ("employment", ("nonfarm", "payroll", "employment change", "adp", "jobs", "wage", "average hourly earnings"), 0.95),
+        ("unemployment", ("unemployment rate", "jobless claims", "initial claims", "continuing claims", "claims"), -0.95),
+        ("growth", ("gdp", "gross domestic product", "retail sales", "industrial production"), 0.8),
+        ("activity", ("pmi", "ism", "manufacturing", "services", "business confidence"), 0.7),
+        ("rates", ("interest rate", "rate decision", "fomc", "fed funds", "ecb rate", "boe rate", "policy rate"), 1.0),
+    ]
+    for name, terms, weight in profiles:
+        if any(t in e for t in terms):
+            return {"category": name, "currency_bias_weight": weight}
+    return {"category": "macro", "currency_bias_weight": 0.55}
+
+
 def analyze_manual_news(data: dict) -> tuple[str, str, str]:
-    """Return direction, explanation and confidence note; heuristic, not a trade guarantee."""
-    actual, forecast, previous = data.get("actual"), data.get("forecast"), data.get("previous")
-    if actual is None or forecast is None:
-        return "UNCLEAR", "Actual বা Forecast-এর মান বুঝতে পারিনি—সংখ্যা ও unit আবার দাও।", "ডেটা অসম্পূর্ণ"
-    event = str(data.get("event", "")).lower()
-    # For some indicators, a lower number is usually better for the currency.
-    lower_is_better_terms = (
-        "unemployment rate", "jobless claims", "initial claims", "continuing claims",
-        "claims", "unemployment", "job losses", "layoffs", "bad loans",
+    """Pre-news fundamental analysis using only Forecast, Previous and event context.
+
+    This is a probability/bias model, not a promise of market direction. Without
+    Actual, the model estimates what the release *could* imply if Forecast is met
+    or surprised relative to the recent trend.
+    """
+    forecast, previous = data.get("forecast"), data.get("previous")
+    if forecast is None or previous is None:
+        return "UNCLEAR", "Forecast ও Previous-এর মান বুঝতে পারিনি।", "ডেটা অসম্পূর্ণ"
+
+    profile = _news_profile(str(data.get("event", "")))
+    category = profile["category"]
+    delta = forecast - previous
+    if previous != 0:
+        pct = abs(delta / previous) * 100
+    else:
+        pct = abs(delta)
+
+    # Macro convention: for most growth/inflation/rate data, a higher forecast
+    # implies a stronger currency; unemployment/claims are inverse.
+    direction_sign = 1 if delta > 0 else -1 if delta < 0 else 0
+    if category == "unemployment":
+        direction_sign *= -1
+
+    # Strength of the forecast-vs-previous change. Keep confidence conservative.
+    if direction_sign == 0:
+        conf = 50
+        bias = "NEUTRAL"
+    else:
+        strength = min(1.0, pct / 1.5) if previous else 0.4
+        conf = int(round(52 + strength * 24))
+        bias = "BULLISH" if direction_sign > 0 else "BEARISH"
+
+    currency = str(data.get("currency", "USD")).upper()
+    if currency == "USD":
+        market_hint = "USD strength → USD pairs generally favor the USD side; risk assets can react inversely."
+    else:
+        market_hint = f"{currency} strength → pairs containing {currency} may react in the corresponding direction."
+
+    trend_text = (
+        "Forecast is above Previous, indicating an improving/higher expected reading."
+        if delta > 0 else
+        "Forecast is below Previous, indicating a cooling/lower expected reading."
+        if delta < 0 else
+        "Forecast is unchanged from Previous, so the pre-release trend signal is neutral."
     )
-    lower_is_better = any(term in event for term in lower_is_better_terms)
-    if actual == forecast:
-        if previous is not None and actual != previous:
-            explanation = "Actual Forecast-এর সমান; তাই surprise নেই। Previous-এর তুলনায় পরিবর্তন একা নির্ভরযোগ্য দিক নির্ধারণ করে না।"
-        else:
-            explanation = "Actual ও Forecast সমান—স্পষ্ট surprise নেই।"
-        return "UNCLEAR", explanation, "দিক অনিশ্চিত"
-    if lower_is_better:
-        up = actual < forecast
-        reason = "এই indicator-এ সাধারণত কম মান মুদ্রার জন্য ভালো।" if up else "এই indicator-এ সাধারণত বেশি মান মুদ্রার জন্য নেতিবাচক।"
+    if category == "inflation":
+        fundamental = "Inflation data is especially sensitive because it can shift interest-rate expectations and central-bank pricing."
+    elif category in ("employment", "unemployment"):
+        fundamental = "Labor-market data can shift rate expectations, yields and currency demand quickly."
+    elif category == "rates":
+        fundamental = "Policy-rate decisions are high-impact because the expected path of future rates often matters more than the headline alone."
     else:
-        up = actual > forecast
-        reason = "Actual, Forecast-এর চেয়ে বেশি।" if up else "Actual, Forecast-এর চেয়ে কম।"
-        if data.get("event") == "Economic event not specified":
-            reason += " নিউজের নাম দেওয়া হয়নি, তাই সাধারণ surprise rule ব্যবহার করা হয়েছে।"
-    direction = "UP ⬆️" if up else "DOWN ⬇️"
-    delta = actual - forecast
-    diff = f"Forecast থেকে পার্থক্য: {delta:+g} (একই unit ধরে)।"
-    if previous is not None:
-        prev_note = "Actual Previous-এর চেয়ে বেশি।" if actual > previous else "Actual Previous-এর চেয়ে কম।" if actual < previous else "Actual Previous-এর সমান।"
-    else:
-        prev_note = "Previous-এর মান তুলনা করা যায়নি।"
-    return direction, f"{reason}\n{diff}\n{prev_note}", "সম্ভাব্য প্রভাব; নিশ্চিত Quotex M1 signal নয়"
+        fundamental = "The event is classified as a macro growth/activity release; market reaction depends on how the forecast changes policy and growth expectations."
+
+    explanation = (
+        f"PRE-NEWS BIAS: {bias} • {category.upper()}\n"
+        f"Forecast {forecast:g} vs Previous {previous:g} (Δ {delta:+g}). {trend_text}\n"
+        f"Fundamental context: {fundamental}\n"
+        f"Market context: {market_hint}\n"
+        "Actual is intentionally excluded; this is the direction expected from information available before release."
+    )
+    note = f"Pre-news confidence {conf}%. This is an analytical bias, not a guaranteed win probability. Confirm with volatility, yields/positioning and price action immediately before release."
+    return bias, explanation, note
 
 
 def format_news_analysis(data: dict) -> str:
-    """Format news analysis as copyable Telegram HTML text, never as a photo."""
+    """Format pre-news analysis for Telegram; Actual is never displayed."""
     import html
-
     direction, explanation, note = analyze_manual_news(data)
-    result_icon = (
-        "🟢" if direction.startswith("UP")
-        else "🔴" if direction.startswith("DOWN")
-        else "🟡"
-    )
+    result_icon = "🟢" if direction == "BULLISH" else "🔴" if direction == "BEARISH" else "🟡"
     currency = html.escape(str(data.get("currency", "—")))
     event = html.escape(str(data.get("event", "Economic event")))
-    actual = html.escape(str(data.get("actual_text", "N/A")))
     forecast = html.escape(str(data.get("forecast_text", "N/A")))
     previous = html.escape(str(data.get("previous_text", "N/A")))
     reason = html.escape(explanation)
     safe_note = html.escape(note)
-
     return (
-        "👻 <b>GHOST MATRIX</b>\n"
+        "👻 <b>GHOST AI</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        "📰 <b>NEWS ANALYZER</b>      🔵 <b>PAID</b>\n"
+        "📰 <b>PRE-NEWS ANALYZER</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
         f"🌐 <b>{currency} • {event}</b>\n\n"
         "┌─────────────────────┐\n"
-        f"│ <b>ACTUAL:</b> {actual}\n"
         f"│ <b>FORECAST:</b> {forecast}\n"
         f"│ <b>PREVIOUS:</b> {previous}\n"
+        "│ <b>ACTUAL:</b> excluded (pre-news mode)\n"
         "└─────────────────────┘\n\n"
-        f"{result_icon} <b>RESULT: {direction}</b>\n"
-        f"🧠 <b>ANALYSIS:</b>\n{reason}\n\n"
+        f"{result_icon} <b>EXPECTED BIAS: {direction}</b>\n"
+        f"🧠 <b>FUNDAMENTAL ANALYSIS:</b>\n{reason}\n\n"
         f"⚠️ <i>{safe_note}</i>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 <b>OWNER: {html.escape(NEWS_OWNER)}</b>"
+        "GHOST AI • Forecast + Previous + fundamental context"
     )
 
 
 def render_news_analysis_card(data: dict) -> bytes:
-    """Render the approved GHOST MATRIX news card as a Telegram-ready PNG."""
+    """Render a pre-news GHOST AI card; Actual is intentionally omitted."""
     direction, explanation, note = analyze_manual_news(data)
-    width, height = 1080, 760
+    width, height = 1080, 700
     bg = "#080D1A"
     img = Image.new("RGB", (width, height), bg)
     draw = ImageDraw.Draw(img)
     font = _chart_font
-    # Header panel
     draw.rounded_rectangle((28, 24, width - 28, 142), radius=28, fill="#101D35", outline="#254B83", width=2)
     draw.ellipse((52, 50, 116, 114), fill="#173B78", outline="#62B8FF", width=2)
     draw.text((67, 62), "G", font=font(38), fill="#8AD0FF")
-    draw.text((140, 43), "GHOST MATRIX", font=font(38), fill="#F1F6FF")
-    draw.text((142, 91), "NEWS ANALYZER", font=font(21), fill="#8CA6C8")
+    draw.text((140, 43), "GHOST AI", font=font(38), fill="#F1F6FF")
+    draw.text((142, 91), "PRE-NEWS ANALYZER", font=font(21), fill="#8CA6C8")
     draw.rounded_rectangle((855, 53, 1020, 108), radius=16, fill="#173B78", outline="#2876C9", width=2)
-    draw.text((890, 67), "PAID", font=font(28), fill="#69BDFF")
+    draw.text((884, 67), "PRE-NEWS", font=font(22), fill="#69BDFF")
 
-    event_label = f"{data['currency']}  •  {data['event']}"
+    event_label = f"{data.get('currency','—')}  •  {data.get('event','Economic event')}"
     draw.text((48, 174), event_label[:52], font=font(28), fill="#B9D7FF")
-    labels = [("ACTUAL", data["actual_text"]), ("FORECAST", data["forecast_text"]), ("PREVIOUS", data["previous_text"])]
-    x_positions = [38, 373, 708]
+    labels = [("FORECAST", data.get("forecast_text", "N/A")), ("PREVIOUS", data.get("previous_text", "N/A"))]
+    x_positions = [38, 548]
     for x, (label, value) in zip(x_positions, labels):
-        draw.rounded_rectangle((x, 226, x + 320, 344), radius=20, fill="#111D30", outline="#263B56", width=2)
+        draw.rounded_rectangle((x, 226, x + 494, 344), radius=20, fill="#111D30", outline="#263B56", width=2)
         draw.text((x + 22, 246), label, font=font(20), fill="#90A7C5")
-        draw.text((x + 22, 282), str(value)[:18], font=font(34), fill="#FFFFFF")
+        draw.text((x + 22, 282), str(value)[:22], font=font(34), fill="#FFFFFF")
 
-    if direction.startswith("UP"):
-        panel, accent, arrow = "#103D30", "#5AE2AF", "UP  ↑"
-    elif direction.startswith("DOWN"):
-        panel, accent, arrow = "#421D2A", "#FF7D8B", "DOWN  ↓"
+    if direction == "BULLISH":
+        panel, accent, arrow = "#103D30", "#5AE2AF", "BULLISH  ↑"
+    elif direction == "BEARISH":
+        panel, accent, arrow = "#421D2A", "#FF7D8B", "BEARISH  ↓"
     else:
-        panel, accent, arrow = "#3B3217", "#F3D477", "UNCLEAR"
-    draw.rounded_rectangle((38, 372, width - 38, 512), radius=22, fill=panel, outline=accent, width=2)
-    draw.text((72, 392), arrow, font=font(46), fill=accent)
-    # Use English on the PNG because the runtime may not have a Bengali-capable font.
-    event_lower = str(data.get("event", "")).lower()
-    lower_is_better = any(term in event_lower for term in (
-        "unemployment rate", "jobless claims", "initial claims", "continuing claims",
-        "claims", "unemployment", "job losses", "layoffs", "bad loans",
-    ))
-    if direction.startswith("UP"):
-        short_reason = "Lower than forecast may support currency." if lower_is_better else "Actual is above forecast."
-    elif direction.startswith("DOWN"):
-        short_reason = "Actual is below forecast." if not lower_is_better else "Higher than forecast may weigh on currency."
-    else:
-        short_reason = "No clear surprise versus forecast."
-    draw.text((74, 458), short_reason, font=font(20), fill="#E6F0FA")
+        panel, accent, arrow = "#3B3217", "#F3D477", "NEUTRAL"
+    draw.rounded_rectangle((38, 372, width - 38, 506), radius=22, fill=panel, outline=accent, width=2)
+    draw.text((72, 392), arrow, font=font(42), fill=accent)
+    draw.text((74, 458), "Forecast + Previous pre-release bias", font=font(20), fill="#E6F0FA")
 
-    draw.line((44, 550, width - 44, 550), fill="#20324C", width=2)
-    draw.text((48, 574), "NEWS-BASED ANALYSIS", font=font(19), fill="#91A5C0")
-    draw.text((48, 606), "Not a confirmed Quotex M1 signal", font=font(22), fill="#D5DFEC")
-    draw.text((48, 674), f"OWNER: {NEWS_OWNER}", font=font(23), fill="#B9D7FF")
-    draw.text((width - 350, 681), "GHOST MATRIX  •  NEWS", font=font(15), fill="#7186A5")
-
-    output = io.BytesIO()
-    img.save(output, format="PNG", optimize=True)
-    return output.getvalue()
-
+    draw.line((44, 542, width - 44, 542), fill="#20324C", width=2)
+    draw.text((48, 560), "FUNDAMENTAL PRE-NEWS ANALYSIS", font=font(19), fill="#91A5C0")
+    draw.text((48, 595), "Actual excluded • use volatility/price action for final confirmation", font=font(20), fill="#D5DFEC")
+    draw.text((48, 650), "GHOST AI", font=font(23), fill="#B9D7FF")
+    output = io.BytesIO(); img.save(output, format="PNG", optimize=True); return output.getvalue()
 
 def _event_datetime(event: dict) -> Optional[datetime]:
     for key in ("time_utc", "datetime", "date_time", "release_time"):
@@ -1686,7 +1706,7 @@ def get_economic_calendar(days: int = 7) -> list[dict]:
 
 def format_economic_calendar(events: list[dict], days: int = 7) -> str:
     lines = [
-        "👻 GHOST MATRIX",
+        "👻 GHOST AI",
         "━━━━━━━━━━━━━━━━━━━━",
         "📰 ECONOMIC NEWS CALENDAR        🔵 PAID",
         f"📅 High-impact events • Next {days} days • Bangladesh time",
@@ -1731,7 +1751,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
 
     if command in ("/start", "/help"):
         send_message(
-            "👻 GHOST MATRIX V2.0\n\n"
+            "👻 GHOST AI V2.0\n\n"
             "Commands:\n"
             "/status — bot/API/database status\n"
             "/markets — cached market catalog count\n"
@@ -1750,7 +1770,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
     elif command == "/status":
         db_ok, db_msg = init_database()
         msg = (
-            "🛠 GHOST MATRIX STATUS\n"
+            "🛠 GHOST AI STATUS\n"
             f"Bot token: {'configured' if BOT_TOKEN else 'MISSING'}\n"
             f"Chat ID: {'configured' if CHAT_ID else 'MISSING'}\n"
             f"Twelve Data key: {'configured' if TWELVE_DATA_API_KEY else 'MISSING'}\n"
@@ -1767,7 +1787,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
     elif command == "/markets":
         catalog = get_catalog()
         send_message(
-            f"🎯 GHOST MATRIX — SELECTED MARKETS ({len(catalog)})\n" +
+            f"🎯 GHOST AI — SELECTED MARKETS ({len(catalog)})\n" +
             "\n".join(f"{i}. {x['symbol']}" for i, x in enumerate(catalog, 1)) +
             "\n\nএই তালিকা তোমার নির্বাচিত pair; Quotex-এ REAL tab-এ availability নিজে মিলিয়ে দেখো.", chat_id)
     elif command == "/signals":
@@ -1775,7 +1795,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
         if not signals:
             send_message("📋 এখনো কোনো সিগনাল লগ নেই। /future দিয়ে ম্যানুয়াল স্ক্যান করো।", chat_id)
         else:
-            lines = ["📋 GHOST MATRIX — RECENT SIGNALS", "ফল জানাতে /win ID বা /loss ID ব্যবহার করো।", ""]
+            lines = ["📋 GHOST AI — RECENT SIGNALS", "ফল জানাতে /win ID বা /loss ID ব্যবহার করো।", ""]
             for sig in signals:
                 sid = sig.get("id", "?")
                 sym = sig.get("symbol", "?")
@@ -1896,7 +1916,7 @@ def handle_command(text: str, chat_id: str, photo_file_id: Optional[str] = None)
         except Exception as exc:
             log.warning("Economic calendar request failed: %s", exc)
             send_message(
-                "👻 GHOST MATRIX — NEWS CALENDAR\n"
+                "👻 GHOST AI — NEWS CALENDAR\n"
                 "🔵 PAID\n\n"
                 "লাইভ economic calendar এখন পাওয়া যায়নি। কিছুক্ষণ পরে /news আবার চেষ্টা করো।\n"
                 f"Source: {NEWS_SOURCE_URL}\n"
@@ -2505,7 +2525,7 @@ def api_admin_signal_outcome(signal_id):
 
 @app.get("/api/config")
 def api_config():
-    return jsonify({"app_name": APP_NAME, "affiliate_url": AFFILIATE_URL, "telegram_admin": TELEGRAM_ADMIN, "timeframe": "1 MIN", "markets": ["REAL","OTC"], "vision_providers": _vision_provider_status()})
+    return jsonify({"app_name": APP_NAME, "affiliate_url": AFFILIATE_URL, "telegram_admin": TELEGRAM_ADMIN, "timeframe": "1 MIN", "markets": ["REAL","OTC"]})
 
 
 @app.get("/api/auth/verify")
@@ -2725,7 +2745,7 @@ def api_dashboard():
             total = wins + losses
             api_calls = int(state.get("memory_api_calls", {}).get(str(today), 0))
     return jsonify({
-        "app": "GHOST MATRIX", "status": "running",
+        "app": "GHOST AI", "status": "running",
         "data_source": "Twelve Data external feed", "quotex_verified": False,
         "twelve_data_key_configured": bool(TWELVE_DATA_API_KEY),
         "bot_token_configured": bool(BOT_TOKEN), "chat_id_configured": bool(CHAT_ID),
@@ -2823,190 +2843,187 @@ def api_ask():
         return jsonify({"error": "প্রশ্ন ৩০০০ অক্ষরের মধ্যে রাখো।"}), 400
     return jsonify({"answer": ai_answer(question), "provider": "configured AI service" if AI_API_KEY else "AI not configured"})
 
-
-# ---------------------- Vision provider routing ----------------------
-VISION_SYSTEM_PROMPT = """You are GHOST AI, a chart-analysis engine. Analyze ONLY visible evidence in the screenshot.
-Never guess or hallucinate the asset, timeframe, price, broker, or candle values. If the pair or timeframe is not clearly visible, return UNKNOWN.
-Use price action + SMC concepts: trend, HH/HL or LL/LH, BOS/CHOCH, liquidity sweep, order blocks, FVG/imbalance, premium/discount, rejection, displacement and momentum.
-For OTC charts, consider possible broker-specific reverse/fake-breakout behavior only when visible evidence supports it; never invent a feed or price.
-A CALL/PUT requires at least 2 clear confluences. Otherwise use NO TRADE.
-Confidence is setup quality, NOT win probability. Never promise profit.
-Return ONLY valid JSON with: direction, confidence, summary, trend, structure, zones, reasoning, confirmation, invalidation, confidence_note, confluences, market_hint, timeframe_hint.
-"""
-VISION_USER_PROMPT = """Analyze this trading-chart screenshot for GHOST AI.
-1) Identify the exact visible market pair (e.g. EUR/AUD) only if readable; do not default to EUR/USD.
-2) Identify visible timeframe only if readable.
-3) Determine CALL, PUT, or NO TRADE using price action + SMC confluence.
-4) Explain the strongest evidence and invalidation.
-Return JSON only."""
-
-def _strip_json_fence(text: str) -> str:
-    text = str(text or "").strip()
-    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.I)
-    text = re.sub(r"\s*```$", "", text, flags=re.I)
-    return text.strip()
-
-def _parse_vision_json(content: str) -> dict:
-    cleaned = _strip_json_fence(content)
-    try:
-        data = json.loads(cleaned)
-        if isinstance(data, dict):
-            return data
-    except Exception:
-        pass
-    # Some providers may wrap JSON in prose; extract the first object conservatively.
-    m = re.search(r"\{.*\}", cleaned, flags=re.S)
-    if m:
-        try:
-            data = json.loads(m.group(0))
-            if isinstance(data, dict):
-                return data
-        except Exception:
-            pass
-    raise ValueError("Vision provider did not return valid JSON")
-
-def _call_groq_vision(encoded: str, mime: str) -> str:
-    if not AI_API_KEY:
-        raise RuntimeError("GROQ is not configured")
-    payload = {"model": GROQ_VISION_MODEL, "messages": [
-        {"role":"system","content":VISION_SYSTEM_PROMPT},
-        {"role":"user","content":[{"type":"text","text":VISION_USER_PROMPT},{"type":"image_url","image_url":{"url":f"data:{mime};base64,{encoded}"}}]}
-    ], "temperature":0.05, "max_completion_tokens":1400}
-    r=http_session.post(GROQ_BASE, headers={"Authorization":f"Bearer {AI_API_KEY}","Content-Type":"application/json"}, json=payload, timeout=35)
-    r.raise_for_status()
-    return r.json()["choices"][0]["message"]["content"]
-
-def _call_openai_vision(encoded: str, mime: str) -> str:
-    if not OPENAI_API_KEY:
-        raise RuntimeError("OPENAI_API_KEY is not configured")
-    payload={"model":OPENAI_VISION_MODEL,"input":[{"role":"user","content":[
-        {"type":"input_text","text":VISION_SYSTEM_PROMPT+"\\n\\n"+VISION_USER_PROMPT},
-        {"type":"input_image","image_url":f"data:{mime};base64,{encoded}","detail":"high"}
-    ]},],"temperature":0.05,"max_output_tokens":1400}
-    r=http_session.post(OPENAI_RESPONSES_BASE,headers={"Authorization":f"Bearer {OPENAI_API_KEY}","Content-Type":"application/json"},json=payload,timeout=40)
-    r.raise_for_status(); data=r.json()
-    if data.get("output_text"):
-        return data["output_text"]
-    chunks=[]
-    for item in data.get("output",[]) or []:
-        for c in item.get("content",[]) or []:
-            if isinstance(c,dict) and c.get("type") in ("output_text","text") and c.get("text"):
-                chunks.append(c["text"])
-    if chunks: return "\n".join(chunks)
-    raise RuntimeError("OpenAI returned no text output")
-
-def _call_gemini_vision(encoded: str, mime: str) -> str:
-    if not GEMINI_API_KEY:
-        raise RuntimeError("GEMINI_API_KEY is not configured")
-    url=f"{GEMINI_BASE}/{GEMINI_VISION_MODEL}:generateContent"
-    payload={"contents":[{"role":"user","parts":[
-        {"text":VISION_SYSTEM_PROMPT+"\\n\\n"+VISION_USER_PROMPT},
-        {"inlineData":{"mimeType":mime,"data":encoded}}
-    ]}],"generationConfig":{"temperature":0.05,"maxOutputTokens":1400,"responseMimeType":"application/json"}}
-    r=http_session.post(url,headers={"x-goog-api-key":GEMINI_API_KEY,"Content-Type":"application/json"},json=payload,timeout=40)
-    r.raise_for_status(); data=r.json()
-    parts=((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or []
-    text="\n".join(str(x.get("text","")) for x in parts if isinstance(x,dict) and x.get("text"))
-    if text: return text
-    raise RuntimeError("Gemini returned no text output")
-
-def _vision_provider_status() -> dict:
-    return {"openai":bool(OPENAI_API_KEY),"gemini":bool(GEMINI_API_KEY),"groq":bool(AI_API_KEY)}
-
-def _normalise_detected_market(value: str) -> str:
-    text=str(value or "").upper().replace("-","/").replace(" ","")
-    m=re.search(r"([A-Z]{3})[/]?([A-Z]{3})",text)
-    if not m: return "UNKNOWN"
-    pair=f"{m.group(1)}/{m.group(2)}"
-    return pair if pair in DEFAULT_REAL_MARKETS else pair
-
-def _normalise_vision_result(raw: dict) -> dict:
-    direction=str(raw.get("direction","NO TRADE")).upper().strip()
-    if direction not in ("CALL","PUT","NO TRADE","NO SIGNAL"): direction="NO TRADE"
-    if direction=="NO SIGNAL": direction="NO TRADE"
-    try: conf=max(0,min(100,int(float(raw.get("confidence",0)))))
-    except Exception: conf=0
-    con=raw.get("confluences") or []
-    if not isinstance(con,list): con=[]
-    con=[str(x) for x in con if str(x).strip()][:12]
-    if direction in ("CALL","PUT") and len(con)<2:
-        direction="NO TRADE"; conf=min(conf,48)
-    if direction in ("CALL","PUT"):
-        caps=[(5,92),(4,88),(3,80),(2,70)]
-        floor=58
-        for n,cap in caps:
-            if len(con)>=n:
-                conf=max(floor if n==2 else (86 if n==5 else 70 if n==3 else 80),min(conf,cap)); break
-    else: conf=min(conf,58)
-    return {
-        "direction":direction,"confidence":conf,
-        "summary":str(raw.get("summary") or "ছবির দৃশ্যমান evidence অনুযায়ী বিশ্লেষণ সম্পন্ন হয়েছে।"),
-        "trend":str(raw.get("trend") or "স্পষ্ট নয়"),"structure":str(raw.get("structure") or "স্পষ্ট নয়"),
-        "zones":str(raw.get("zones") or "স্পষ্ট নয়"),"reasoning":str(raw.get("reasoning") or "স্পষ্ট confluence পাওয়া যায়নি।"),
-        "confirmation":str(raw.get("confirmation") or "পরবর্তী candle confirmation অপেক্ষা করো।"),
-        "invalidation":str(raw.get("invalidation") or "সেটআপের বিপরীত structure তৈরি হলে invalid."),
-        "confidence_note":str(raw.get("confidence_note") or "এটি setup-quality score; win probability নয়।"),
-        "confluences":con,"market_hint":_normalise_detected_market(raw.get("market_hint")),
-        "timeframe_hint":str(raw.get("timeframe_hint") or "UNKNOWN")
-    }
-
 @app.post("/api/analyze-image")
 @login_required
 def api_analyze_image():
-    _uid=session.get("user_id")
-    if not _uid: return jsonify({"error":"Login required","auth_required":True,"locked":True}),401
-    _plan=get_user_active_plan(int(_uid))
-    is_owner=False
+    # GHOST AI: Backend-enforced access control - logged_in AND active_plan required
+    _uid = session.get("user_id")
+    if not _uid:
+        return jsonify({"error": "Login required", "auth_required": True, "locked": True}), 401
+    _plan = get_user_active_plan(int(_uid))
+    # OWNER/ADMIN: full access without plan
+    _is_owner_analyze = False
     try:
         with db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT email,is_admin FROM gm_users WHERE id=%s",(int(_uid),)); row=cur.fetchone()
-                if row: is_owner=_is_owner_email(row[0] or "") or bool(row[1])
-    except Exception: pass
-    has_plan=is_owner or bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
-    if not has_plan:
-        return jsonify({"error":"SIGNAL ACCESS LOCKED","locked":True,"message":"Your account does not have an active signal plan.","affiliate_url":AFFILIATE_URL,"plan":_plan}),403
-    if not _api_allowed("vision",4,60): return jsonify({"error":"এক মিনিটে সর্বোচ্চ ৪টি screenshot analysis। পরে আবার চেষ্টা করো।"}),429
-    upload=request.files.get("image")
-    if upload is None or not upload.filename: return jsonify({"error":"একটি chart screenshot upload করো।"}),400
-    provider=str(request.form.get("provider") or "groq").strip().lower()
-    if provider not in ("openai","gemini","groq"): return jsonify({"error":"Invalid AI provider. Select OpenAI, Gemini or Groq."}),400
-    configured=_vision_provider_status()
-    if not configured.get(provider): return jsonify({"error":f"{provider.upper()} is not configured. Add the corresponding Render ENV key."}),503
-    raw=upload.read(12*1024*1024+1)
-    if not raw or len(raw)>12*1024*1024: return jsonify({"error":"ছবি খালি অথবা ১২ MB-এর বেশি।"}),413
-    q_score,q_issues=check_screenshot_quality(raw)
-    if q_score<55: return jsonify({"error":"SCREENSHOT QUALITY TOO LOW","quality_too_low":True,"image_quality":q_score,"issues":q_issues}),422
+                cur.execute("SELECT email, is_admin FROM gm_users WHERE id=%s", (int(_uid),))
+                _ru = cur.fetchone()
+                if _ru: _is_owner_analyze = _is_owner_email(_ru[0] or "") or bool(_ru[1])
+    except Exception:
+        pass
+    _has_plan = True if _is_owner_analyze else bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
+    if not _has_plan:
+        return jsonify({"error": "SIGNAL ACCESS LOCKED", "locked": True, "message": "Your account does not have an active signal plan.", "affiliate_url": AFFILIATE_URL, "plan": _plan}), 403
+    if not _api_allowed("vision", 4, 60):
+        return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৪টি screenshot analysis। পরে আবার চেষ্টা করো।"}), 429
+    upload = request.files.get("image")
+    if upload is None or not upload.filename:
+        return jsonify({"error": "একটি chart screenshot upload করো।"}), 400
+    if not AI_API_KEY:
+        return jsonify({"error": "AI_API_KEY Render Environment-এ সেট নেই; screenshot analysis চালু নয়।"}), 503
+    raw = upload.read(12 * 1024 * 1024 + 1)
+    if not raw or len(raw) > 12 * 1024 * 1024:
+        return jsonify({"error": "ছবি খালি অথবা ১২ MB-এর বেশি। ছোট screenshot upload করো।"}), 413
+    # GHOST AI: Screenshot Quality Control
+    _q_score, _q_issues = check_screenshot_quality(raw)
+    _market = str(request.form.get("market") or request.form.get("symbol") or "")
+    _mtype = str(request.form.get("market_type") or request.form.get("marketType") or "OTC")
+    if _q_score < 55:
+        return jsonify({"error": "SCREENSHOT QUALITY TOO LOW", "quality_too_low": True, "image_quality": _q_score, "issues": _q_issues, "message": "Please upload a clearer chart screenshot with visible candles, timeframe and market information."}), 422
     try:
-        im=Image.open(io.BytesIO(raw)); im.verify()
-        mime=upload.mimetype if upload.mimetype in ("image/jpeg","image/png","image/webp") else "image/jpeg"
-        vision_bytes=raw
+        im = Image.open(io.BytesIO(raw))
+        im.verify()
+        mime = upload.mimetype if upload.mimetype in ("image/jpeg", "image/png", "image/webp") else "image/jpeg"
+        # Reduce vision latency by resizing large screenshots before the model call.
+        vision_bytes = raw
         try:
-            work=Image.open(io.BytesIO(raw)).convert("RGB"); work.thumbnail((1800,1200),Image.Resampling.LANCZOS)
-            buf=io.BytesIO(); work.save(buf,format="JPEG",quality=84,optimize=True); vision_bytes=buf.getvalue(); mime="image/jpeg"
-        except Exception: pass
-        encoded=base64.b64encode(vision_bytes).decode("ascii")
-        callers={"openai":_call_openai_vision,"gemini":_call_gemini_vision,"groq":_call_groq_vision}
-        content=callers[provider](encoded,mime)
-        analysis=_normalise_vision_result(_parse_vision_json(content))
-        requested_market=_normalise_detected_market(request.form.get("market") or request.form.get("symbol"))
-        detected_market=analysis.get("market_hint") if analysis.get("market_hint")!="UNKNOWN" else requested_market
-        market_type=str(request.form.get("market_type") or "REAL").upper()
-        if market_type not in ("REAL","OTC"): market_type="REAL"
-        timeframe=_normalize_timeframe(request.form.get("timeframe") or "1 MIN")
-        if analysis.get("timeframe_hint") and analysis["timeframe_hint"]!="UNKNOWN": timeframe=_normalize_timeframe(analysis["timeframe_hint"])
-        _dir=analysis["direction"]; _conf=int(analysis["confidence"])
-        if _dir=="NO TRADE": _dir="NO SIGNAL"; analysis["direction"]="NO SIGNAL"
-        text=(analysis.get("summary","")+" | "+analysis.get("reasoning","")).strip()
+            work = Image.open(io.BytesIO(raw)).convert("RGB")
+            work.thumbnail((1800, 1200), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            work.save(buf, format="JPEG", quality=84, optimize=True)
+            vision_bytes = buf.getvalue()
+            mime = "image/jpeg"
+        except Exception:
+            pass
+        encoded = base64.b64encode(vision_bytes).decode("ascii")
+        system_prompt = '''You are GHOST TRADER V3 — elite SMC price action analyst with high accuracy + tradeable signals.
+
+MISSION: Analyze ONLY what is visible in the chart screenshot. Never hallucinate asset, timeframe, price.
+
+ELITE SMC FRAMEWORK:
+1. Trend: HH/HL=up, LL/LH=down, BOS=Break of Structure, CHOCH=Change of Character
+2. Liquidity: Sweep, stop hunt, equal highs/lows taken
+3. Zones: Order Block (bullish/bearish OB), FVG, Premium/Discount, Imbalance, Breaker
+4. Momentum: Engulfing, pinbar rejection, displacement
+
+TRADEABLE RULES (BALANCED - Less NO TRADE):
+- 2+ confluences REQUIRED for CALL/PUT (previously 3+ was too strict causing too many NO TRADE)
+- CALL if: bullish BOS/CHOCH + bullish OB/FVG or bullish momentum + discount zone preferred
+- PUT if: bearish BOS/CHOCH + bearish OB/FVG or bearish momentum + premium zone preferred
+- If chart blurry or 0-1 confluence only → NO TRADE
+- Confidence = setup quality, not win probability. Never promise profit.
+
+CONFIDENCE CALIBRATION (BALANCED):
+- 5+ confluences + clean = 86-92%
+- 4 confluences = 80-88%
+- 3 confluences = 70-80%
+- 2 confluences = 58-70% (tradeable, medium)
+- 0-1 confluence or unclear = 0-48% + NO TRADE
+- Mixed signals → reduce 10-15, not full 20
+
+Return ONLY valid JSON with keys:
+direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short), trend (Bengali), structure (Bengali), zones (Bengali), reasoning (Bengali), confirmation (Bengali), invalidation (Bengali), confidence_note (Bengali), confluences (array like ["BOS","Bullish OB","FVG","Engulfing"]), market_hint (asset/timeframe if visible)
+'''
+        user_prompt = "এই chart screenshot-টি বিশ্লেষণ করো। asset/timeframe দেখা গেলে শনাক্ত করো; না দেখা গেলে অনুমান কোরো না। CALL, PUT অথবা NO TRADE নির্বাচন করো। দুই দিকের প্রমাণ যাচাই করো এবং entry নেওয়ার আগে কী confirmation দরকার বলো। JSON ছাড়া অন্য কিছু দেবে না।"
+        payload = {"model": GROQ_VISION_MODEL, "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": [
+                {"type": "text", "text": user_prompt},
+                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
+            ]}
+        ], "temperature": 0.05, "max_completion_tokens": 1400}
+        response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=28)
+        response.raise_for_status()
+        content = response.json()["choices"][0]["message"]["content"].strip()
+        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", content, flags=re.I).strip()
+        try:
+            analysis = json.loads(cleaned)
+            if not isinstance(analysis, dict):
+                raise ValueError("analysis JSON is not an object")
+            direction = str(analysis.get("direction", "NO TRADE")).upper()
+            analysis["direction"] = direction if direction in ("CALL", "PUT", "NO TRADE") else "NO TRADE"
+            try:
+                base_conf = max(0, min(100, int(float(analysis.get("confidence", 0)))))
+            except (TypeError, ValueError):
+                base_conf = 0
+            
+            # --- GHOST V3 Accuracy Boost: Confluence-based recalibration ---
+            confluences = analysis.get("confluences", [])
+            if not isinstance(confluences, list):
+                confluences = []
+            # Count from reasoning text if confluences list empty
+            reasoning_text = (str(analysis.get("reasoning","")) + " " + str(analysis.get("structure","")) + " " + str(analysis.get("zones",""))).lower()
+            keyword_map = ["bos","choch","order block","fvg","liquidity","premium","discount","engulfing","pinbar","pin bar","imbalance","breaker","displacement","sweep"]
+            detected = []
+            for kw in keyword_map:
+                if kw in reasoning_text and kw not in [x.lower() for x in detected]:
+                    detected.append(kw)
+            if not confluences:
+                confluences = detected
+            analysis["confluences"] = confluences
+            conf_count = len(confluences)
+            
+            # Balanced filter - less NO TRADE, more tradeable signals
+            if analysis["direction"] in ("CALL","PUT"):
+                if conf_count < 2:
+                    analysis["direction"] = "NO TRADE"
+                    analysis["invalidation"] = f"মাত্র {conf_count} confluence - 2+ লাগে trade এর জন্য। Detected: {', '.join(confluences) if confluences else 'কম'}"
+                    base_conf = min(base_conf, 48)
+                elif conf_count >= 5:
+                    base_conf = max(base_conf, 86)
+                    base_conf = min(base_conf, 92)
+                elif conf_count >= 4:
+                    base_conf = max(base_conf, 80)
+                    base_conf = min(base_conf, 88)
+                elif conf_count >= 3:
+                    base_conf = max(base_conf, 70)
+                    base_conf = min(base_conf, 80)
+                else: # 2 confluences - still tradeable with medium confidence
+                    base_conf = max(base_conf, 58)
+                    base_conf = min(base_conf, 70)
+            else:
+                # Keep NO TRADE but with realistic confidence
+                if conf_count >= 2:
+                    # If model said NO TRADE but we have 2+ confluences, allow reconsider as weak signal?
+                    # Keep NO TRADE but bump confidence slightly so user sees not always 45%
+                    base_conf = max(base_conf, 48)
+                    base_conf = min(base_conf, 58)
+                else:
+                    base_conf = min(base_conf, 48)
+            
+            # Cap never 100% to stay realistic
+            if base_conf > 92:
+                base_conf = 92
+            
+            analysis["confidence"] = base_conf
+            for key in ("summary", "trend", "structure", "zones", "reasoning", "confirmation", "invalidation", "confidence_note"):
+                if not isinstance(analysis.get(key), str):
+                    analysis[key] = "ছবিতে পরিষ্কারভাবে শনাক্ত করা যায়নি।"
+        except (json.JSONDecodeError, ValueError):
+            analysis = {"direction": "NO TRADE", "confidence": 0, "summary": content,
+                        "trend": "Structured result unavailable", "structure": "Structured result unavailable",
+                        "zones": "Structured result unavailable", "reasoning": content,
+                        "confirmation": "Clear price confirmation ছাড়া entry নিও না।",
+                        "invalidation": "সেটআপ নিশ্চিত নয়।", "confidence_note": "Confidence নির্ভরযোগ্যভাবে বের করা যায়নি; এটি win probability নয়।"}
+        # GHOST AI: Store signal, add quality metrics, prefer NO SIGNAL over low-confidence
+        _dir = str(analysis.get("direction","NO TRADE")).upper()
+        _conf = int(analysis.get("confidence",0) or 0)
+        if _dir in ("CALL","PUT") and _conf < 58:
+            _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"; analysis["signal"]="NO SIGNAL"
+        if _dir == "NO TRADE":
+            _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"
+        _verified = get_verified_accuracy()
+        _analysis_text = str(analysis.get("summary","") or "") + " | " + str(analysis.get("reasoning","") or "")
         try:
             with db_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("INSERT INTO gm_user_signals (user_id,market,market_type,timeframe,signal,confidence,analysis,image_quality,outcome) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'PENDING') RETURNING id",(int(_uid),detected_market,market_type,timeframe,_dir,_conf,text[:2000],int(q_score)))
-        except Exception as e: log.warning("Could not store user vision signal: %s",e)
-        return jsonify({"analysis":analysis,"signal":_dir,"confidence":_conf,"market":detected_market,"market_type":market_type,"timeframe":timeframe,"provider":provider,"provider_model":{"openai":OPENAI_VISION_MODEL,"gemini":GEMINI_VISION_MODEL,"groq":GROQ_VISION_MODEL}.get(provider),"image_quality":int(q_score),"image_quality_issues":q_issues,"available_providers":configured,"status":"VALID" if _dir in ("CALL","PUT") else "NO SIGNAL","warning":"Screenshot-based decision support only. Confidence is setup quality, not win probability."})
+                    cur.execute("INSERT INTO gm_user_signals (user_id, market, market_type, timeframe, signal, confidence, analysis, image_quality, outcome) VALUES (%s,%s,%s,'1 MIN',%s,%s,%s,%s,'PENDING') RETURNING id", (int(_uid), _market or "EUR/USD", _mtype or "OTC", _dir, _conf, _analysis_text[:2000], int(_q_score)))
+        except Exception as _e:
+            log.warning("Could not store user signal: %s", _e)
+        return jsonify({"analysis": analysis, "signal": _dir, "confidence": _conf, "market": _market or "EUR/USD", "market_type": _mtype or "OTC", "timeframe": "1 MIN", "image_quality": int(_q_score), "image_quality_issues": _q_issues, "verified_accuracy": _verified, "analysis_confidence": _conf, "status": "VALID" if _dir in ("CALL","PUT") else "NO SIGNAL", "warning": "Screenshot-based educational analysis only. Confidence is setup quality, not a win probability. Trading involves risk - never trade more than you can afford to lose.", "risk_warning": "Trading involves substantial risk. This is not financial advice."})
     except Exception as exc:
-        log.warning("Vision analysis failed provider=%s: %s",provider,exc)
-        return jsonify({"error":f"{provider.upper()} analysis failed: {str(exc)[:220]}"}),502
+        log.warning("Mini App screenshot analysis failed: %s", exc)
+        return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। image format, AI_API_KEY, vision model ও provider limit পরীক্ষা করো।"}), 502
 
 
 @app.post("/api/signals/generate")
@@ -3143,27 +3160,20 @@ def api_future_signals():
                 if not isinstance(base_time,datetime):
                     base_time=datetime.now(timezone.utc)
                 tf_minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1)
-                # Schedule only windows strictly after now. The price is the CURRENT analysed
-                # setup reference; no future price is fabricated. If the user requests more
-                # candidates than selected markets, additional future windows are queued from
-                # the same verified current setup.
+                # Always schedule after the candle being analysed. This prevents a future card
+                # from being stamped with the current candle's start time.
                 next_window=base_time + timedelta(minutes=tf_minutes)
                 now_utc=datetime.now(timezone.utc)
                 while next_window <= now_utc:
                     next_window += timedelta(minutes=tf_minutes)
-                remaining=max(1,count-len(results))
-                for rank in range(remaining):
-                    window=next_window + timedelta(minutes=tf_minutes*rank)
-                    results.append({
-                        "market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],
-                        "confidence":_setup_confidence(r),"price":r.get("price"),
-                        "entry_time":window.astimezone(BANGLADESH_TZ).isoformat(),
-                        "expiry":f"{tf_minutes} MIN","reason":r.get("reason"),
-                        "strategy":"GHOST Future Setup Engine","source":source,"timeframe":timeframe,
-                        "verified_quotex":False,"status":"FUTURE CANDIDATE","window_rank":rank+1,
-                        "price_note":"Current verified setup reference only; future price is not predicted or fabricated."
-                    })
-                    if len(results)>=count: break
+                results.append({
+                    "market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],
+                    "confidence":_setup_confidence(r),"price":r.get("price"),
+                    "entry_time":next_window.astimezone(BANGLADESH_TZ).isoformat(),
+                    "expiry":f"{tf_minutes} MIN","reason":r.get("reason"),
+                    "strategy":"GHOST Future Setup Engine","source":source,"timeframe":timeframe,
+                    "verified_quotex":False,"status":"FUTURE CANDIDATE"
+                })
         except Exception as exc:
             log.warning("Future candidate scan failed for %s: %s",market,exc)
 
@@ -3194,7 +3204,7 @@ def api_news():
             clean.append({"datetime": dt.isoformat() if isinstance(dt, datetime) else None,
                           "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if isinstance(dt, datetime) else "সময় যাচাই করা যায়নি",
                           "name": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"),
-                          "forecast": e.get("forecast"), "previous": e.get("previous"), "actual": e.get("actual"), "url": e.get("url")})
+                          "forecast": e.get("forecast"), "previous": e.get("previous"), "url": e.get("url")})
         return jsonify({"events": clean, "days": days, "source": NEWS_SOURCE_URL, "timezone": "Asia/Dhaka"})
     except Exception as exc:
         log.warning("Mini App news request failed: %s", exc)
@@ -3223,28 +3233,26 @@ def api_news_bias():
     rel = [e for e in events if str(e.get("currency") or "").upper() in (base, quote)]
     if not rel:
         return jsonify({"available": False, "status": "NEWS DATA UNAVAILABLE", "market": market, "events": [], "message": f"No high-impact events for {base}/{quote} in next 7 days. Use technical analysis only."})
-    # Compute bias from actual vs forecast where actual exists
+    # Pre-news bias: Forecast vs Previous only. Actual is intentionally excluded.
     bullish = 0; bearish = 0; scored = 0
     clean = []
     for e in rel[:12]:
         dt = e.get("datetime")
-        # Simple bias: if actual exists and differs from forecast, infer direction via analyze_manual_news helper
         bias = "NEUTRAL"
-        if e.get("actual") is not None and e.get("forecast") is not None:
+        if e.get("forecast") is not None and e.get("previous") is not None:
             try:
-                tmp = {"currency": e.get("currency"), "event": e.get("name") or "", "actual": _extract_number(str(e.get("actual"))), "forecast": _extract_number(str(e.get("forecast"))), "previous": _extract_number(str(e.get("previous"))) if e.get("previous") is not None else None}
-                dirc, _, _ = analyze_manual_news({**tmp, "actual_text": str(e.get("actual")), "forecast_text": str(e.get("forecast")), "previous_text": str(e.get("previous") or "")})
-                if dirc.startswith("UP"): bias = "BULLISH " + str(e.get("currency"))
-                elif dirc.startswith("DOWN"): bias = "BEARISH " + str(e.get("currency"))
-                if bias != "NEUTRAL": scored += 1
-                if "BULLISH" in bias: bullish += 1
-                if "BEARISH" in bias: bearish += 1
+                tmp = {"currency": e.get("currency"), "event": e.get("name") or "", "forecast": _extract_number(str(e.get("forecast"))), "previous": _extract_number(str(e.get("previous")))}
+                dirc, _, _ = analyze_manual_news({**tmp, "forecast_text": str(e.get("forecast")), "previous_text": str(e.get("previous"))})
+                if dirc in ("BULLISH", "BEARISH"):
+                    bias = dirc + " " + str(e.get("currency")); scored += 1
+                    if dirc == "BULLISH": bullish += 1
+                    else: bearish += 1
             except Exception:
                 pass
-        clean.append({"datetime": dt.isoformat() if isinstance(dt, datetime) else None, "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if isinstance(dt, datetime) else None, "name": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"), "forecast": e.get("forecast"), "previous": e.get("previous"), "actual": e.get("actual"), "bias": bias})
+        clean.append({"datetime": dt.isoformat() if isinstance(dt, datetime) else None, "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if isinstance(dt, datetime) else None, "name": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"), "forecast": e.get("forecast"), "previous": e.get("previous"), "bias": bias})
     if scored == 0:
         overall = "NEUTRAL / AVOID"
-        detail = "Events found but no Actual vs Forecast to determine bias. Do not use news as confirmation."
+        detail = "Events found but Forecast/Previous data is insufficient to determine a pre-news bias."
     else:
         # Map currency bias to market: if base bullish -> CALL, if quote bullish -> PUT (base vs quote)
         base_bull = sum(1 for c in clean if c["currency"] == base and "BULLISH" in c["bias"])
@@ -3306,16 +3314,28 @@ def api_news_analyze():
     body = request.get_json(silent=True) or {}
     currency = str(body.get("currency", "")).strip().upper()
     event = str(body.get("event", "")).strip()
-    actual = str(body.get("actual", "")).strip()
-    forecast = str(body.get("forecast", "")).strip()
-    previous = str(body.get("previous", "")).strip()
-    if not currency or not event or not actual or not forecast:
-        return jsonify({"error": "Currency, event, actual ও forecast পূরণ করো।"}), 400
-    prompt = (f"Economic news explanation in Bengali. Currency: {currency}; event: {event}; actual: {actual}; forecast: {forecast}; previous: {previous or 'not supplied'}. Explain actual-vs-forecast carefully, likely first-order currency interpretation, what could reverse the reaction, and uncertainty. Do not claim current market reaction without live price data.")
-    return jsonify({"analysis": ai_answer(prompt), "note": "Economic interpretation only; current price reaction is not verified."})
+    forecast_text = str(body.get("forecast", "")).strip()
+    previous_text = str(body.get("previous", "")).strip()
+    if not currency or not event or not forecast_text or not previous_text:
+        return jsonify({"error": "Currency, event, forecast ও previous পূরণ করো। Actual প্রয়োজন নেই।"}), 400
+    data = {
+        "currency": currency, "event": event,
+        "forecast_text": forecast_text, "previous_text": previous_text,
+        "forecast": _extract_number(forecast_text),
+        "previous": _extract_number(previous_text),
+        "actual": None, "actual_text": None,
+    }
+    direction, explanation, note = analyze_manual_news(data)
+    return jsonify({
+        "analysis": explanation, "bias": direction,
+        "confidence_note": note,
+        "actual_excluded": True,
+        "fundamental_profile": _news_profile(event),
+        "market_context": "Pre-news only: use volatility, yields/positioning and price action as confirmation; do not fabricate Actual.",
+    })
 
 
-# --------------------------- GHOST MATRIX PRO API ---------------------------
+# --------------------------- GHOST AI PRO API ---------------------------
 TIMEFRAME_MAP = {
     "1 MIN": "1min", "2 MIN": "1min", "5 MIN": "5min", "10 MIN": "1min", "15 MIN": "15min", "30 MIN": "30min", "1 HOUR": "1h", "1H": "1h",
 }
@@ -3421,7 +3441,7 @@ def api_timeframes(): return jsonify({"timeframes":["1 MIN","2 MIN","5 MIN","10 
 @login_required
 def api_live():
     market_type=str(request.args.get("market_type") or "REAL").upper(); tf=_normalize_timeframe(request.args.get("timeframe")); symbols=[x["symbol"] for x in get_catalog()]
-    if market_type=="OTC": return jsonify({"available":False,"market_type":"OTC","timeframe":tf,"signals":[],"message":"Verified OTC feed is not connected. GHOST MATRIX will not fabricate OTC prices or signals."})
+    if market_type=="OTC": return jsonify({"available":False,"market_type":"OTC","timeframe":tf,"signals":[],"message":"Verified OTC feed is not connected. GHOST AI will not fabricate OTC prices or signals."})
     if not _signal_access_for_user(int(session["user_id"])): return jsonify({"locked":True,"signals":[],"message":"Active signal plan required."}),403
     results=[]
     for sym in symbols[:8]:
