@@ -684,6 +684,22 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 .ghostShotMeta select{width:100%;box-sizing:border-box;background:#0a0e1a;color:#fff;border:1px solid #2a2f45;border-radius:10px;padding:9px;font-size:9px}
 .ghostProviderStatus{font-size:8px;color:#8b8ba7;margin-top:6px;min-height:12px}
 html{scroll-behavior:smooth}
+
+/* === Screenshot AI selector: larger animated buttons only === */
+.ghostAiPicker{padding:14px;border-radius:18px;}
+.ghostAiPicker .pickerTitle{font-size:10px;margin-bottom:10px;}
+.ghostAiBtns{gap:10px;}
+.ghostAiBtn{min-height:78px;padding:14px 8px;border-radius:16px;font-size:12px;letter-spacing:.03em;position:relative;overflow:hidden;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease,background .22s ease;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
+.ghostAiBtn::before{content:"";position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.13) 48%,transparent 61%);transform:translateX(-55%) rotate(8deg);animation:ghostAiSweep 3.2s linear infinite;pointer-events:none;}
+.ghostAiBtn:hover{transform:translateY(-3px) scale(1.025);border-color:rgba(167,139,250,.65);box-shadow:0 0 24px rgba(124,58,237,.28),inset 0 1px 0 rgba(255,255,255,.08);}
+.ghostAiBtn:active{transform:scale(.98);}
+.ghostAiBtn.on{transform:translateY(-2px) scale(1.02);border-color:#a78bfa;background:linear-gradient(135deg,rgba(167,139,250,.34),rgba(124,58,237,.28));box-shadow:0 0 28px rgba(124,58,237,.34),0 0 0 2px rgba(167,139,250,.08),inset 0 1px 0 rgba(255,255,255,.12);}
+.ghostAiBtn.on::after{content:"✓";position:absolute;top:7px;right:9px;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#a78bfa;color:#120b2d;font-size:12px;font-weight:1000;box-shadow:0 0 14px rgba(167,139,250,.75);animation:ghostAiCheck 1.5s ease-in-out infinite;}
+.ghostAiBtn small{font-size:8px;margin-top:6px;}
+@keyframes ghostAiSweep{0%{transform:translateX(-70%) rotate(8deg)}55%,100%{transform:translateX(70%) rotate(8deg)}}
+@keyframes ghostAiCheck{0%,100%{transform:scale(.92);opacity:.82}50%{transform:scale(1.08);opacity:1}}
+@media(max-width:430px){.ghostAiBtns{grid-template-columns:1fr 1fr;gap:9px}.ghostAiBtn{min-height:82px;font-size:11px}.ghostAiBtn small{font-size:7px}}
+
 </style>
 </head>
 <body>
