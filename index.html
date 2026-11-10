@@ -661,6 +661,29 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 .ghostCompare h3{font-size:13px;color:#fff;margin-bottom:4px}.ghostCompare p{font-size:9px;color:#8b8ba7;margin-bottom:10px}
 .ghostCompare table{width:100%;border-collapse:collapse;font-size:8px}.ghostCompare th,.ghostCompare td{padding:8px 6px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}.ghostCompare th{color:#a78bfa;font-size:7px;letter-spacing:.08em}.ghostCompare td:first-child{color:#fff;font-weight:800}.ghostCompare td:last-child{color:#c4b5fd}
 
+
+.ghostHomeFeatures{margin:18px 0 28px;padding:18px 0 8px;scroll-margin-top:18px}
+.ghostSectionKicker{font-size:8px;font-weight:900;letter-spacing:.18em;color:#a78bfa;margin-bottom:6px}
+.ghostHomeFeatures h2{font-size:20px;line-height:1.1;color:#fff;margin:0 0 7px}
+.ghostHomeFeatures>p{font-size:10px;line-height:1.6;color:#8b8ba7;margin:0 0 14px}
+.ghostFeatureGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.ghostFeatureCard{min-height:82px;padding:12px;border-radius:15px;background:linear-gradient(180deg,rgba(30,21,64,.72),rgba(12,9,30,.86));border:1px solid rgba(167,139,250,.13);box-shadow:0 8px 28px rgba(0,0,0,.16)}
+.ghostFeatureCard b{display:block;color:#fff;font-size:10px;margin-bottom:6px}
+.ghostFeatureCard span{display:block;color:#8b8ba7;font-size:8.5px;line-height:1.5}
+.ghostHomeFeatures .ghostCompare{margin-top:12px}
+@media(max-width:430px){.ghostFeatureGrid{grid-template-columns:1fr 1fr}}
+
+/* AI provider selector + chart metadata controls */
+.ghostAiPicker{margin:10px 0 8px;padding:10px;border:1px solid rgba(167,139,250,.16);border-radius:15px;background:rgba(15,10,46,.72)}
+.ghostAiPicker .pickerTitle{font-size:8px;letter-spacing:.16em;font-weight:900;color:#8b8ba7;margin-bottom:7px}
+.ghostAiBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ghostAiBtn{border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035);color:#cbd5e1;border-radius:10px;padding:9px 5px;font-size:9px;font-weight:900;cursor:pointer;transition:.2s}
+.ghostAiBtn.on{border-color:#a78bfa;background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(124,58,237,.22));color:#fff;box-shadow:0 0 18px rgba(124,58,237,.18)}
+.ghostAiBtn small{display:block;font-size:6px;color:#8b8ba7;margin-top:3px;font-weight:700}
+.ghostShotMeta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.ghostShotMeta select{width:100%;box-sizing:border-box;background:#0a0e1a;color:#fff;border:1px solid #2a2f45;border-radius:10px;padding:9px;font-size:9px}
+.ghostProviderStatus{font-size:8px;color:#8b8ba7;margin-top:6px;min-height:12px}
+html{scroll-behavior:smooth}
 </style>
 </head>
 <body>
@@ -690,16 +713,7 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 <div id="msg" style="font-size:9px;color:#ff3b5c;margin:6px 0;display:none;text-align:left;background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.15);padding:7px;border-radius:9px;white-space:pre-line"></div>
 <button class="ip" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;border:0;margin-top:8px;box-shadow:0 8px 20px rgba(124,58,237,.4)" id="lb">LOGIN</button>
 <button id="regBtn" style="display:none;width:100%;padding:12px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;font-weight:900;border:0;border-radius:10px;margin-top:8px;cursor:pointer;box-shadow:0 8px 20px rgba(124,58,237,.4)" onclick="doRegister()">CREATE ACCOUNT</button>
-<div style="font-size:9px;color:#8b8ba7;margin-top:10px">No account? Tap <b style="color:#c4b5fd;cursor:pointer" onclick="switchAuthTab('register')">Register</b> • Have account? <b style="color:#c4b5fd;cursor:pointer" onclick="switchAuthTab('login')">Login</b></div><div class="ghostCompare">
-<h3>Why GHOST AI?</h3>
-<p>Multi-model chart verification built for real + OTC analysis.</p>
-<table><thead><tr><th>CAPABILITY</th><th>GENERAL AI</th><th>GHOST AI</th></tr></thead><tbody>
-<tr><td>Model consensus</td><td>Single model</td><td>Groq + Gemini + OpenAI when configured</td></tr>
-<tr><td>OTC analysis</td><td>Generic</td><td>Dedicated OTC / reverse-logic pipeline</td></tr>
-<tr><td>Confidence</td><td>Generic answer</td><td>0–100 setup-quality score + agreement</td></tr>
-<tr><td>Coverage</td><td>On request</td><td>Live / OTC / Future modules</td></tr>
-<tr><td>Vision scanner</td><td>General image reading</td><td>Chart + PA/SMC confluence analysis</td></tr>
-</tbody></table></div>
+<div style="font-size:9px;color:#8b8ba7;margin-top:10px">No account? Tap <b style="color:#c4b5fd;cursor:pointer" onclick="switchAuthTab('register')">Register</b> • Have account? <b style="color:#c4b5fd;cursor:pointer" onclick="switchAuthTab('login')">Login</b></div>
 </div>
 </div>
 
@@ -728,6 +742,31 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 <div class="quotaCard full" onclick="openUnlock()"><div class="qcIc" style="background:#f3e8ff;color:#9333ea"><span class="cssIco" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg></span></div><div class="qcTi">Ghost Injector</div><div class="lockWrap"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><div class="upTxt">Upgrade to unlock</div></div>
 </div>
 </div>
+<div class="ghostHomeFeatures" id="ghostHomeFeatures">
+  <div class="ghostSectionKicker">GHOST AI PLATFORM</div>
+  <h2>Built for smarter chart analysis.</h2>
+  <p>Scroll to explore the tools, verification layers and AI capabilities inside GHOST AI.</p>
+  <div class="ghostFeatureGrid">
+    <div class="ghostFeatureCard"><b>Multi-AI Analysis</b><span>Choose OpenAI, Gemini or Groq for screenshot investigation.</span></div>
+    <div class="ghostFeatureCard"><b>OTC Reverse Logic</b><span>Dedicated OTC analysis instead of treating OTC like a normal market.</span></div>
+    <div class="ghostFeatureCard"><b>0–100 Confidence</b><span>Setup-quality scoring with confluence and model agreement.</span></div>
+    <div class="ghostFeatureCard"><b>Live + Future</b><span>Real-market feeds, live signals and future setup candidates.</span></div>
+    <div class="ghostFeatureCard"><b>Vision Scanner</b><span>Upload a chart screenshot and inspect candles, trend, structure and levels.</span></div>
+    <div class="ghostFeatureCard"><b>24/7 Coverage</b><span>Designed around Real Market + OTC workflows and verified data sources.</span></div>
+  </div>
+  <div class="ghostCompare">
+    <h3>Why GHOST AI?</h3>
+    <p>See how GHOST AI differs from a general-purpose AI when analyzing trading charts.</p>
+    <table><thead><tr><th>CAPABILITY</th><th>GENERAL AI</th><th>GHOST AI</th></tr></thead><tbody>
+    <tr><td>Model selection</td><td>Usually one model</td><td>OpenAI, Gemini or Groq selectable</td></tr>
+    <tr><td>Model consensus</td><td>Not trading-specific</td><td>Multi-model verification when enabled</td></tr>
+    <tr><td>OTC analysis</td><td>Generic chart interpretation</td><td>Dedicated OTC / reverse-logic pipeline</td></tr>
+    <tr><td>Confidence</td><td>Generic response</td><td>0–100 setup-quality score + agreement</td></tr>
+    <tr><td>Coverage</td><td>On request</td><td>Live / OTC / Future modules</td></tr>
+    <tr><td>Vision scanner</td><td>General image reading</td><td>Chart + PA/SMC confluence analysis</td></tr>
+    </tbody></table>
+  </div>
+</div>
 </div>
 
 <div class="page" id="pg-live">
@@ -753,7 +792,7 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
   <div class="cocoNode n4"><div class="srIcon"><span></span><span></span><span></span></div><b>SUPPORT</b></div>
   <div class="cocoNode n5"><div class="candleSet"><span></span><span></span><span></span><span></span></div><b>STRUCTURE</b></div>
   <div class="cocoNode n6"><div class="pulseIcon"></div><b>LIQUIDITY</b></div>
-  <div class="cocoCore"><div class="coreAura"></div><div class="coreLogo">GHOST<span>MATRIX</span></div><div class="coreStatus"><i></i> LIVE ANALYSIS</div></div>
+  <div class="cocoCore"><div class="coreAura"></div><div class="ghostCoreBrand"><div class="logo"><i></i></div><small>GHOST AI</small><div class="coreStatus"><i></i> LIVE ANALYSIS</div></div></div>
   <div class="cocoCandleField"><span class="bar b1"></span><span class="bar b2"></span><span class="bar b3"></span><span class="bar b4"></span><span class="bar b5"></span><span class="bar b6"></span><span class="bar b7"></span><span class="bar b8"></span><span class="bar b9"></span><span class="bar b10"></span></div>
 </div>
 <div class="anBar"><div class="anPill"><span class="pdot"></span> Analyzing <span id="livePairTxt">market</span></div></div>
@@ -762,7 +801,20 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 </div>
 
 <div class="page" id="pg-analyzer">
-<div class="tabs"><div class="tab on">OTC</div><div class="tab">REAL</div></div>
+<div class="tabs" id="shotMarketTabs"><div class="tab on" data-shot-market="OTC" onclick="setShotMarket('OTC',this)">OTC</div><div class="tab" data-shot-market="REAL" onclick="setShotMarket('REAL',this)">REAL</div></div>
+<div class="ghostAiPicker">
+  <div class="pickerTitle">SELECT AI FOR SCREENSHOT ANALYSIS</div>
+  <div class="ghostAiBtns">
+    <button type="button" class="ghostAiBtn" data-provider="openai" onclick="selectVisionProvider('openai')">OPENAI<small>GPT VISION</small></button>
+    <button type="button" class="ghostAiBtn" data-provider="gemini" onclick="selectVisionProvider('gemini')">GEMINI<small>VISION</small></button>
+    <button type="button" class="ghostAiBtn on" data-provider="groq" onclick="selectVisionProvider('groq')">GROQ<small>VISION</small></button>
+  </div>
+  <div class="ghostProviderStatus" id="ghostProviderStatus">Selected: Groq • checking provider availability…</div>
+</div>
+<div class="ghostShotMeta">
+  <select id="shotMarketPair"><option value="">Market: AUTO-DETECT FROM SCREENSHOT</option></select>
+  <select id="shotTf"><option>1 MIN</option><option>2 MIN</option><option>5 MIN</option><option>10 MIN</option><option>15 MIN</option><option>30 MIN</option><option>1 HOUR</option></select>
+</div>
 <div class="drop" id="paste">
 <div class="dropIc"><span class="cssIco" style="width:20px;height:20px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg></span></div>
 <div class="dropT">Drop chart</div>
@@ -791,7 +843,7 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
   <div class="cocoNode n4"><div class="srIcon"><span></span><span></span><span></span></div><b>SUPPORT</b></div>
   <div class="cocoNode n5"><div class="candleSet"><span></span><span></span><span></span><span></span></div><b>STRUCTURE</b></div>
   <div class="cocoNode n6"><div class="pulseIcon"></div><b>LIQUIDITY</b></div>
-  <div class="cocoCore"><div class="coreAura"></div><div class="coreLogo">GHOST<span>MATRIX</span></div><div class="coreStatus"><i></i> LIVE ANALYSIS</div></div>
+  <div class="cocoCore"><div class="coreAura"></div><div class="ghostCoreBrand"><div class="logo"><i></i></div><small>GHOST AI</small><div class="coreStatus"><i></i> LIVE ANALYSIS</div></div></div>
   <div class="cocoCandleField"><span class="bar b1"></span><span class="bar b2"></span><span class="bar b3"></span><span class="bar b4"></span><span class="bar b5"></span><span class="bar b6"></span><span class="bar b7"></span><span class="bar b8"></span><span class="bar b9"></span><span class="bar b10"></span></div>
 </div>
 <div class="anBar"><div class="anPill"><span class="pdot"></span> Analyzing chart</div></div>
@@ -1063,6 +1115,27 @@ const fi=$('file'), pv=$('pv'), pz=$('paste');
 pz.addEventListener('click',()=>fi.click()); $('selBtn').addEventListener('click',()=>fi.click());
 fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)handle(f)});
 document.addEventListener('paste',e=>{for(const it of e.clipboardData?.items||[]){ if(it.kind==='file'){const f=it.getAsFile(); if(f?.type.startsWith('image/')){handle(f);break;}}}});
+let ghostVisionProvider = localStorage.getItem('ghost_vision_provider') || 'groq';
+let ghostShotMarketType = 'OTC';
+function selectVisionProvider(provider){
+  ghostVisionProvider=provider; localStorage.setItem('ghost_vision_provider',provider);
+  document.querySelectorAll('.ghostAiBtn').forEach(b=>b.classList.toggle('on',b.dataset.provider===provider));
+  const names={openai:'OpenAI',gemini:'Gemini',groq:'Groq'};
+  const st=document.getElementById('ghostProviderStatus'); if(st) st.textContent='Selected: '+names[provider]+' • this provider will run the screenshot analysis.';
+}
+function setShotMarket(type,el){
+  ghostShotMarketType=type;
+  document.querySelectorAll('#shotMarketTabs .tab').forEach(x=>x.classList.toggle('on',x===el));
+}
+async function loadVisionProviders(){
+  try{const d=await api('/api/config'); const st=document.getElementById('ghostProviderStatus');
+    const ok=d.vision_providers||{}; const names={openai:'OpenAI',gemini:'Gemini',groq:'Groq'};
+    document.querySelectorAll('.ghostAiBtn').forEach(b=>{const yes=!!ok[b.dataset.provider]; b.disabled=!yes; b.style.opacity=yes?'1':'.42';});
+    if(!ok[ghostVisionProvider]){const first=['openai','gemini','groq'].find(x=>ok[x]); if(first) selectVisionProvider(first); else if(st) st.textContent='No Vision AI provider is configured.';}
+    else if(st) st.textContent='Selected: '+names[ghostVisionProvider]+' • READY';
+  }catch(e){}
+}
+selectVisionProvider(ghostVisionProvider); loadVisionProviders();
 function handle(f){file=f;const r=new FileReader();r.onload=e=>{pv.src=e.target.result;pv.style.display='block';$('fileInfo').style.display='block';$('fileInfo').textContent=`✓ ${f.name} • ${Math.round(f.size/1024)}KB`;};r.readAsDataURL(f)}
 $('liveAn').addEventListener('click',async()=>{
  if(!selPair)return; const flow=$('flowLive'), res=$('liveRes'), btn=$('liveAn');
@@ -1082,7 +1155,7 @@ $('an').addEventListener('click',async()=>{
  flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='...';
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
-  const fd=new FormData(); fd.append('image',file,file.name||'chart.png'); fd.append('broker', window.GHOST_BROKER || localStorage.getItem('ghost_ai_broker') || 'Quotex'); fd.append('market_type', window.GHOST_BROKER || 'Quotex');
+  const fd=new FormData(); fd.append('image',file,file.name||'chart.png'); fd.append('provider',ghostVisionProvider); fd.append('market_type',ghostShotMarketType); fd.append('market',document.getElementById('shotMarketPair')?.value||''); fd.append('timeframe',document.getElementById('shotTf')?.value||'1 MIN');
   ghostShowAnalyzing(res);
   const d=await api('/api/analyze-image',{method:'POST',headers:{'X-Ghost-Owner':window._ghostIsOwner?'1':'0','X-Ghost-Role':window._ghostIsOwner?'owner':'user'},body:fd});
   if(d.locked){ if(window._ghostIsOwner){ throw new Error('OWNER ACCESS IS ACTIVE, BUT THE SIGNAL API IS STILL RETURNING LOCKED. The backend must allow owner/admin accounts.'); } showSignalLocked(); throw new Error('SIGNAL ACCESS LOCKED - Your account does not have an active signal plan.'); }
@@ -1482,7 +1555,7 @@ async function loadSignalHistory(){
     if(!box){ const dash=document.getElementById('pg-dashboard'); if(dash){ box=document.createElement('div'); box.id='signalHistoryBox'; box.style.cssText='margin-top:12px'; dash.appendChild(box); } }
     if(box){
       if(!list.length){ box.innerHTML='<div style="font-size:10px;color:#8b8ba7;padding:10px;background:rgba(255,255,255,.04);border-radius:12px">No signals yet. Upload a chart with an active plan to generate.</div>'; }
-      else{ box.innerHTML='<div style="font-size:11px;font-weight:900;color:white;margin-bottom:8px">Signal History</div>'+list.slice(0,8).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px;margin-bottom:6px"><div><div style="font-size:11px;font-weight:900;color:white">${s.market} • ${s.signal}</div><div style="font-size:9px;color:#8b8ba7">${new Date(s.created_at).toLocaleString()} • ${s.market_type} • 1 MIN • Conf ${s.confidence}% • Quality ${s.image_quality}/100</div></div><div style="font-size:9px;font-weight:900;padding:4px 8px;border-radius:20px;background:${s.outcome==='WIN'?'#00ff88':s.outcome==='LOSS'?'#ff3b5c':'#2a2f45'};color:${s.outcome==='WIN'?'#000':'white'}">${s.outcome}</div></div>`).join(''); }
+      else{ box.innerHTML='<div style="font-size:11px;font-weight:900;color:white;margin-bottom:8px">Signal History</div>'+list.slice(0,8).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px;margin-bottom:6px"><div><div style="font-size:11px;font-weight:900;color:white">${s.market} • ${s.signal}</div><div style="font-size:9px;color:#8b8ba7">${new Date(s.created_at).toLocaleString()} • ${s.market_type} • ${s.timeframe||'1 MIN'} • Conf ${s.confidence}% • Quality ${s.image_quality}/100</div></div><div style="font-size:9px;font-weight:900;padding:4px 8px;border-radius:20px;background:${s.outcome==='WIN'?'#00ff88':s.outcome==='LOSS'?'#ff3b5c':'#2a2f45'};color:${s.outcome==='WIN'?'#000':'white'}">${s.outcome}</div></div>`).join(''); }
     }
   }catch(e){}
 }

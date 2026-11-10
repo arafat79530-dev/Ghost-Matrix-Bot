@@ -56,16 +56,16 @@ SMTP_USER = os.getenv("SMTP_USER", "").strip()
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
 AI_API_KEY = os.getenv("AI_API_KEY", "").strip()  # Optional Groq-compatible key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-OPENAI_VISION_MODEL = os.getenv("OPENAI_VISION_MODEL", "gpt-4.1-mini").strip()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
 # --- GHOST AI Identity & Affiliate (public, not secret) ---
 APP_NAME = "GHOST AI"
 AFFILIATE_URL = "https://broker-qx.pro/sign-up/?lid=2384783"
 TELEGRAM_ADMIN = "https://t.me/ghostsupportbd"
 GROQ_VISION_MODEL = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.6-27b").strip()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_VISION_MODEL = os.getenv("OPENAI_VISION_MODEL", "gpt-4.1-mini").strip()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash").strip()
 OTCHARTS_API_KEY = os.getenv("OTCHARTS_API_KEY", "").strip()
 # Optional comma-separated Twelve Data symbols for non-FX Quotex assets.
 # Example format depends on Twelve Data's own symbol catalog; these are NOT
@@ -89,7 +89,7 @@ MAX_SIGNAL_AGE_SECONDS = 180
 TWELVE_BASE = "https://api.twelvedata.com"
 TELEGRAM_BASE = f"https://api.telegram.org/bot{BOT_TOKEN}" if BOT_TOKEN else ""
 GROQ_BASE = "https://api.groq.com/openai/v1/chat/completions"
-OPENAI_BASE = "https://api.openai.com/v1/chat/completions"
+OPENAI_RESPONSES_BASE = "https://api.openai.com/v1/responses"
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
 logging.basicConfig(
@@ -2505,7 +2505,7 @@ def api_admin_signal_outcome(signal_id):
 
 @app.get("/api/config")
 def api_config():
-    return jsonify({"app_name": APP_NAME, "affiliate_url": AFFILIATE_URL, "telegram_admin": TELEGRAM_ADMIN, "timeframe": "1 MIN", "markets": ["REAL","OTC"]})
+    return jsonify({"app_name": APP_NAME, "affiliate_url": AFFILIATE_URL, "telegram_admin": TELEGRAM_ADMIN, "timeframe": "1 MIN", "markets": ["REAL","OTC"], "vision_providers": _vision_provider_status()})
 
 
 @app.get("/api/auth/verify")
@@ -2824,303 +2824,189 @@ def api_ask():
     return jsonify({"answer": ai_answer(question), "provider": "configured AI service" if AI_API_KEY else "AI not configured"})
 
 
-def _clean_model_json(content: str) -> dict[str, Any]:
-    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", str(content or "").strip(), flags=re.I).strip()
+# ---------------------- Vision provider routing ----------------------
+VISION_SYSTEM_PROMPT = """You are GHOST AI, a chart-analysis engine. Analyze ONLY visible evidence in the screenshot.
+Never guess or hallucinate the asset, timeframe, price, broker, or candle values. If the pair or timeframe is not clearly visible, return UNKNOWN.
+Use price action + SMC concepts: trend, HH/HL or LL/LH, BOS/CHOCH, liquidity sweep, order blocks, FVG/imbalance, premium/discount, rejection, displacement and momentum.
+For OTC charts, consider possible broker-specific reverse/fake-breakout behavior only when visible evidence supports it; never invent a feed or price.
+A CALL/PUT requires at least 2 clear confluences. Otherwise use NO TRADE.
+Confidence is setup quality, NOT win probability. Never promise profit.
+Return ONLY valid JSON with: direction, confidence, summary, trend, structure, zones, reasoning, confirmation, invalidation, confidence_note, confluences, market_hint, timeframe_hint.
+"""
+VISION_USER_PROMPT = """Analyze this trading-chart screenshot for GHOST AI.
+1) Identify the exact visible market pair (e.g. EUR/AUD) only if readable; do not default to EUR/USD.
+2) Identify visible timeframe only if readable.
+3) Determine CALL, PUT, or NO TRADE using price action + SMC confluence.
+4) Explain the strongest evidence and invalidation.
+Return JSON only."""
+
+def _strip_json_fence(text: str) -> str:
+    text = str(text or "").strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.I)
+    text = re.sub(r"\s*```$", "", text, flags=re.I)
+    return text.strip()
+
+def _parse_vision_json(content: str) -> dict:
+    cleaned = _strip_json_fence(content)
     try:
-        obj = json.loads(cleaned)
-        return obj if isinstance(obj, dict) else {}
+        data = json.loads(cleaned)
+        if isinstance(data, dict):
+            return data
     except Exception:
-        return {}
+        pass
+    # Some providers may wrap JSON in prose; extract the first object conservatively.
+    m = re.search(r"\{.*\}", cleaned, flags=re.S)
+    if m:
+        try:
+            data = json.loads(m.group(0))
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            pass
+    raise ValueError("Vision provider did not return valid JSON")
 
-def _vision_consensus_prompt():
-    return """You are GHOST AI, a cautious trading-chart vision analyst.
-Analyze ONLY visible chart evidence. Never invent asset, timeframe, price or future candles.
-Use price action and SMC concepts: trend, HH/HL or LL/LH, BOS/CHOCH, liquidity sweep,
-order block, FVG/imbalance, rejection, momentum and support/resistance.
-Return ONLY JSON with:
-direction (CALL, PUT, NO TRADE), confidence (0-100 setup quality, NOT win probability),
-summary, trend, structure, zones, reasoning, confirmation, invalidation,
-confluences (array), market_hint.
-Require at least 2 independent confluences for CALL/PUT; otherwise NO TRADE."""
+def _call_groq_vision(encoded: str, mime: str) -> str:
+    if not AI_API_KEY:
+        raise RuntimeError("GROQ is not configured")
+    payload = {"model": GROQ_VISION_MODEL, "messages": [
+        {"role":"system","content":VISION_SYSTEM_PROMPT},
+        {"role":"user","content":[{"type":"text","text":VISION_USER_PROMPT},{"type":"image_url","image_url":{"url":f"data:{mime};base64,{encoded}"}}]}
+    ], "temperature":0.05, "max_completion_tokens":1400}
+    r=http_session.post(GROQ_BASE, headers={"Authorization":f"Bearer {AI_API_KEY}","Content-Type":"application/json"}, json=payload, timeout=35)
+    r.raise_for_status()
+    return r.json()["choices"][0]["message"]["content"]
 
-def _call_openai_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, Any]:
+def _call_openai_vision(encoded: str, mime: str) -> str:
     if not OPENAI_API_KEY:
-        return {"provider":"OpenAI","configured":False,"available":False,"reason":"OPENAI_API_KEY not configured"}
-    payload = {
-        "model": OPENAI_VISION_MODEL,
-        "temperature": 0.05,
-        "max_completion_tokens": 1400,
-        "messages": [
-            {"role":"system","content":_vision_consensus_prompt()},
-            {"role":"user","content":[
-                {"type":"text","text":user_prompt},
-                {"type":"image_url","image_url":{"url":f"data:{mime};base64,{encoded}"}}
-            ]}
-        ]
-    }
-    try:
-        r=http_session.post(OPENAI_BASE,
-            headers={"Authorization":f"Bearer {OPENAI_API_KEY}","Content-Type":"application/json"},
-            json=payload, timeout=30)
-        r.raise_for_status()
-        content=r.json()["choices"][0]["message"]["content"]
-        obj=_clean_model_json(content)
-        return {"provider":"OpenAI","configured":True,"available":bool(obj),"analysis":obj}
-    except Exception as exc:
-        return {"provider":"OpenAI","configured":True,"available":False,"reason":str(exc)[:180]}
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+    payload={"model":OPENAI_VISION_MODEL,"input":[{"role":"user","content":[
+        {"type":"input_text","text":VISION_SYSTEM_PROMPT+"\\n\\n"+VISION_USER_PROMPT},
+        {"type":"input_image","image_url":f"data:{mime};base64,{encoded}","detail":"high"}
+    ]},],"temperature":0.05,"max_output_tokens":1400}
+    r=http_session.post(OPENAI_RESPONSES_BASE,headers={"Authorization":f"Bearer {OPENAI_API_KEY}","Content-Type":"application/json"},json=payload,timeout=40)
+    r.raise_for_status(); data=r.json()
+    if data.get("output_text"):
+        return data["output_text"]
+    chunks=[]
+    for item in data.get("output",[]) or []:
+        for c in item.get("content",[]) or []:
+            if isinstance(c,dict) and c.get("type") in ("output_text","text") and c.get("text"):
+                chunks.append(c["text"])
+    if chunks: return "\n".join(chunks)
+    raise RuntimeError("OpenAI returned no text output")
 
-def _call_gemini_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, Any]:
+def _call_gemini_vision(encoded: str, mime: str) -> str:
     if not GEMINI_API_KEY:
-        return {"provider":"Gemini","configured":False,"available":False,"reason":"GEMINI_API_KEY not configured"}
+        raise RuntimeError("GEMINI_API_KEY is not configured")
     url=f"{GEMINI_BASE}/{GEMINI_VISION_MODEL}:generateContent"
-    payload={
-        "contents":[{"parts":[
-            {"text":_vision_consensus_prompt()+"\n\n"+user_prompt},
-            {"inline_data":{"mime_type":mime,"data":encoded}}
-        ]}],
-        "generationConfig":{"temperature":0.05,"maxOutputTokens":1400,"responseMimeType":"application/json"}
-    }
-    try:
-        r=http_session.post(url, params={"key":GEMINI_API_KEY},
-            headers={"Content-Type":"application/json"}, json=payload, timeout=30)
-        r.raise_for_status()
-        data=r.json()
-        content="".join(
-            p.get("text","") for p in
-            (data.get("candidates",[{}])[0].get("content",{}).get("parts",[]) or [])
-            if isinstance(p,dict)
-        )
-        obj=_clean_model_json(content)
-        return {"provider":"Gemini","configured":True,"available":bool(obj),"analysis":obj}
-    except Exception as exc:
-        return {"provider":"Gemini","configured":True,"available":False,"reason":str(exc)[:180]}
+    payload={"contents":[{"role":"user","parts":[
+        {"text":VISION_SYSTEM_PROMPT+"\\n\\n"+VISION_USER_PROMPT},
+        {"inlineData":{"mimeType":mime,"data":encoded}}
+    ]}],"generationConfig":{"temperature":0.05,"maxOutputTokens":1400,"responseMimeType":"application/json"}}
+    r=http_session.post(url,headers={"x-goog-api-key":GEMINI_API_KEY,"Content-Type":"application/json"},json=payload,timeout=40)
+    r.raise_for_status(); data=r.json()
+    parts=((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or []
+    text="\n".join(str(x.get("text","")) for x in parts if isinstance(x,dict) and x.get("text"))
+    if text: return text
+    raise RuntimeError("Gemini returned no text output")
 
-def _build_multi_model_consensus(results: list[dict[str, Any]]) -> dict[str, Any]:
-    valid=[r for r in results if r.get("available") and isinstance(r.get("analysis"),dict)]
-    votes=[]
-    for r in valid:
-        d=str(r["analysis"].get("direction","NO TRADE")).upper()
-        votes.append(d if d in ("CALL","PUT","NO TRADE") else "NO TRADE")
-    call=votes.count("CALL"); put=votes.count("PUT"); no=votes.count("NO TRADE")
-    if call and call>put and call>=no:
-        direction="CALL"
-    elif put and put>call and put>=no:
-        direction="PUT"
-    else:
-        direction="NO TRADE"
-    agreement=round((max(call,put,no)/len(votes))*100) if votes else 0
-    chosen=next((r["analysis"] for r in valid if str(r["analysis"].get("direction","")).upper()==direction), (valid[0]["analysis"] if valid else {}))
-    base_conf=0
-    try: base_conf=int(float(chosen.get("confidence",0)))
-    except Exception: pass
-    # Consensus is a setup-quality modifier, never a probability claim.
-    confidence=max(0,min(92,round(base_conf*0.65 + agreement*0.35))) if direction in ("CALL","PUT") else min(base_conf,48)
+def _vision_provider_status() -> dict:
+    return {"openai":bool(OPENAI_API_KEY),"gemini":bool(GEMINI_API_KEY),"groq":bool(AI_API_KEY)}
+
+def _normalise_detected_market(value: str) -> str:
+    text=str(value or "").upper().replace("-","/").replace(" ","")
+    m=re.search(r"([A-Z]{3})[/]?([A-Z]{3})",text)
+    if not m: return "UNKNOWN"
+    pair=f"{m.group(1)}/{m.group(2)}"
+    return pair if pair in DEFAULT_REAL_MARKETS else pair
+
+def _normalise_vision_result(raw: dict) -> dict:
+    direction=str(raw.get("direction","NO TRADE")).upper().strip()
+    if direction not in ("CALL","PUT","NO TRADE","NO SIGNAL"): direction="NO TRADE"
+    if direction=="NO SIGNAL": direction="NO TRADE"
+    try: conf=max(0,min(100,int(float(raw.get("confidence",0)))))
+    except Exception: conf=0
+    con=raw.get("confluences") or []
+    if not isinstance(con,list): con=[]
+    con=[str(x) for x in con if str(x).strip()][:12]
+    if direction in ("CALL","PUT") and len(con)<2:
+        direction="NO TRADE"; conf=min(conf,48)
+    if direction in ("CALL","PUT"):
+        caps=[(5,92),(4,88),(3,80),(2,70)]
+        floor=58
+        for n,cap in caps:
+            if len(con)>=n:
+                conf=max(floor if n==2 else (86 if n==5 else 70 if n==3 else 80),min(conf,cap)); break
+    else: conf=min(conf,58)
     return {
-        "direction":direction,
-        "confidence":confidence,
-        "model_agreement":agreement,
-        "votes":{"CALL":call,"PUT":put,"NO TRADE":no},
-        "providers":[r.get("provider") for r in valid],
-        "provider_status":[{k:r.get(k) for k in ("provider","configured","available","reason")} for r in results],
-        "analysis":chosen
+        "direction":direction,"confidence":conf,
+        "summary":str(raw.get("summary") or "ছবির দৃশ্যমান evidence অনুযায়ী বিশ্লেষণ সম্পন্ন হয়েছে।"),
+        "trend":str(raw.get("trend") or "স্পষ্ট নয়"),"structure":str(raw.get("structure") or "স্পষ্ট নয়"),
+        "zones":str(raw.get("zones") or "স্পষ্ট নয়"),"reasoning":str(raw.get("reasoning") or "স্পষ্ট confluence পাওয়া যায়নি।"),
+        "confirmation":str(raw.get("confirmation") or "পরবর্তী candle confirmation অপেক্ষা করো।"),
+        "invalidation":str(raw.get("invalidation") or "সেটআপের বিপরীত structure তৈরি হলে invalid."),
+        "confidence_note":str(raw.get("confidence_note") or "এটি setup-quality score; win probability নয়।"),
+        "confluences":con,"market_hint":_normalise_detected_market(raw.get("market_hint")),
+        "timeframe_hint":str(raw.get("timeframe_hint") or "UNKNOWN")
     }
 
 @app.post("/api/analyze-image")
 @login_required
 def api_analyze_image():
-    # GHOST AI: Backend-enforced access control - logged_in AND active_plan required
-    _uid = session.get("user_id")
-    if not _uid:
-        return jsonify({"error": "Login required", "auth_required": True, "locked": True}), 401
-    _plan = get_user_active_plan(int(_uid))
-    # OWNER/ADMIN: full access without plan
-    _is_owner_analyze = False
+    _uid=session.get("user_id")
+    if not _uid: return jsonify({"error":"Login required","auth_required":True,"locked":True}),401
+    _plan=get_user_active_plan(int(_uid))
+    is_owner=False
     try:
         with db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT email, is_admin FROM gm_users WHERE id=%s", (int(_uid),))
-                _ru = cur.fetchone()
-                if _ru: _is_owner_analyze = _is_owner_email(_ru[0] or "") or bool(_ru[1])
-    except Exception:
-        pass
-    _has_plan = True if _is_owner_analyze else bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
-    if not _has_plan:
-        return jsonify({"error": "SIGNAL ACCESS LOCKED", "locked": True, "message": "Your account does not have an active signal plan.", "affiliate_url": AFFILIATE_URL, "plan": _plan}), 403
-    if not _api_allowed("vision", 4, 60):
-        return jsonify({"error": "এক মিনিটে সর্বোচ্চ ৪টি screenshot analysis। পরে আবার চেষ্টা করো।"}), 429
-    upload = request.files.get("image")
-    if upload is None or not upload.filename:
-        return jsonify({"error": "একটি chart screenshot upload করো।"}), 400
-    if not AI_API_KEY:
-        return jsonify({"error": "AI_API_KEY Render Environment-এ সেট নেই; screenshot analysis চালু নয়।"}), 503
-    raw = upload.read(12 * 1024 * 1024 + 1)
-    if not raw or len(raw) > 12 * 1024 * 1024:
-        return jsonify({"error": "ছবি খালি অথবা ১২ MB-এর বেশি। ছোট screenshot upload করো।"}), 413
-    # GHOST AI: Screenshot Quality Control
-    _q_score, _q_issues = check_screenshot_quality(raw)
-    _market = str(request.form.get("market") or request.form.get("symbol") or "")
-    _mtype = str(request.form.get("market_type") or request.form.get("marketType") or "OTC")
-    _timeframe = _normalize_timeframe(request.form.get("timeframe") or "1 MIN")
-    if _q_score < 55:
-        return jsonify({"error": "SCREENSHOT QUALITY TOO LOW", "quality_too_low": True, "image_quality": _q_score, "issues": _q_issues, "message": "Please upload a clearer chart screenshot with visible candles, timeframe and market information."}), 422
+                cur.execute("SELECT email,is_admin FROM gm_users WHERE id=%s",(int(_uid),)); row=cur.fetchone()
+                if row: is_owner=_is_owner_email(row[0] or "") or bool(row[1])
+    except Exception: pass
+    has_plan=is_owner or bool(_plan and _plan.get("plan_name") not in ("FREE",) and _plan.get("status")=="active")
+    if not has_plan:
+        return jsonify({"error":"SIGNAL ACCESS LOCKED","locked":True,"message":"Your account does not have an active signal plan.","affiliate_url":AFFILIATE_URL,"plan":_plan}),403
+    if not _api_allowed("vision",4,60): return jsonify({"error":"এক মিনিটে সর্বোচ্চ ৪টি screenshot analysis। পরে আবার চেষ্টা করো।"}),429
+    upload=request.files.get("image")
+    if upload is None or not upload.filename: return jsonify({"error":"একটি chart screenshot upload করো।"}),400
+    provider=str(request.form.get("provider") or "groq").strip().lower()
+    if provider not in ("openai","gemini","groq"): return jsonify({"error":"Invalid AI provider. Select OpenAI, Gemini or Groq."}),400
+    configured=_vision_provider_status()
+    if not configured.get(provider): return jsonify({"error":f"{provider.upper()} is not configured. Add the corresponding Render ENV key."}),503
+    raw=upload.read(12*1024*1024+1)
+    if not raw or len(raw)>12*1024*1024: return jsonify({"error":"ছবি খালি অথবা ১২ MB-এর বেশি।"}),413
+    q_score,q_issues=check_screenshot_quality(raw)
+    if q_score<55: return jsonify({"error":"SCREENSHOT QUALITY TOO LOW","quality_too_low":True,"image_quality":q_score,"issues":q_issues}),422
     try:
-        im = Image.open(io.BytesIO(raw))
-        im.verify()
-        mime = upload.mimetype if upload.mimetype in ("image/jpeg", "image/png", "image/webp") else "image/jpeg"
-        # Reduce vision latency by resizing large screenshots before the model call.
-        vision_bytes = raw
+        im=Image.open(io.BytesIO(raw)); im.verify()
+        mime=upload.mimetype if upload.mimetype in ("image/jpeg","image/png","image/webp") else "image/jpeg"
+        vision_bytes=raw
         try:
-            work = Image.open(io.BytesIO(raw)).convert("RGB")
-            work.thumbnail((1800, 1200), Image.Resampling.LANCZOS)
-            buf = io.BytesIO()
-            work.save(buf, format="JPEG", quality=84, optimize=True)
-            vision_bytes = buf.getvalue()
-            mime = "image/jpeg"
-        except Exception:
-            pass
-        encoded = base64.b64encode(vision_bytes).decode("ascii")
-        system_prompt = '''You are GHOST TRADER V3 — elite SMC price action analyst with high accuracy + tradeable signals.
-
-MISSION: Analyze ONLY what is visible in the chart screenshot. Never hallucinate asset, timeframe, price.
-
-ELITE SMC FRAMEWORK:
-1. Trend: HH/HL=up, LL/LH=down, BOS=Break of Structure, CHOCH=Change of Character
-2. Liquidity: Sweep, stop hunt, equal highs/lows taken
-3. Zones: Order Block (bullish/bearish OB), FVG, Premium/Discount, Imbalance, Breaker
-4. Momentum: Engulfing, pinbar rejection, displacement
-
-TRADEABLE RULES (BALANCED - Less NO TRADE):
-- 2+ confluences REQUIRED for CALL/PUT (previously 3+ was too strict causing too many NO TRADE)
-- CALL if: bullish BOS/CHOCH + bullish OB/FVG or bullish momentum + discount zone preferred
-- PUT if: bearish BOS/CHOCH + bearish OB/FVG or bearish momentum + premium zone preferred
-- If chart blurry or 0-1 confluence only → NO TRADE
-- Confidence = setup quality, not win probability. Never promise profit.
-
-CONFIDENCE CALIBRATION (BALANCED):
-- 5+ confluences + clean = 86-92%
-- 4 confluences = 80-88%
-- 3 confluences = 70-80%
-- 2 confluences = 58-70% (tradeable, medium)
-- 0-1 confluence or unclear = 0-48% + NO TRADE
-- Mixed signals → reduce 10-15, not full 20
-
-Return ONLY valid JSON with keys:
-direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short), trend (Bengali), structure (Bengali), zones (Bengali), reasoning (Bengali), confirmation (Bengali), invalidation (Bengali), confidence_note (Bengali), confluences (array like ["BOS","Bullish OB","FVG","Engulfing"]), market_hint (asset/timeframe if visible)
-'''
-        user_prompt = "এই chart screenshot-টি বিশ্লেষণ করো। asset/timeframe দেখা গেলে শনাক্ত করো; না দেখা গেলে অনুমান কোরো না। CALL, PUT অথবা NO TRADE নির্বাচন করো। দুই দিকের প্রমাণ যাচাই করো এবং entry নেওয়ার আগে কী confirmation দরকার বলো। JSON ছাড়া অন্য কিছু দেবে না।"
-        payload = {"model": GROQ_VISION_MODEL, "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": [
-                {"type": "text", "text": user_prompt},
-                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
-            ]}
-        ], "temperature": 0.05, "max_completion_tokens": 1400}
-        response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=28)
-        response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"].strip()
-        cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", content, flags=re.I).strip()
-        try:
-            analysis = json.loads(cleaned)
-            if not isinstance(analysis, dict):
-                raise ValueError("analysis JSON is not an object")
-            direction = str(analysis.get("direction", "NO TRADE")).upper()
-            analysis["direction"] = direction if direction in ("CALL", "PUT", "NO TRADE") else "NO TRADE"
-            try:
-                base_conf = max(0, min(100, int(float(analysis.get("confidence", 0)))))
-            except (TypeError, ValueError):
-                base_conf = 0
-            
-            # --- GHOST V3 Accuracy Boost: Confluence-based recalibration ---
-            confluences = analysis.get("confluences", [])
-            if not isinstance(confluences, list):
-                confluences = []
-            # Count from reasoning text if confluences list empty
-            reasoning_text = (str(analysis.get("reasoning","")) + " " + str(analysis.get("structure","")) + " " + str(analysis.get("zones",""))).lower()
-            keyword_map = ["bos","choch","order block","fvg","liquidity","premium","discount","engulfing","pinbar","pin bar","imbalance","breaker","displacement","sweep"]
-            detected = []
-            for kw in keyword_map:
-                if kw in reasoning_text and kw not in [x.lower() for x in detected]:
-                    detected.append(kw)
-            if not confluences:
-                confluences = detected
-            analysis["confluences"] = confluences
-            conf_count = len(confluences)
-            
-            # Balanced filter - less NO TRADE, more tradeable signals
-            if analysis["direction"] in ("CALL","PUT"):
-                if conf_count < 2:
-                    analysis["direction"] = "NO TRADE"
-                    analysis["invalidation"] = f"মাত্র {conf_count} confluence - 2+ লাগে trade এর জন্য। Detected: {', '.join(confluences) if confluences else 'কম'}"
-                    base_conf = min(base_conf, 48)
-                elif conf_count >= 5:
-                    base_conf = max(base_conf, 86)
-                    base_conf = min(base_conf, 92)
-                elif conf_count >= 4:
-                    base_conf = max(base_conf, 80)
-                    base_conf = min(base_conf, 88)
-                elif conf_count >= 3:
-                    base_conf = max(base_conf, 70)
-                    base_conf = min(base_conf, 80)
-                else: # 2 confluences - still tradeable with medium confidence
-                    base_conf = max(base_conf, 58)
-                    base_conf = min(base_conf, 70)
-            else:
-                # Keep NO TRADE but with realistic confidence
-                if conf_count >= 2:
-                    # If model said NO TRADE but we have 2+ confluences, allow reconsider as weak signal?
-                    # Keep NO TRADE but bump confidence slightly so user sees not always 45%
-                    base_conf = max(base_conf, 48)
-                    base_conf = min(base_conf, 58)
-                else:
-                    base_conf = min(base_conf, 48)
-            
-            # Cap never 100% to stay realistic
-            if base_conf > 92:
-                base_conf = 92
-            
-            analysis["confidence"] = base_conf
-            for key in ("summary", "trend", "structure", "zones", "reasoning", "confirmation", "invalidation", "confidence_note"):
-                if not isinstance(analysis.get(key), str):
-                    analysis[key] = "ছবিতে পরিষ্কারভাবে শনাক্ত করা যায়নি।"
-        except (json.JSONDecodeError, ValueError):
-            analysis = {"direction": "NO TRADE", "confidence": 0, "summary": content,
-                        "trend": "Structured result unavailable", "structure": "Structured result unavailable",
-                        "zones": "Structured result unavailable", "reasoning": content,
-                        "confirmation": "Clear price confirmation ছাড়া entry নিও না।",
-                        "invalidation": "সেটআপ নিশ্চিত নয়।", "confidence_note": "Confidence নির্ভরযোগ্যভাবে বের করা যায়নি; এটি win probability নয়।"}
-        # Optional Gemini + OpenAI consensus. Existing Groq analysis remains the baseline.
-        # If either provider is not configured, it is reported as unavailable; no fake vote is added.
-        _consensus_results = [{"provider":"Groq","configured":bool(AI_API_KEY),"available":True,"analysis":analysis}]
-        _consensus_results.append(_call_openai_vision(encoded, mime, user_prompt))
-        _consensus_results.append(_call_gemini_vision(encoded, mime, user_prompt))
-        _consensus = _build_multi_model_consensus(_consensus_results)
-        if _consensus.get("analysis"):
-            analysis.update(_consensus["analysis"])
-        analysis["direction"] = _consensus["direction"]
-        analysis["confidence"] = _consensus["confidence"]
-        analysis["model_agreement"] = _consensus["model_agreement"]
-        analysis["model_votes"] = _consensus["votes"]
-        analysis["model_providers"] = _consensus["providers"]
-
-        # GHOST AI: Store signal, add quality metrics, prefer NO SIGNAL over low-confidence
-        _dir = str(analysis.get("direction","NO TRADE")).upper()
-        _conf = int(analysis.get("confidence",0) or 0)
-        if _dir in ("CALL","PUT") and _conf < 58:
-            _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"; analysis["signal"]="NO SIGNAL"
-        if _dir == "NO TRADE":
-            _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"
-        _verified = get_verified_accuracy()
-        _analysis_text = str(analysis.get("summary","") or "") + " | " + str(analysis.get("reasoning","") or "")
+            work=Image.open(io.BytesIO(raw)).convert("RGB"); work.thumbnail((1800,1200),Image.Resampling.LANCZOS)
+            buf=io.BytesIO(); work.save(buf,format="JPEG",quality=84,optimize=True); vision_bytes=buf.getvalue(); mime="image/jpeg"
+        except Exception: pass
+        encoded=base64.b64encode(vision_bytes).decode("ascii")
+        callers={"openai":_call_openai_vision,"gemini":_call_gemini_vision,"groq":_call_groq_vision}
+        content=callers[provider](encoded,mime)
+        analysis=_normalise_vision_result(_parse_vision_json(content))
+        requested_market=_normalise_detected_market(request.form.get("market") or request.form.get("symbol"))
+        detected_market=analysis.get("market_hint") if analysis.get("market_hint")!="UNKNOWN" else requested_market
+        market_type=str(request.form.get("market_type") or "REAL").upper()
+        if market_type not in ("REAL","OTC"): market_type="REAL"
+        timeframe=_normalize_timeframe(request.form.get("timeframe") or "1 MIN")
+        if analysis.get("timeframe_hint") and analysis["timeframe_hint"]!="UNKNOWN": timeframe=_normalize_timeframe(analysis["timeframe_hint"])
+        _dir=analysis["direction"]; _conf=int(analysis["confidence"])
+        if _dir=="NO TRADE": _dir="NO SIGNAL"; analysis["direction"]="NO SIGNAL"
+        text=(analysis.get("summary","")+" | "+analysis.get("reasoning","")).strip()
         try:
             with db_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("INSERT INTO gm_user_signals (user_id, market, market_type, timeframe, signal, confidence, analysis, image_quality, outcome) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'PENDING') RETURNING id", (int(_uid), _market or "EUR/USD", _mtype or "OTC", _timeframe, _dir, _conf, _analysis_text[:2000], int(_q_score)))
-        except Exception as _e:
-            log.warning("Could not store user signal: %s", _e)
-        return jsonify({"analysis": analysis, "signal": _dir, "confidence": _conf, "market": _market or "EUR/USD", "market_type": _mtype or "OTC", "timeframe": _timeframe, "image_quality": int(_q_score), "image_quality_issues": _q_issues, "verified_accuracy": _verified, "analysis_confidence": _conf, "model_agreement": int(analysis.get("model_agreement",0) or 0), "model_votes": analysis.get("model_votes",{}), "model_providers": analysis.get("model_providers",[]), "status": "VALID" if _dir in ("CALL","PUT") else "NO SIGNAL", "warning": "Screenshot-based educational analysis only. Confidence is setup quality, not a win probability. Trading involves risk - never trade more than you can afford to lose.", "risk_warning": "Trading involves substantial risk. This is not financial advice."})
+                    cur.execute("INSERT INTO gm_user_signals (user_id,market,market_type,timeframe,signal,confidence,analysis,image_quality,outcome) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'PENDING') RETURNING id",(int(_uid),detected_market,market_type,timeframe,_dir,_conf,text[:2000],int(q_score)))
+        except Exception as e: log.warning("Could not store user vision signal: %s",e)
+        return jsonify({"analysis":analysis,"signal":_dir,"confidence":_conf,"market":detected_market,"market_type":market_type,"timeframe":timeframe,"provider":provider,"provider_model":{"openai":OPENAI_VISION_MODEL,"gemini":GEMINI_VISION_MODEL,"groq":GROQ_VISION_MODEL}.get(provider),"image_quality":int(q_score),"image_quality_issues":q_issues,"available_providers":configured,"status":"VALID" if _dir in ("CALL","PUT") else "NO SIGNAL","warning":"Screenshot-based decision support only. Confidence is setup quality, not win probability."})
     except Exception as exc:
-        log.warning("Mini App screenshot analysis failed: %s", exc)
-        return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। image format, AI_API_KEY, vision model ও provider limit পরীক্ষা করো।"}), 502
+        log.warning("Vision analysis failed provider=%s: %s",provider,exc)
+        return jsonify({"error":f"{provider.upper()} analysis failed: {str(exc)[:220]}"}),502
 
 
 @app.post("/api/signals/generate")
@@ -3257,20 +3143,27 @@ def api_future_signals():
                 if not isinstance(base_time,datetime):
                     base_time=datetime.now(timezone.utc)
                 tf_minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1)
-                # Always schedule after the candle being analysed. This prevents a future card
-                # from being stamped with the current candle's start time.
+                # Schedule only windows strictly after now. The price is the CURRENT analysed
+                # setup reference; no future price is fabricated. If the user requests more
+                # candidates than selected markets, additional future windows are queued from
+                # the same verified current setup.
                 next_window=base_time + timedelta(minutes=tf_minutes)
                 now_utc=datetime.now(timezone.utc)
                 while next_window <= now_utc:
                     next_window += timedelta(minutes=tf_minutes)
-                results.append({
-                    "market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],
-                    "confidence":_setup_confidence(r),"price":r.get("price"),
-                    "entry_time":next_window.astimezone(BANGLADESH_TZ).isoformat(),
-                    "expiry":f"{tf_minutes} MIN","reason":r.get("reason"),
-                    "strategy":"GHOST Future Setup Engine","source":source,"timeframe":timeframe,
-                    "verified_quotex":False,"status":"FUTURE CANDIDATE"
-                })
+                remaining=max(1,count-len(results))
+                for rank in range(remaining):
+                    window=next_window + timedelta(minutes=tf_minutes*rank)
+                    results.append({
+                        "market":market,"symbol":market,"direction":r["direction"],"signal":r["direction"],
+                        "confidence":_setup_confidence(r),"price":r.get("price"),
+                        "entry_time":window.astimezone(BANGLADESH_TZ).isoformat(),
+                        "expiry":f"{tf_minutes} MIN","reason":r.get("reason"),
+                        "strategy":"GHOST Future Setup Engine","source":source,"timeframe":timeframe,
+                        "verified_quotex":False,"status":"FUTURE CANDIDATE","window_rank":rank+1,
+                        "price_note":"Current verified setup reference only; future price is not predicted or fabricated."
+                    })
+                    if len(results)>=count: break
         except Exception as exc:
             log.warning("Future candidate scan failed for %s: %s",market,exc)
 
