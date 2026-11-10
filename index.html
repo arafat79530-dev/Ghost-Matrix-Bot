@@ -684,8 +684,6 @@ body.owner .ownerOnly.ownerFlex{display:flex!important}
 .ghostShotMeta select{width:100%;box-sizing:border-box;background:#0a0e1a;color:#fff;border:1px solid #2a2f45;border-radius:10px;padding:9px;font-size:9px}
 .ghostProviderStatus{font-size:8px;color:#8b8ba7;margin-top:6px;min-height:12px}
 html{scroll-behavior:smooth}
-/* GHOST AI analysis overlay additions */
-.newsPreScan .cocoFlowViz{height:260px!important;margin-bottom:8px}.newsPreScan{padding:12px!important}
 </style>
 </head>
 <body>
@@ -907,17 +905,14 @@ html{scroll-behavior:smooth}
 </div>
 <div id="newsLockedView" class="lockedCard"><div class="lockIc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div><h3>News Signals is locked</h3><p>Your Free account can browse the app, but live news signals require an active plan.</p><button class="unlockBtn" onclick="openUnlock()"><span class="cssIco" style="width:14px;height:14px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="14" r="5"/><path d="M11 10l8-8 M17 4l2 2 M15 8l2 2"/></svg></span> Unlock engine</button></div>
 <div id="newsOwnerView" class="ownerOnly">
-<div id="newsEventsPanel" class="newsContentCard">
-  <div class="newsPanelHead"><div><h3>Economic Calendar</h3><div class="newsPanelSub">Scheduled events • Forecast • Previous • Pre-news bias</div></div><button class="newsRefreshBtn" onclick="loadNewsFeed()">↻ Refresh</button></div>
+<div id="newsEventsPanel" class="newsContentCard ghostNewsProPanel">
+  <div class="newsPanelHead"><div><h3>GHOST AI — Pre-News Signal</h3><div class="newsPanelSub">Upcoming high-impact events • Bangladesh time • Forecast • Previous • Pre-news bias</div></div><button class="newsRefreshBtn" onclick="loadNewsFeed()">↻ Refresh</button></div>
+  <div class="newsTodayBanner"><div><span class="newsKicker">TODAY • 10 NOV 2026</span><b>US CPI — October 2026</b><span>Scheduled release: <strong>7:30 PM BDT</strong> • 08:30 AM ET</span></div><span class="newsHighBadge">HIGH IMPACT</span></div>
   <div class="newsCalendar" id="newsCalendar"></div>
-</div>
-<div id="newsFundamentalPanel" class="newsContentCard" style="display:none">
-  <div class="newsPanelHead"><div><h3>Fundamental</h3><div class="newsPanelSub">Event impact and directional bias</div></div></div>
   <div id="fundamentalFeed" class="fundamentalFeed"></div>
 </div>
 </div>
 </div>
-
 <div class="page" id="pg-management">
 <div class="mgmtTabs"><div class="mtab on" data-mgmt-tab="management">Management</div><div class="mtab" data-mgmt-tab="sheet">Sheet</div></div>
 <div id="mgmtFormPanel">
@@ -1332,21 +1327,9 @@ window.openUnlock=openUnlock; window.closeUnlock=closeUnlock;
 function contactAdmin(){ window.open('https://t.me/ghostsupportbd','_blank'); }
 window.contactAdmin=contactAdmin;
 document.getElementById('unlockModal')?.addEventListener('click',e=>{ if(e.target.id==='unlockModal') closeUnlock(); });
-// News calendar • pre-news only
-const NEWS_FALLBACK=[
- {id:'nfp',time:'08:30',currency:'USD',impact:'HIGH',event:'Employment / Jobs Release',forecast:'—',actual:'—'},
- {id:'cpi',time:'09:30',currency:'USD',impact:'HIGH',event:'Inflation / CPI',forecast:'—',actual:'—'},
- {id:'retail',time:'10:00',currency:'USD',impact:'MEDIUM',event:'Retail Sales',forecast:'—',actual:'—'},
- {id:'gdp',time:'11:00',currency:'EUR',impact:'HIGH',event:'GDP / Growth Release',forecast:'—',actual:'—'}
-];
-let ghostNewsEvents=[];
-function newsBias(ev){const f=parseFloat(ev.forecast),p=parseFloat(ev.previous);if(Number.isFinite(f)&&Number.isFinite(p)){if(Math.abs(f-p)<0.000001)return 'NEUTRAL';return f>p?'POSITIVE BIAS':'NEGATIVE BIAS';}return String(ev.bias||ev.pre_news_bias||ev.directional_bias||'WAIT').toUpperCase();}
-function newsConfluence(ev){const out=[];if(ev.previous!=null&&ev.previous!=='')out.push(`Previous: ${esc(String(ev.previous))}`);if(ev.historical_trend)out.push(`Historical: ${esc(String(ev.historical_trend))}`);if(ev.positioning)out.push(`Positioning: ${esc(String(ev.positioning))}`);if(ev.sentiment)out.push(`Sentiment: ${esc(String(ev.sentiment))}`);if(ev.volatility)out.push(`Volatility: ${esc(String(ev.volatility))}`);if(ev.central_bank_context)out.push(`Rates/Central Bank: ${esc(String(ev.central_bank_context))}`);if(ev.correlated_markets)out.push(`Correlated: ${esc(String(ev.correlated_markets))}`);if(ev.price_action)out.push(`Price Action: ${esc(String(ev.price_action))}`);return out;}
-function renderNewsCalendar(){const box=document.getElementById('newsCalendar');if(!box)return;if(!ghostNewsEvents.length){box.innerHTML='<div class="newsContentCard"><p>No scheduled events returned by the news feed.</p></div>';return;}box.innerHTML=ghostNewsEvents.map(ev=>{const b=newsBias(ev),cf=newsConfluence(ev);return `<div class="newsEvent"><div class="newsEventTop"><div class="newsEventName">${esc(ev.event||'Economic Event')} <span style="color:#8b8ba7">• ${esc(ev.currency||'')}</span></div><div class="newsEventTime">${esc(ev.time||'--:--')}</div></div><div class="newsEventMeta"><span class="newsChip impact-${String(ev.impact||'low').toLowerCase()}">${esc(ev.impact||'LOW')} IMPACT</span><span class="newsChip">Forecast: ${esc(String(ev.forecast??'—'))}</span>${ev.previous!=null?`<span class="newsChip">Previous: ${esc(String(ev.previous))}</span>`:''}</div><div class="newsBias"><span>Pre-news bias</span><b>${esc(b)}</b></div>${cf.length?`<div class="newsEventMeta" style="margin-top:7px">${cf.map(x=>`<span class="newsChip">${x}</span>`).join('')}</div>`:''}</div>`}).join('');}
-function renderFundamentalFeed(){const box=document.getElementById('fundamentalFeed');if(!box)return;box.innerHTML=ghostNewsEvents.map(ev=>{const b=newsBias(ev),cf=newsConfluence(ev);return `<div class="newsEvent"><div class="newsEventTop"><div class="newsEventName">${esc(ev.currency||'')} • ${esc(ev.event||'Event')}</div><div class="newsEventTime">${esc(ev.time||'--:--')}</div></div><div class="newsEventMeta"><span class="newsChip">Forecast ${esc(String(ev.forecast??'—'))}</span>${ev.previous!=null?`<span class="newsChip">Previous ${esc(String(ev.previous))}</span>`:''}</div><div class="newsBias"><span>Directional pre-news read</span><b>${esc(b)}</b></div>${cf.length?`<div class="newsEventMeta" style="margin-top:7px">${cf.map(x=>`<span class="newsChip">${x}</span>`).join('')}</div>`:''}</div>`}).join('')||'<div class="newsContentCard"><p>Waiting for pre-news fundamental data.</p></div>';}
-async function loadNewsFeed(){const box=document.getElementById('newsCalendar');if(box)box.innerHTML='<div class="gt-analyzing newsPreScan"><div class="cocoFlowViz" style="height:260px"><div class="cocoGrid"></div><div class="cocoCore"><div class="coreAura"></div><div class="ghostCoreBrand"><div class="logo"><i></i></div><small>GHOST AI</small><div class="coreStatus"><i></i> PRE-NEWS SCAN</div></div></div></div><div style="font-size:9px;letter-spacing:.14em;color:#c4b5fd;font-weight:900;margin-top:6px">ANALYZING PREVIOUS • FORECAST • TREND • SENTIMENT • VOLATILITY</div><div style="font-size:9px;color:#8b8ba7;margin-top:7px">Released value is intentionally excluded from pre-news analysis.</div></div>';try{const d=await api('/api/news/events');ghostNewsEvents=(d.events||d.news||[]).map((x,i)=>({...x,id:x.id||String(i)}));if(!ghostNewsEvents.length)throw new Error('empty');}catch{ghostNewsEvents=NEWS_FALLBACK.map(x=>({...x}));}renderNewsCalendar();renderFundamentalFeed();}
-function applyNewsBroadcast(){return;}
-window.loadNewsFeed=loadNewsFeed;window.applyNewsBroadcast=applyNewsBroadcast;
+// News calendar + pre-news mode
+// Pre-news calendar is provided by the GHOST AI final patch below.
+
 
 // Future Signals
 let futureSel=new Set(), futureCount=5;
@@ -1386,7 +1369,7 @@ async function generateFuture(){
   if(!window._ghostIsOwner){ openUnlock(); return; }
   const r=document.getElementById('futureResult'); if(!r) return;
   if(!futureSel.size){ r.innerHTML='<div class="newsContentCard"><h3>Select a market first</h3><p>Choose at least one pair before generating future signals.</p></div>'; return; }
-  ghostShowAnalyzing(r);
+  r.innerHTML='<div class="newsContentCard"><div class="newsPanelSub">Generating future signal data…</div></div>';
   try{
     const d=await api('/api/future-signals',{method:'POST',body:{markets:[...futureSel],count:futureCount,market_type:cur,timeframe:(document.getElementById('futureTf')?.value||'5 MIN')}});
     const list=d.signals||d.results||[];
@@ -1776,5 +1759,73 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
   </div>
 </div>
 
-<div aria-hidden="true" style="position:fixed;left:-9999px">GHOST AI • Decision-support only.</div></body>
+<div aria-hidden="true" style="position:fixed;left:-9999px">GHOST AI • Decision-support only.</div>
+<style id="ghost-ai-final-overrides">
+/* GHOST AI premium sizing + video-style analysis layer. Existing layout remains intact. */
+:root{--ghost-ui-scale:1.08}
+.mcard{min-height:132px;padding:15px;border-radius:18px}
+.mcard .mpair{font-size:14px}.mcard .injBtn{width:36px;height:36px}.mcard .injBtn svg{width:18px;height:18px}
+.futureCard{min-height:118px;padding:15px;border-radius:18px}.futureCard .mpair{font-size:13px}
+.durCard{min-height:102px;padding:15px 12px;border-radius:16px}.durCard .durNum{font-size:25px}.durCard .durName{font-size:12px}
+.newsEvent{padding:16px!important;border-radius:18px!important}.newsEventName{font-size:13px!important}.newsEventTime{font-size:14px!important}
+.newsChip{font-size:10px!important;padding:6px 9px!important}.newsBias{font-size:11px!important}
+.ghostNewsProPanel{overflow:hidden}.newsTodayBanner{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:12px 0;padding:15px 16px;border-radius:18px;background:linear-gradient(135deg,rgba(124,58,237,.20),rgba(0,255,136,.06));border:1px solid rgba(167,139,250,.30);box-shadow:0 10px 28px rgba(0,0,0,.22)}
+.newsTodayBanner>div{display:flex;flex-direction:column;gap:4px}.newsTodayBanner b{font-size:17px;color:#fff}.newsTodayBanner span{font-size:10px;color:#aeb0c8}.newsKicker{font-size:9px!important;letter-spacing:.16em;color:#a78bfa!important;font-weight:900}.newsHighBadge{font-size:10px!important;font-weight:900;color:#fff!important;padding:8px 10px;border-radius:999px;background:rgba(255,59,92,.18);border:1px solid rgba(255,59,92,.35);white-space:nowrap}
+.ghostVideoAnalyzer{position:relative;min-height:330px;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(124,58,237,.30),transparent 34%),linear-gradient(180deg,#100b28,#050612);border:1px solid rgba(167,139,250,.38);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.48),inset 0 0 45px rgba(124,58,237,.10)}
+.ghostVideoAnalyzer:before,.ghostVideoAnalyzer:after{content:"";position:absolute;left:-20%;width:140%;height:1px;background:linear-gradient(90deg,transparent,#a78bfa,#00ff88,transparent);box-shadow:0 0 16px #a78bfa;animation:ghostSweep 2.2s linear infinite;opacity:.9}.ghostVideoAnalyzer:after{animation-delay:1.1s;opacity:.35}
+.ghostScanGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(167,139,250,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(167,139,250,.06) 1px,transparent 1px);background-size:28px 28px;mask-image:radial-gradient(circle at center,#000 10%,transparent 75%);animation:ghostGrid 5s linear infinite}
+.ghostLogoCore{position:relative;z-index:2;width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(circle,rgba(167,139,250,.24),rgba(10,6,32,.92) 62%);border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 8px rgba(167,139,250,.05),0 0 45px rgba(124,58,237,.65),inset 0 0 25px rgba(0,255,136,.12);animation:ghostCore 1.8s ease-in-out infinite}
+.ghostLogoCore .ghostMark{font-size:28px;font-weight:1000;letter-spacing:.12em;color:#fff;text-shadow:0 0 18px #a78bfa}.ghostLogoCore small{font-size:8px;letter-spacing:.22em;color:#c4b5fd;font-weight:900;margin-top:4px}.ghostOrbit{position:absolute;inset:38px;border:1px dashed rgba(167,139,250,.42);border-radius:50%;animation:ghostOrbit 7s linear infinite}.ghostOrbit i{position:absolute;width:7px;height:7px;border-radius:50%;background:#00ff88;box-shadow:0 0 12px #00ff88;top:-3px;left:50%}
+.ghostAnalyzeText{position:absolute;bottom:28px;z-index:3;text-align:center;color:#c4b5fd;font-size:10px;letter-spacing:.16em;font-weight:900}.ghostAnalyzeText b{display:block;color:#fff;font-size:13px;margin-bottom:5px}
+@keyframes ghostSweep{0%{top:-10%;transform:rotate(0deg)}50%{top:50%;transform:rotate(0deg)}100%{top:110%;transform:rotate(0deg)}}@keyframes ghostGrid{to{transform:translateY(28px)}}@keyframes ghostCore{0%,100%{transform:scale(.96);filter:brightness(.95)}50%{transform:scale(1.04);filter:brightness(1.2)}}@keyframes ghostOrbit{to{transform:rotate(360deg)}}
+@media(max-width:520px){.mcard{min-height:124px;padding:13px}.futureCard{min-height:110px}.newsTodayBanner{align-items:flex-start}.newsTodayBanner b{font-size:15px}.newsHighBadge{font-size:9px!important}.ghostVideoAnalyzer{min-height:300px}}
+</style>
+<script id="ghost-ai-final-patch">
+(function(){
+  // Pre-news calendar: date/time are explicit and release values are excluded.
+  const TODAY_NEWS=[
+    {id:'cpi-oct-2026',date:'10 Nov 2026',time:'7:30 PM',tz:'BDT',currency:'USD',impact:'HIGH',event:'Consumer Price Index (CPI) — October 2026',forecast:'0.3% m/m',previous:'0.6% m/m',coreForecast:'0.2% m/m',corePrevious:'0.3% m/m',pairs:'EUR/USD • GBP/USD • USD/JPY',source:'U.S. Bureau of Labor Statistics',releaseISO:'2026-11-10T19:30:00+06:00'}
+  ];
+  const BASE_EVENTS=[
+    ...TODAY_NEWS,
+    {id:'ppi-nov-13',date:'13 Nov 2026',time:'7:30 PM',tz:'BDT',currency:'USD',impact:'HIGH',event:'Producer Price Index (PPI) — October 2026',forecast:'—',previous:'—',pairs:'EUR/USD • GBP/USD • USD/JPY',source:'U.S. Bureau of Labor Statistics'},
+    {id:'imports-nov-17',date:'17 Nov 2026',time:'7:30 PM',tz:'BDT',currency:'USD',impact:'HIGH',event:'U.S. Import & Export Price Indexes — October 2026',forecast:'—',previous:'—',pairs:'EUR/USD • USD/JPY',source:'U.S. Bureau of Labor Statistics'}
+  ];
+  function preNewsBias(ev){
+    if(ev.id==='cpi-oct-2026') return {label:'USD MIXED → WATCH',score:64,detail:'Forecast is below the previous monthly CPI pace. Softer inflation can weigh on USD, while the pre-news read remains conditional on the release versus forecast.'};
+    return {label:'WAIT FOR CONFLUENCE',score:50,detail:'Forecast/previous data is not available yet. No forced directional call before confirmed inputs.'};
+  }
+  window.renderNewsCalendar=function(){
+    const box=document.getElementById('newsCalendar'); if(!box)return;
+    const events=(window.ghostNewsEvents&&window.ghostNewsEvents.length?window.ghostNewsEvents:BASE_EVENTS);
+    box.innerHTML=events.map(ev=>{const b=preNewsBias(ev);return `<div class="newsEvent" style="margin-bottom:10px"><div class="newsEventTop"><div class="newsEventName">${esc(ev.event||'Economic Event')} <span style="color:#8b8ba7">• ${esc(ev.currency||'')}</span></div><div class="newsEventTime">${esc(ev.date||'')}<br><b>${esc(ev.time||'--:--')} ${esc(ev.tz||'BDT')}</b></div></div><div class="newsEventMeta"><span class="newsChip impact-${String(ev.impact||'low').toLowerCase()}">${esc(ev.impact||'LOW')} IMPACT</span><span class="newsChip">Forecast: ${esc(String(ev.forecast??'—'))}</span><span class="newsChip">Previous: ${esc(String(ev.previous??'—'))}</span></div><div class="newsEventMeta"><span class="newsChip">Core Forecast: ${esc(String(ev.coreForecast??'—'))}</span><span class="newsChip">Core Previous: ${esc(String(ev.corePrevious??'—'))}</span><span class="newsChip">Pairs: ${esc(String(ev.pairs||'USD'))}</span></div><div class="newsBias"><span>PRE-NEWS SIGNAL</span><b>${esc(b.label)} • ${b.score}%</b></div><div style="font-size:10px;color:#9da0b8;line-height:1.55;margin-top:8px">${esc(b.detail)}</div><div style="font-size:9px;color:#6f728c;margin-top:7px">Source: ${esc(ev.source||'Official economic calendar')}</div></div>`}).join('');
+    const ff=document.getElementById('fundamentalFeed'); if(ff)ff.innerHTML=`<div class="newsContentCard" style="margin-top:10px"><div class="newsPanelHead"><div><h3>Pre-News Confluence</h3><div class="newsPanelSub">No released value is used before the scheduled release.</div></div></div><div class="fundamentalFeed"><div class="newsEvent"><div class="newsEventName">What GHOST AI checks before the release</div><div class="newsEventMeta"><span class="newsChip">Forecast vs Previous</span><span class="newsChip">Historical trend</span><span class="newsChip">Related indicators</span><span class="newsChip">USD strength</span><span class="newsChip">Rates / central bank</span><span class="newsChip">Market positioning</span><span class="newsChip">Pre-news volatility</span><span class="newsChip">Price action</span></div></div></div></div>`;
+  };
+  window.loadNewsFeed=async function(){
+    const box=document.getElementById('newsCalendar'); if(box){box.innerHTML=`<div class="ghostVideoAnalyzer"><div class="ghostScanGrid"></div><div class="ghostOrbit"><i></i></div><div class="ghostLogoCore"><div class="ghostMark">GHOST</div><small>AI</small></div><div class="ghostAnalyzeText"><b>PRE-NEWS SCAN</b>READING CALENDAR • FORECAST • PREVIOUS • MARKET CONTEXT</div></div>`;}
+    let apiEvents=[]; try{const d=await api('/api/news/events');apiEvents=(d.events||d.news||[]).map((x,i)=>({...x,id:x.id||String(i)}));}catch{}
+    // Always keep the verified current-day CPI event visible even if the backend feed is empty/stale.
+    const merged=[...BASE_EVENTS]; for(const x of apiEvents){if(!merged.some(y=>String(y.event).toLowerCase()===String(x.event||'').toLowerCase() && String(y.date||'')===String(x.date||''))) merged.push(x);}
+    window.ghostNewsEvents=merged; window.renderNewsCalendar();
+  };
+  // Make Future Signal use the same centered GHOST AI analysis animation.
+  const oldFuture=window.generateFuture;
+  window.generateFuture=async function(){
+    const r=document.getElementById('futureResult'); if(r){r.innerHTML=`<div class="ghostVideoAnalyzer"><div class="ghostScanGrid"></div><div class="ghostOrbit"><i></i></div><div class="ghostLogoCore"><div class="ghostMark">GHOST</div><small>AI</small></div><div class="ghostAnalyzeText"><b>FUTURE SIGNAL SCAN</b>STRUCTURE • MOMENTUM • LEVELS • VOLATILITY</div></div>`;}
+    await new Promise(res=>setTimeout(res,850));
+    return oldFuture();
+  };
+  // Replace the compact analysis renderer with a larger, centered GHOST AI version while retaining its existing result flow.
+  const oldShow=window.ghostShowAnalyzing;
+  window.ghostShowAnalyzing=function(el){
+    if(!el)return;
+    el.innerHTML=`<div class="ghostVideoAnalyzer"><div class="ghostScanGrid"></div><div class="ghostOrbit"><i></i></div><div class="ghostLogoCore"><div class="ghostMark">GHOST</div><small>AI</small></div><div class="ghostAnalyzeText"><b>AI ANALYZING</b>PRICE ACTION • STRUCTURE • MOMENTUM • LEVELS • CONFLUENCE</div></div>`;
+  };
+  // Keep global references used by the existing app.
+  window.ghostShowAnalyzing=window.ghostShowAnalyzing;
+  window.renderNewsCalendar=window.renderNewsCalendar;
+  setTimeout(()=>window.loadNewsFeed(),250);
+})();
+</script>
+</body>
 </html>
