@@ -957,7 +957,7 @@ html{scroll-behavior:smooth}
 </div>
 <div class="proPanel on" id="pro-overview">
 <div class="proGrid"><div class="proCard"><h3>ACCOUNT STATUS</h3><div class="proValue" id="proPlan">—</div><div class="proSub" id="proAccess">Loading…</div></div><div class="proCard"><h3>VERIFIED PERFORMANCE</h3><div class="proValue" id="proWinRate">—</div><div class="proSub" id="proWL">Wins 0 • Losses 0</div></div><div class="proCard"><h3>REAL MARKET</h3><div class="proValue" id="proReal">—</div><div class="proSub">Twelve Data external feed</div></div><div class="proCard"><h3>AI / VISION</h3><div class="proValue" id="proAI">—</div><div class="proSub">Setup quality • model confluence</div></div></div>
-<div class="proCard" style="margin-top:8px"><h3>TIMEFRAME ENGINE</h3><div style="display:flex;gap:5px;flex-wrap:wrap" id="tfButtons"></div><div class="proNotice">1 MIN is the default. Higher timeframes use the same external-feed analysis framework. OTC remains unavailable unless a verified OTC data source is connected.</div></div>
+<div class="proCard" style="margin-top:8px"><h3>TIMEFRAME ENGINE</h3><div style="display:flex;gap:5px;flex-wrap:wrap" id="tfButtons"></div><div class="proNotice">1 MIN is the default. Live signals are based on the latest completed candle and target the following candle. OTC uses the configured OTC feed.</div></div>
 <div class="proCard" style="margin-top:8px"><h3>LIVE SIGNAL VERIFICATION</h3><div id="proLiveList" class="proList"><div class="proSub">Tap Refresh to scan current REAL-market candidates.</div></div><button class="proBtn" style="margin-top:8px" onclick="proLiveScan()">Refresh Live Candidates</button></div>
 </div>
 <div class="proPanel" id="pro-history"><div class="proCard"><h3>SIGNAL HISTORY</h3><div id="proHistory" class="proList">Loading…</div></div></div>
@@ -1154,11 +1154,11 @@ $('liveAn').addEventListener('click',async()=>{
  flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='...'; $('livePairTxt').textContent=selPair;
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
-  const d=await api('/api/inject-signal',{method:'POST',body:{market:selPair,duration:1,timeframe:'1 MIN',market_type:'REAL'}});
+  const d=await api('/api/inject-signal',{method:'POST',body:{market:selPair,duration:1,timeframe:'1 MIN',market_type:cur==='otc'?'OTC':'REAL'}});
   const dir=String(d.direction||'NO SIGNAL').toUpperCase(); const conf=Number(d.confidence||0);
   ghostShowAnalyzing(res);
-  if(dir==='CALL'||dir==='PUT') ghostRenderTerminal(res,{market:selPair,market_type:'REAL',verified_accuracy:null},d.analysis||d,dir,conf,d.factors||[]);
-  else ghostRenderTerminal(res,{market:selPair,market_type:'REAL'},d.analysis||d,'NO SIGNAL',conf,d.factors||[]);
+  if(dir==='CALL'||dir==='PUT') ghostRenderTerminal(res,{market:selPair,market_type:cur==='otc'?'OTC':'REAL',verified_accuracy:null,entry_time:d.entry_time},d.analysis||d,dir,conf,d.factors||[]);
+  else ghostRenderTerminal(res,{market:selPair,market_type:cur==='otc'?'OTC':'REAL',entry_time:d.entry_time},d.analysis||d,'NO SIGNAL',conf,d.factors||[]);
  }finally{btn.disabled=false;btn.textContent='Analyze →'; setTimeout(()=>flow.classList.remove('on'),7000)}
 });
 $('an').addEventListener('click',async()=>{
@@ -1224,7 +1224,7 @@ function proTab(name){document.querySelectorAll('#proTabs button').forEach(b=>b.
 document.addEventListener('click',e=>{const b=e.target.closest('#proTabs button');if(b)proTab(b.dataset.pro)});
 async function proLoad(){try{const [pl,perf,st,tf]=await Promise.all([api('/api/user/plan'),api('/api/performance'),api('/api/market-status'),api('/api/timeframes')]);$('proPlan').textContent=pl.display_plan||'FREE';$('proPlan2').textContent=pl.display_plan||'FREE';$('proAccess').textContent=pl.has_access?'FULL SIGNAL ACCESS':'LIMITED • SIGNAL PLAN REQUIRED';$('proWinRate').textContent=perf.win_rate==null?'—':perf.win_rate+'%';$('proWL').textContent=`Wins ${perf.wins} • Losses ${perf.losses} • Pending ${perf.pending}`;$('proReal').textContent=st.real.connected?'CONNECTED':'OFFLINE';$('proAI').textContent=st.ai.configured?'READY':'NOT CONFIGURED';$('tfButtons').innerHTML=(tf.timeframes||[]).map(x=>`<button class="proBtn alt" style="margin:2px" onclick="proSetTf('${x}')">${x}</button>`).join('');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill proBad">${st.otc.connected?'CONNECTED':'NOT CONNECTED'}</span></div><div class="proRow"><span>AI</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div><div class="proRow"><span>Telegram bot</span><span class="proPill">${st.telegram.configured?'CONFIGURED':'NOT CONFIGURED'}</span></div>`;proLiveScan();}catch(e){if($('proAccess'))$('proAccess').textContent=e.message}}
 function proSetTf(tf){proTf=tf;document.querySelectorAll('#tfButtons button').forEach(b=>b.classList.toggle('on',b.textContent===tf));proLiveScan()}
-async function proLiveScan(){const box=$('proLiveList');if(!box)return;box.innerHTML='<div class="proSub">Scanning current REAL-market candidates…</div>';try{const d=await api('/api/live?market_type=REAL&timeframe='+encodeURIComponent(proTf));box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.symbol)}</b><div class="proSub">${esc(x.reason||'')}</div></div><span class="proPill">${esc(x.direction||'NO TRADE')} • ${x.confidence||0}</span></div>`).join('')||'<div class="proSub">No current candidates.</div>'}catch(e){box.innerHTML=`<div class="proNotice proLock">${esc(e.message)}</div>`}}
+async function proLiveScan(){const box=$('proLiveList');if(!box)return;box.innerHTML='<div class="proSub">Scanning current REAL-market candidates…</div>';try{const d=await api('/api/live?market_type=REAL&timeframe='+encodeURIComponent(proTf));box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.symbol)}</b><div class="proSub">${esc(x.reason||'')}</div><div class="proSub">ENTRY NEXT: ${x.entry_time?new Date(x.entry_time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dhaka'}):'--'}</div></div><span class="proPill">${esc(x.direction||'NO TRADE')} • ${x.confidence||0}</span></div>`).join('')||'<div class="proSub">No current candidates.</div>'}catch(e){box.innerHTML=`<div class="proNotice proLock">${esc(e.message)}</div>`}}
 async function proHistory(){const box=$('proHistory');try{const d=await api('/api/history');box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.market)}</b><div class="proSub">${esc(x.market_type)} • ${esc(x.timeframe)} • ${esc((x.created_at||'').replace('T',' ').slice(0,16))}</div></div><span class="proPill">${esc(x.signal)} • ${x.confidence||0} • ${esc(x.outcome)}</span></div>`).join('')||'<div class="proSub">No signal history yet.</div>'}catch(e){box.textContent=e.message}}
 async function proAlerts(){const box=$('proAlerts');try{const d=await api('/api/alerts');box.innerHTML=(d.alerts||[]).map(x=>`<div class="proRow"><span>${esc(x.market||'ALL')} • ${esc(x.timeframe)} • ≥${x.threshold}</span><button class="proBtn alt" onclick="proDeleteAlert(${x.id})">Delete</button></div>`).join('')||'<div class="proSub">No alerts configured.</div>'}catch(e){box.textContent=e.message}}
 async function proAddAlert(){try{await api('/api/alerts',{method:'POST',body:{market:$('alertMarket').value.trim().toUpperCase(),timeframe:$('alertTf').value,threshold:Number($('alertThreshold').value||70),alert_type:'SIGNAL'}});proAlerts()}catch(e){alert(e.message)}}
@@ -1410,23 +1410,31 @@ let mtgOn=false;
 function toggleMTG(){ mtgOn=!mtgOn; document.getElementById('mtgToggle').classList.toggle('on', mtgOn); }
 window.toggleMTG=toggleMTG;
 function validateMgmt(){
-  const cap=Number(document.getElementById('mgmtCap').value||0);
-  const pay=Number(document.getElementById('mgmtPayout').value||0);
-  const prof=Number(document.getElementById('mgmtProfit').value||0);
-  const risk=Number(document.getElementById('mgmtRisk').value||0);
-  const capBox=document.getElementById('capBox');
-  if(cap>0 && cap<=10) capBox.classList.add('err'); else capBox.classList.remove('err');
-  const ok = cap>10 && pay>0 && prof>0 && risk>0;
-  document.getElementById('genSheetBtn').disabled=!ok;
-  document.getElementById('genHint').textContent = ok ? 'Ready to generate your trade sheet.' : 'Fill in all fields to generate your trade sheet.';
-}
-window.validateMgmt=validateMgmt;
-function generateSheet(){
   const cap=Number(document.getElementById('mgmtCap').value);
   const pay=Number(document.getElementById('mgmtPayout').value);
   const prof=Number(document.getElementById('mgmtProfit').value);
   const risk=Number(document.getElementById('mgmtRisk').value);
-  const stake=cap*risk/100; const targetAmt=cap*prof/100; const trades=Math.ceil(targetAmt/(stake*pay/100));
+  const capBox=document.getElementById('capBox');
+  const validCap=Number.isFinite(cap) && cap>0;
+  const validPay=Number.isFinite(pay) && pay>0 && pay<=1000;
+  const validProf=Number.isFinite(prof) && prof>0 && prof<=1000;
+  const validRisk=Number.isFinite(risk) && risk>0 && risk<=100;
+  if(capBox) capBox.classList.toggle('err',!validCap);
+  const ok=validCap && validPay && validProf && validRisk;
+  const btn=document.getElementById('genSheetBtn');
+  if(btn) btn.disabled=!ok;
+  const hint=document.getElementById('genHint');
+  if(hint) hint.textContent=ok?'Ready to generate your trade sheet.':'Fill in all fields with valid values to generate your trade sheet.';
+}
+window.validateMgmt=validateMgmt;
+function generateSheet(){
+  validateMgmt();
+  const cap=Number(document.getElementById('mgmtCap').value);
+  const pay=Number(document.getElementById('mgmtPayout').value);
+  const prof=Number(document.getElementById('mgmtProfit').value);
+  const risk=Number(document.getElementById('mgmtRisk').value);
+  if(!(Number.isFinite(cap)&&cap>0&&Number.isFinite(pay)&&pay>0&&Number.isFinite(prof)&&prof>0&&Number.isFinite(risk)&&risk>0)){ alert('Please enter valid Management values.'); return; }
+  const stake=cap*risk/100; const targetAmt=cap*prof/100; const perWin=stake*pay/100; const trades=perWin>0?Math.ceil(targetAmt/perWin):0;
   const res=document.getElementById('sheetResult');
   res.innerHTML=`<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(167,139,250,.3);border-radius:14px;padding:14px"><div style="font-size:12px;font-weight:900;color:white">Your Trade Sheet</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:11px"><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">STAKE / TRADE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${stake.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">TARGET PROFIT</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${targetAmt.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">EST. TRADES</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${trades}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">MARTINGALE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${mtgOn?'YES':'NO'}</div></div></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px">Capital $${cap} • Payout ${pay}% • Risk ${risk}% • MTG ${mtgOn?'ON - stake doubles after loss':'OFF'}</div></div>`;
   res.classList.add('on');
@@ -1659,7 +1667,7 @@ function ghostRenderTerminal(el, d, a, dir, conf, confl){
   const market = (d && d.market) || (a && a.market_hint) || 'EUR/USD';
   const mtype = (d && d.market_type) || 'OTC';
   const tf = (d && d.timeframe) || (a && a.timeframe) || '1 MIN';
-  const entry = ghostEntryTime();
+  const entry = d && d.entry_time ? new Date(d.entry_time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dhaka'}) : ghostEntryTime();
   const nowStr = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dhaka'});
   const summary = a && a.summary ? a.summary : (isNo ? 'Insufficient data / low confidence. Prefer NO SIGNAL over a low-confidence signal.' : 'Bullish rejection + support confirmation');
   const verified = d && d.verified_accuracy ? `VERIFIED ACCURACY: ${d.verified_accuracy.accuracy}% (${d.verified_accuracy.wins}W / ${d.verified_accuracy.losses}L)` : 'VERIFIED ACCURACY: Calculating from WIN / LOSS';

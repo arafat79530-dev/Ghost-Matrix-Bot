@@ -743,6 +743,26 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
             "candle_count": len(candles),
         }
 
+    # Analyse the most recent COMPLETED candle, never the still-forming candle.
+    # This makes a 1-minute signal an entry for the following minute rather than
+    # a signal stamped on the minute currently being formed.
+    tf_norm = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
+    tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    bucket_start = now_ts - (now_ts % (tf_minutes * 60))
+    if candles and isinstance(candles[-1].get("time"), datetime):
+        latest_ts = int(candles[-1]["time"].astimezone(timezone.utc).timestamp())
+        if latest_ts >= bucket_start and len(candles) >= 61:
+            candles = candles[:-1]
+
+    if len(candles) < 60:
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": "Completed candle data কম; বিশ্লেষণের জন্য অন্তত 60টি সম্পূর্ণ candle দরকার।",
+            "candle_count": len(candles),
+        }
+
     closes = [c["close"] for c in candles]
     fast = ema(closes, 9)
     slow = ema(closes, 21)
@@ -754,8 +774,6 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
     previous = candles[idx - 1]
 
     age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
-    tf_norm = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
-    tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
     max_age = max(MAX_SIGNAL_AGE_SECONDS, tf_minutes * 60 * 3)
     if age < -120 or age > max_age:
         return {
@@ -3204,7 +3222,7 @@ def api_inject_signal():
             result=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
             result.update({"source":meta["source"],"verified_quotex":False,"market_type":"OTC","timeframe":timeframe,"backtest":backtest_ema(candles)})
             direction=result.get("direction","NO TRADE"); confidence=_setup_confidence(result) if direction in ("CALL","PUT") else 0
-            return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":market,"market_type":"OTC","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["OTCharts Quotex OTC candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance"],"source":meta["source"],"verified_quotex":False}),200
+            return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":market,"market_type":"OTC","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["OTCharts Quotex OTC candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance"],"source":meta["source"],"verified_quotex":False,"entry_time":((result.get("candle",{}).get("time") + timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1))).astimezone(BANGLADESH_TZ).isoformat() if isinstance(result.get("candle",{}).get("time"),datetime) else None),"expiry":timeframe}),200
         symbol=market.replace(" (OTC)","").strip()
         allowed={str(item.get("symbol","")).upper() for item in get_catalog()}
         if symbol not in allowed: return jsonify({"error":"Market is not in the configured real-market allowlist."}),400
@@ -3212,7 +3230,7 @@ def api_inject_signal():
         if not _api_allowed("inject",2,60): return jsonify({"error":"Signal analysis rate limit reached."}),429
         result=scan_one_symbol(symbol,timeframe)
         direction=result.get("direction","NO SIGNAL"); confidence=_setup_confidence(result) if direction in ("CALL","PUT") else 0
-        return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":symbol,"market_type":"REAL","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["Twelve Data live candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance","Historical EMA sanity check"],"source":"Twelve Data external feed","verified_quotex":False}),200
+        return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":symbol,"market_type":"REAL","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["Twelve Data live candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance","Historical EMA sanity check"],"source":"Twelve Data external feed","verified_quotex":False,"entry_time":((result.get("candle",{}).get("time") + timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1))).astimezone(BANGLADESH_TZ).isoformat() if isinstance(result.get("candle",{}).get("time"),datetime) else None),"expiry":timeframe}),200
     except Exception as exc:
         log.warning("Injector analysis failed: %s",exc)
         return jsonify({"error":"Live market analysis failed: %s" % str(exc)[:180]}),502
@@ -3535,15 +3553,47 @@ def api_timeframes(): return jsonify({"timeframes":["1 MIN","2 MIN","5 MIN","10 
 @app.get("/api/live")
 @login_required
 def api_live():
-    market_type=str(request.args.get("market_type") or "REAL").upper(); tf=_normalize_timeframe(request.args.get("timeframe")); symbols=[x["symbol"] for x in get_catalog()]
-    if market_type=="OTC": return jsonify({"available":False,"market_type":"OTC","timeframe":tf,"signals":[],"message":"Verified OTC feed is not connected. GHOST MATRIX will not fabricate OTC prices or signals."})
-    if not _signal_access_for_user(int(session["user_id"])): return jsonify({"locked":True,"signals":[],"message":"Active signal plan required."}),403
+    uid=int(session["user_id"])
+    market_type=str(request.args.get("market_type") or "REAL").upper()
+    tf=_normalize_timeframe(request.args.get("timeframe"))
+    if not _signal_access_for_user(uid):
+        return jsonify({"locked":True,"signals":[],"message":"Active signal plan required."}),403
+
     results=[]
+    symbols=[x["symbol"] for x in get_catalog()]
+    if market_type=="OTC":
+        if not OTCHARTS_API_KEY or OTChartsClient is None:
+            return jsonify({"available":False,"market_type":"OTC","timeframe":tf,"signals":[],"message":"OTC feed is not configured."}),503
+        pool=symbols[:8]
+        for sym in pool:
+            try:
+                market=sym if "(OTC)" in sym else f"{sym} (OTC)"
+                if not _api_allowed("otc_live",2,60): break
+                candles,meta=_otc_candles(market,tf,300)
+                r=analyze_candles(market.replace(" (OTC)",""),candles,tf)
+                r["confidence"]=_setup_confidence(r); r["timeframe"]=tf
+                candle=r.get("candle") or {}
+                entry_time=None
+                if isinstance(candle.get("time"),datetime):
+                    entry_time=(candle["time"]+timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf,1))).astimezone(BANGLADESH_TZ).isoformat()
+                results.append({"symbol":market,"direction":r.get("direction"),"confidence":r.get("confidence",0),"price":r.get("price"),"reason":r.get("reason"),"timeframe":tf,"entry_time":entry_time,"expiry":tf,"source":meta["source"]})
+            except Exception as exc: log.warning("OTC live scan %s: %s",sym,exc)
+        return jsonify({"available":bool(results),"market_type":"OTC","timeframe":tf,"signals":results,"source":"OTCharts OTC feed","verified_quotex":False,"warning":"OTC data is external and not Quotex-verified."})
+
+    if not TWELVE_DATA_API_KEY:
+        return jsonify({"error":"TWELVE_DATA_API_KEY is not configured."}),503
     for sym in symbols[:8]:
         try:
-            interval=TIMEFRAME_MAP[tf]; payload=twelve_get("time_series",{"symbol":sym,"interval":interval,"outputsize":300,"order":"desc","format":"JSON","timezone":"UTC"}); candles=parse_candles(payload); r=analyze_candles(sym,candles); r["confidence"]=_setup_confidence(r); r["timeframe"]=tf; results.append({"symbol":sym,"direction":r.get("direction"),"confidence":r.get("confidence",0),"price":r.get("price"),"reason":r.get("reason"),"timeframe":tf,"source":"Twelve Data external feed"})
+            if not _api_allowed("live",2,60): break
+            r=scan_one_symbol(sym,tf)
+            r["confidence"]=_setup_confidence(r)
+            candle=r.get("candle") or {}
+            entry_time=None
+            if isinstance(candle.get("time"),datetime):
+                entry_time=(candle["time"]+timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf,1))).astimezone(BANGLADESH_TZ).isoformat()
+            results.append({"symbol":sym,"direction":r.get("direction"),"confidence":r.get("confidence",0),"price":r.get("price"),"reason":r.get("reason"),"timeframe":tf,"entry_time":entry_time,"expiry":tf,"source":"Twelve Data external feed"})
         except Exception as exc: log.warning("live scan %s: %s",sym,exc)
-    return jsonify({"available":True,"market_type":"REAL","timeframe":tf,"signals":results,"source":"Twelve Data external feed","verified_quotex":False,"warning":"Confidence is setup quality, not win probability."})
+    return jsonify({"available":True,"market_type":"REAL","timeframe":tf,"signals":results,"source":"Twelve Data external feed","verified_quotex":False,"warning":"Signals are based on the latest completed candle and target the following candle."})
 
 
 @app.get("/api/performance")
