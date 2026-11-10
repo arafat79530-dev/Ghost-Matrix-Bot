@@ -55,7 +55,8 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "").strip()
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
-AI_API_KEY = os.getenv("AI_API_KEY", "").strip()  # Optional Groq-compatible key
+GROQ_API_KEY = (os.getenv("GROQ_API_KEY", "") or os.getenv("AI_API_KEY", "")).strip()
+AI_API_KEY = GROQ_API_KEY  # Backward-compatible alias used by existing non-selector AI features
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_VISION_MODEL = os.getenv("OPENAI_VISION_MODEL", "gpt-4.1-mini").strip()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
@@ -2505,7 +2506,7 @@ def api_admin_signal_outcome(signal_id):
 
 @app.get("/api/config")
 def api_config():
-    return jsonify({"app_name": APP_NAME, "affiliate_url": AFFILIATE_URL, "telegram_admin": TELEGRAM_ADMIN, "timeframe": "1 MIN", "markets": ["REAL","OTC"]})
+    return jsonify({"app_name": APP_NAME, "affiliate_url": AFFILIATE_URL, "telegram_admin": TELEGRAM_ADMIN, "timeframe": "1 MIN", "markets": ["REAL","OTC"], "vision_providers": {"openai": bool(OPENAI_API_KEY), "gemini": bool(GEMINI_API_KEY), "groq": bool(GROQ_API_KEY)}})
 
 
 @app.get("/api/auth/verify")
@@ -2951,8 +2952,14 @@ def api_analyze_image():
     upload = request.files.get("image")
     if upload is None or not upload.filename:
         return jsonify({"error": "একটি chart screenshot upload করো।"}), 400
-    if not AI_API_KEY:
-        return jsonify({"error": "AI_API_KEY Render Environment-এ সেট নেই; screenshot analysis চালু নয়।"}), 503
+    _provider = str(request.form.get("provider") or "groq").strip().lower()
+    _provider_keys = {"openai": OPENAI_API_KEY, "gemini": GEMINI_API_KEY, "groq": GROQ_API_KEY}
+    _provider_names = {"openai": "OpenAI", "gemini": "Gemini", "groq": "Groq"}
+    if _provider not in _provider_keys:
+        return jsonify({"error": "Invalid AI provider selected."}), 400
+    if not _provider_keys[_provider]:
+        _env_name = {"openai": "OPENAI_API_KEY", "gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY (or legacy AI_API_KEY)"}[_provider]
+        return jsonify({"error": f"{_provider_names[_provider]} API key is not configured in Render ({_env_name}).", "provider": _provider}), 503
     raw = upload.read(12 * 1024 * 1024 + 1)
     if not raw or len(raw) > 12 * 1024 * 1024:
         return jsonify({"error": "ছবি খালি অথবা ১২ MB-এর বেশি। ছোট screenshot upload করো।"}), 413
@@ -3008,16 +3015,27 @@ Return ONLY valid JSON with keys:
 direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short), trend (Bengali), structure (Bengali), zones (Bengali), reasoning (Bengali), confirmation (Bengali), invalidation (Bengali), confidence_note (Bengali), confluences (array like ["BOS","Bullish OB","FVG","Engulfing"]), market_hint (asset/timeframe if visible)
 '''
         user_prompt = "এই chart screenshot-টি বিশ্লেষণ করো। asset/timeframe দেখা গেলে শনাক্ত করো; না দেখা গেলে অনুমান কোরো না। CALL, PUT অথবা NO TRADE নির্বাচন করো। দুই দিকের প্রমাণ যাচাই করো এবং entry নেওয়ার আগে কী confirmation দরকার বলো। JSON ছাড়া অন্য কিছু দেবে না।"
-        payload = {"model": GROQ_VISION_MODEL, "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": [
-                {"type": "text", "text": user_prompt},
-                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
-            ]}
-        ], "temperature": 0.05, "max_completion_tokens": 1400}
-        response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=28)
-        response.raise_for_status()
-        content = response.json()["choices"][0]["message"]["content"].strip()
+        if _provider == "openai":
+            _provider_result = _call_openai_vision(encoded, mime, user_prompt)
+            if not _provider_result.get("available"):
+                raise RuntimeError(_provider_result.get("reason") or "OpenAI vision request failed")
+            content = json.dumps(_provider_result["analysis"], ensure_ascii=False)
+        elif _provider == "gemini":
+            _provider_result = _call_gemini_vision(encoded, mime, user_prompt)
+            if not _provider_result.get("available"):
+                raise RuntimeError(_provider_result.get("reason") or "Gemini vision request failed")
+            content = json.dumps(_provider_result["analysis"], ensure_ascii=False)
+        else:
+            payload = {"model": GROQ_VISION_MODEL, "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": [
+                    {"type": "text", "text": user_prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
+                ]}
+            ], "temperature": 0.05, "max_completion_tokens": 1400}
+            response = http_session.post(GROQ_BASE, headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}, json=payload, timeout=28)
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"].strip()
         cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", content, flags=re.I).strip()
         try:
             analysis = json.loads(cleaned)
@@ -3088,19 +3106,9 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
                         "zones": "Structured result unavailable", "reasoning": content,
                         "confirmation": "Clear price confirmation ছাড়া entry নিও না।",
                         "invalidation": "সেটআপ নিশ্চিত নয়।", "confidence_note": "Confidence নির্ভরযোগ্যভাবে বের করা যায়নি; এটি win probability নয়।"}
-        # Optional Gemini + OpenAI consensus. Existing Groq analysis remains the baseline.
-        # If either provider is not configured, it is reported as unavailable; no fake vote is added.
-        _consensus_results = [{"provider":"Groq","configured":bool(AI_API_KEY),"available":True,"analysis":analysis}]
-        _consensus_results.append(_call_openai_vision(encoded, mime, user_prompt))
-        _consensus_results.append(_call_gemini_vision(encoded, mime, user_prompt))
-        _consensus = _build_multi_model_consensus(_consensus_results)
-        if _consensus.get("analysis"):
-            analysis.update(_consensus["analysis"])
-        analysis["direction"] = _consensus["direction"]
-        analysis["confidence"] = _consensus["confidence"]
-        analysis["model_agreement"] = _consensus["model_agreement"]
-        analysis["model_votes"] = _consensus["votes"]
-        analysis["model_providers"] = _consensus["providers"]
+        # Run only the provider selected in the screenshot AI selector.
+        analysis["model_providers"] = [_provider_names[_provider]]
+        analysis["selected_provider"] = _provider
 
         # GHOST AI: Store signal, add quality metrics, prefer NO SIGNAL over low-confidence
         _dir = str(analysis.get("direction","NO TRADE")).upper()
@@ -3117,10 +3125,10 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
                     cur.execute("INSERT INTO gm_user_signals (user_id, market, market_type, timeframe, signal, confidence, analysis, image_quality, outcome) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'PENDING') RETURNING id", (int(_uid), _market or "EUR/USD", _mtype or "OTC", _timeframe, _dir, _conf, _analysis_text[:2000], int(_q_score)))
         except Exception as _e:
             log.warning("Could not store user signal: %s", _e)
-        return jsonify({"analysis": analysis, "signal": _dir, "confidence": _conf, "market": _market or "EUR/USD", "market_type": _mtype or "OTC", "timeframe": _timeframe, "image_quality": int(_q_score), "image_quality_issues": _q_issues, "verified_accuracy": _verified, "analysis_confidence": _conf, "model_agreement": int(analysis.get("model_agreement",0) or 0), "model_votes": analysis.get("model_votes",{}), "model_providers": analysis.get("model_providers",[]), "status": "VALID" if _dir in ("CALL","PUT") else "NO SIGNAL", "warning": "Screenshot-based educational analysis only. Confidence is setup quality, not a win probability. Trading involves risk - never trade more than you can afford to lose.", "risk_warning": "Trading involves substantial risk. This is not financial advice."})
+        return jsonify({"analysis": analysis, "signal": _dir, "confidence": _conf, "market": _market or "EUR/USD", "market_type": _mtype or "OTC", "timeframe": _timeframe, "image_quality": int(_q_score), "image_quality_issues": _q_issues, "verified_accuracy": _verified, "analysis_confidence": _conf, "model_agreement": 0, "model_votes": {}, "model_providers": analysis.get("model_providers",[]), "selected_provider": _provider, "status": "VALID" if _dir in ("CALL","PUT") else "NO SIGNAL", "warning": "Screenshot-based educational analysis only. Confidence is setup quality, not a win probability. Trading involves risk - never trade more than you can afford to lose.", "risk_warning": "Trading involves substantial risk. This is not financial advice."})
     except Exception as exc:
         log.warning("Mini App screenshot analysis failed: %s", exc)
-        return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। image format, AI_API_KEY, vision model ও provider limit পরীক্ষা করো।"}), 502
+        return jsonify({"error": "ছবি বিশ্লেষণ করা যায়নি। নির্বাচিত AI provider-এর API key, model ও provider limit পরীক্ষা করো।"}), 502
 
 
 @app.post("/api/signals/generate")
