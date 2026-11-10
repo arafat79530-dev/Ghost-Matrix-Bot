@@ -1415,7 +1415,7 @@ function validateMgmt(){
   const prof=Number(document.getElementById('mgmtProfit').value);
   const risk=Number(document.getElementById('mgmtRisk').value);
   const capBox=document.getElementById('capBox');
-  const validCap=Number.isFinite(cap) && cap>0;
+  const validCap=Number.isFinite(cap) && cap>10;
   const validPay=Number.isFinite(pay) && pay>0 && pay<=1000;
   const validProf=Number.isFinite(prof) && prof>0 && prof<=1000;
   const validRisk=Number.isFinite(risk) && risk>0 && risk<=100;
@@ -1433,7 +1433,7 @@ function generateSheet(){
   const pay=Number(document.getElementById('mgmtPayout').value);
   const prof=Number(document.getElementById('mgmtProfit').value);
   const risk=Number(document.getElementById('mgmtRisk').value);
-  if(!(Number.isFinite(cap)&&cap>0&&Number.isFinite(pay)&&pay>0&&Number.isFinite(prof)&&prof>0&&Number.isFinite(risk)&&risk>0)){ alert('Please enter valid Management values.'); return; }
+  if(!(Number.isFinite(cap)&&cap>10&&Number.isFinite(pay)&&pay>0&&Number.isFinite(prof)&&prof>0&&Number.isFinite(risk)&&risk>0)){ alert('Please enter valid Management values.'); return; }
   const stake=cap*risk/100; const targetAmt=cap*prof/100; const perWin=stake*pay/100; const trades=perWin>0?Math.ceil(targetAmt/perWin):0;
   const res=document.getElementById('sheetResult');
   res.innerHTML=`<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(167,139,250,.3);border-radius:14px;padding:14px"><div style="font-size:12px;font-weight:900;color:white">Your Trade Sheet</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:11px"><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">STAKE / TRADE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${stake.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">TARGET PROFIT</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${targetAmt.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">EST. TRADES</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${trades}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">MARTINGALE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${mtgOn?'YES':'NO'}</div></div></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px">Capital $${cap} • Payout ${pay}% • Risk ${risk}% • MTG ${mtgOn?'ON - stake doubles after loss':'OFF'}</div></div>`;
@@ -1701,9 +1701,8 @@ window.ghostEntryTime = ghostEntryTime;
 // === GHOST AI - BROKER SELECTOR LOGIC ===
 const GHOST_BROKERS = {
   'Quotex': { logo: 'https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480', fallback: 'QUOTEX', sub: '' },
-  'Binolla': { logo: 'https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480', fallback: 'BINOLLA', sub: '' },
+  'Binomo': { logo: 'https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480', fallback: 'BINOMO', sub: '' },
   'Pocket Option': { logo: 'https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480', fallback: 'POCKET OPTION', sub: '' },
-  'Olymptrade': { logo: 'https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480', fallback: 'OLYMP TRADE', sub: '' }
 };
 let GHOST_BROKER = 'Quotex';
 try{ const saved = localStorage.getItem('ghost_ai_broker'); if(saved && GHOST_BROKERS[saved]) GHOST_BROKER = saved; }catch(e){}
@@ -1766,9 +1765,9 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
         <div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
-      <div class="gb-item" data-broker="Binolla" onclick="selectBroker('Binolla')">
-        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480" alt="Binolla official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOLLA</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Binolla</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Binolla" style="display:none">✓ SELECTED</span></div>
+      <div class="gb-item" data-broker="Binomo" onclick="selectBroker('Binomo')">
+        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480" alt="Binomo official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOMO</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Binomo</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Binomo" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
       <div class="gb-item" data-broker="Pocket Option" onclick="selectBroker('Pocket Option')">
@@ -1776,12 +1775,6 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
         <div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
-      <div class="gb-item" data-broker="Olymptrade" onclick="selectBroker('Olymptrade')">
-        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480" alt="Olymptrade official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">OLYMP<br>TRADE</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Olymptrade</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Olymptrade" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-    </div>
     <button class="gb-close" onclick="closeBrokerModal()">Done</button>
     <div class="gb-note">Logos are official brand assets of their respective brokers.<br>GHOST AI is not affiliated with any broker. Trading involves risk.</div>
   </div>
