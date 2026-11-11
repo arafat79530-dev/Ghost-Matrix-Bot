@@ -57,9 +57,9 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", "").strip()
 GROQ_API_KEY = (os.getenv("GROQ_API_KEY", "") or os.getenv("AI_API_KEY", "")).strip()
 AI_API_KEY = GROQ_API_KEY  # Backward-compatible alias used by existing non-selector AI features
-OPENAI_API_KEY = (os.getenv("OPENAI_API_KEY", "") or os.getenv("OPENAI_KEY", "") or os.getenv("OPENAI_API", "")).strip()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 OPENAI_VISION_MODEL = os.getenv("OPENAI_VISION_MODEL", "gpt-4.1-mini").strip()
-GEMINI_API_KEY = (os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI_KEY", "")).strip()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_VISION_MODEL = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash").strip()
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile").strip()
 # --- GHOST AI Identity & Affiliate (public, not secret) ---
@@ -743,32 +743,43 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
             "candle_count": len(candles),
         }
 
+    # Analyse the most recent COMPLETED candle, never the still-forming candle.
+    # This makes a 1-minute signal an entry for the following minute rather than
+    # a signal stamped on the minute currently being formed.
+    tf_norm = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
+    tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    bucket_start = now_ts - (now_ts % (tf_minutes * 60))
+    if candles and isinstance(candles[-1].get("time"), datetime):
+        latest_ts = int(candles[-1]["time"].astimezone(timezone.utc).timestamp())
+        if latest_ts >= bucket_start and len(candles) >= 61:
+            candles = candles[:-1]
+
+    if len(candles) < 60:
+        return {
+            "symbol": symbol,
+            "direction": "NO TRADE",
+            "reason": "Completed candle data কম; বিশ্লেষণের জন্য অন্তত 60টি সম্পূর্ণ candle দরকার।",
+            "candle_count": len(candles),
+        }
+
     closes = [c["close"] for c in candles]
     fast = ema(closes, 9)
     slow = ema(closes, 21)
     trend = ema(closes, 50)
     rsis = rsi(closes, 14)
 
-    # Analyse the latest COMPLETED candle. If the feed includes the currently-forming
-    # candle, use the previous one and target the following candle as the entry window.
     idx = len(candles) - 1
-    tf_norm = _normalize_timeframe(timeframe) if "_normalize_timeframe" in globals() else timeframe
-    tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf_norm,1)
-    tf_seconds = tf_minutes * 60
-    now_utc = datetime.now(timezone.utc)
-    latest_age = (now_utc - candles[idx]["time"]).total_seconds()
-    if 0 <= latest_age < max(45, tf_seconds * 0.95) and idx >= 1:
-        idx -= 1
     latest = candles[idx]
     previous = candles[idx - 1]
 
-    age = (now_utc - latest["time"]).total_seconds()
-    max_age = max(MAX_SIGNAL_AGE_SECONDS, tf_seconds * 4)
+    age = (datetime.now(timezone.utc) - latest["time"]).total_seconds()
+    max_age = max(MAX_SIGNAL_AGE_SECONDS, tf_minutes * 60 * 3)
     if age < -120 or age > max_age:
         return {
             "symbol": symbol,
             "direction": "NO TRADE",
-            "reason": f"সর্বশেষ সম্পন্ন candle-এর সময় যাচাই করা যাচ্ছে না ({int(age)} sec)।",
+            "reason": f"সর্বশেষ M1 candle-এর সময় যাচাই করা যাচ্ছে না ({int(age)} sec)।",
             "candle": latest,
         }
 
@@ -838,29 +849,12 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
         )
 
     else:
-        # Balanced fallback: require several independent, data-derived confirmations
-        # without making the live engine unnecessarily return NO SIGNAL.
-        bull_score = sum([
-            fast[idx] > slow[idx], slow[idx] > trend[idx], bullish,
-            rsis[idx] >= 50, (resistance - close) > candle_range * 0.10
-        ])
-        bear_score = sum([
-            fast[idx] < slow[idx], slow[idx] < trend[idx], bearish,
-            rsis[idx] <= 50, (close - support) > candle_range * 0.10
-        ])
-        if body_ratio >= 0.25 and bull_score >= 4 and bull_score > bear_score:
-            direction = "CALL"
-            reason = f"Completed candle bullish setup: {bull_score}/5 directional confirmations; RSI {rsis[idx]:.1f}."
-        elif body_ratio >= 0.25 and bear_score >= 4 and bear_score > bull_score:
-            direction = "PUT"
-            reason = f"Completed candle bearish setup: {bear_score}/5 directional confirmations; RSI {rsis[idx]:.1f}."
-        else:
-            direction = "NO TRADE"
-            reason = (
-                f"সব filter একমত নয়। EMA9={fast[idx]:.5f}, "
-                f"EMA21={slow[idx]:.5f}, EMA50={trend[idx]:.5f}, "
-                f"RSI={rsis[idx]:.1f}; অপেক্ষা করাই ভালো।"
-            )
+        direction = "NO TRADE"
+        reason = (
+            f"সব filter একমত নয়। EMA9={fast[idx]:.5f}, "
+            f"EMA21={slow[idx]:.5f}, EMA50={trend[idx]:.5f}, "
+            f"RSI={rsis[idx]:.1f}; অপেক্ষা করাই ভালো।"
+        )
 
     return {
         "symbol": symbol,
@@ -871,7 +865,6 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
         "candle_count": len(candles),
         "first_candle": candles[0]["time"],
         "last_candle": latest["time"],
-        "entry_time": (latest["time"] + timedelta(minutes=tf_minutes)).astimezone(BANGLADESH_TZ).isoformat(),
         "rsi": rsis[idx],
         "ema9": fast[idx],
         "ema21": slow[idx],
@@ -2889,14 +2882,7 @@ def _call_openai_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, 
             headers={"Authorization":f"Bearer {OPENAI_API_KEY}","Content-Type":"application/json"},
             json=payload, timeout=30)
         r.raise_for_status()
-        data = r.json()
-        msg = (data.get("choices") or [{}])[0].get("message") or {}
-        content = msg.get("content", "")
-        if isinstance(content, list):
-            content = "".join(
-                (part.get("text", "") if isinstance(part, dict) else str(part))
-                for part in content
-            )
+        content=r.json()["choices"][0]["message"]["content"]
         obj=_clean_model_json(content)
         return {"provider":"OpenAI","configured":True,"available":bool(obj),"analysis":obj}
     except Exception as exc:
@@ -2918,16 +2904,12 @@ def _call_gemini_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, 
             headers={"Content-Type":"application/json"}, json=payload, timeout=30)
         r.raise_for_status()
         data=r.json()
-        candidates = data.get("candidates") or []
-        parts = ((candidates[0].get("content") or {}).get("parts") or []) if candidates else []
         content="".join(
-            p.get("text","") for p in parts if isinstance(p,dict)
+            p.get("text","") for p in
+            (data.get("candidates",[{}])[0].get("content",{}).get("parts",[]) or [])
+            if isinstance(p,dict)
         )
         obj=_clean_model_json(content)
-        if not obj and candidates:
-            # Some Gemini responses return structured JSON in a different part/field.
-            raw_text = str(((candidates[0].get("content") or {}).get("parts") or [{}])[0].get("text", ""))
-            obj=_clean_model_json(raw_text)
         return {"provider":"Gemini","configured":True,"available":bool(obj),"analysis":obj}
     except Exception as exc:
         return {"provider":"Gemini","configured":True,"available":False,"reason":str(exc)[:180]}
@@ -3153,6 +3135,15 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
             _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"; analysis["signal"]="NO SIGNAL"
         if _dir == "NO TRADE":
             _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"
+        # Never return the running candle as the entry. Schedule the next actionable candle boundary.
+        _now_bd = datetime.now(BANGLADESH_TZ)
+        _tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(_timeframe,1)
+        _epoch_min = int(_now_bd.timestamp() // 60)
+        _next_epoch_min = ((_epoch_min // _tf_minutes) + 1) * _tf_minutes
+        _entry_bd = datetime.fromtimestamp(_next_epoch_min * 60, tz=BANGLADESH_TZ)
+        analysis["entry_time"] = _entry_bd.isoformat()
+        analysis["entry_label"] = _entry_bd.strftime("%d %b %Y • %I:%M %p BDT")
+        analysis["entry_rule"] = "Next actionable candle after screenshot observation; current running candle is excluded."
         _verified = get_verified_accuracy()
         _analysis_text = str(analysis.get("summary","") or "") + " | " + str(analysis.get("reasoning","") or "")
         try:
@@ -3240,7 +3231,7 @@ def api_inject_signal():
             result=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
             result.update({"source":meta["source"],"verified_quotex":False,"market_type":"OTC","timeframe":timeframe,"backtest":backtest_ema(candles)})
             direction=result.get("direction","NO TRADE"); confidence=_setup_confidence(result) if direction in ("CALL","PUT") else 0
-            return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":market,"market_type":"OTC","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["OTCharts Quotex OTC candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance"],"source":meta["source"],"verified_quotex":False}),200
+            return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":market,"market_type":"OTC","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["OTCharts Quotex OTC candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance"],"source":meta["source"],"verified_quotex":False,"entry_time":((result.get("candle",{}).get("time") + timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1))).astimezone(BANGLADESH_TZ).isoformat() if isinstance(result.get("candle",{}).get("time"),datetime) else None),"expiry":timeframe}),200
         symbol=market.replace(" (OTC)","").strip()
         allowed={str(item.get("symbol","")).upper() for item in get_catalog()}
         if symbol not in allowed: return jsonify({"error":"Market is not in the configured real-market allowlist."}),400
@@ -3248,7 +3239,7 @@ def api_inject_signal():
         if not _api_allowed("inject",2,60): return jsonify({"error":"Signal analysis rate limit reached."}),429
         result=scan_one_symbol(symbol,timeframe)
         direction=result.get("direction","NO SIGNAL"); confidence=_setup_confidence(result) if direction in ("CALL","PUT") else 0
-        return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":symbol,"market_type":"REAL","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["Twelve Data live candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance","Historical EMA sanity check"],"source":"Twelve Data external feed","verified_quotex":False}),200
+        return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":symbol,"market_type":"REAL","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["Twelve Data live candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance","Historical EMA sanity check"],"source":"Twelve Data external feed","verified_quotex":False,"entry_time":((result.get("candle",{}).get("time") + timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1))).astimezone(BANGLADESH_TZ).isoformat() if isinstance(result.get("candle",{}).get("time"),datetime) else None),"expiry":timeframe}),200
     except Exception as exc:
         log.warning("Injector analysis failed: %s",exc)
         return jsonify({"error":"Live market analysis failed: %s" % str(exc)[:180]}),502
@@ -3344,7 +3335,9 @@ def api_news():
             dt = e.get("datetime")
             clean.append({"datetime": dt.isoformat() if isinstance(dt, datetime) else None,
                           "datetime_bd": dt.strftime("%d %b %Y, %I:%M %p") if isinstance(dt, datetime) else "সময় যাচাই করা যায়নি",
-                          "name": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"),
+                          "date": dt.strftime("%d %b %Y") if isinstance(dt, datetime) else "",
+                          "time": dt.strftime("%I:%M %p") if isinstance(dt, datetime) else "--:--",
+                          "name": e.get("name"), "event": e.get("name"), "currency": e.get("currency"), "impact": e.get("impact", "high"),
                           "forecast": e.get("forecast"), "previous": e.get("previous"), "actual": e.get("actual"), "url": e.get("url")})
         return jsonify({"events": clean, "days": days, "source": NEWS_SOURCE_URL, "timezone": "Asia/Dhaka"})
     except Exception as exc:
@@ -3460,10 +3453,72 @@ def api_news_analyze():
     actual = str(body.get("actual", "")).strip()
     forecast = str(body.get("forecast", "")).strip()
     previous = str(body.get("previous", "")).strip()
-    if not currency or not event or not actual or not forecast:
-        return jsonify({"error": "Currency, event, actual ও forecast পূরণ করো।"}), 400
-    prompt = (f"Economic news explanation in Bengali. Currency: {currency}; event: {event}; actual: {actual}; forecast: {forecast}; previous: {previous or 'not supplied'}. Explain actual-vs-forecast carefully, likely first-order currency interpretation, what could reverse the reaction, and uncertainty. Do not claim current market reaction without live price data.")
-    return jsonify({"analysis": ai_answer(prompt), "note": "Economic interpretation only; current price reaction is not verified."})
+    pairs = body.get("pairs") or []
+    if not currency or not event:
+        return jsonify({"error": "Currency and event are required."}), 400
+    if not isinstance(pairs, list):
+        pairs = []
+    if not pairs:
+        pairs = ["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","USD/CHF","EUR/JPY","GBP/JPY"]
+    pair_text = ", ".join(str(x) for x in pairs[:18])
+    prompt = (
+        "You are GHOST AI fundamental/news analyst. Answer in Bengali. "
+        f"Event={event}; currency={currency}; actual={actual or 'not released'}; forecast={forecast or 'not supplied'}; previous={previous or 'not supplied'}. "
+        f"Candidate FX pairs: {pair_text}. "
+        "Determine first-order fundamental impact only from the supplied values. If Actual is unavailable, do NOT pretend a confirmed post-release direction; give PRE-NEWS WATCH only. "
+        "Return a concise structured answer with: affected currency, strongest affected pairs, likely direction (CALL/PUT/WATCH), why, what would invalidate/reverse it, and confirmation needed from price action. "
+        "Never claim certainty, guaranteed movement, or a verified current price reaction."
+    )
+    analysis = ai_answer(prompt)
+    return jsonify({"ok": True, "analysis": analysis, "currency": currency, "event": event, "actual": actual or None, "forecast": forecast or None, "previous": previous or None, "pairs": pairs[:18], "note": "Fundamental interpretation only; current price reaction must be confirmed by live price data."})
+
+@app.post("/api/news/market-analysis")
+@login_required
+def api_news_market_analysis():
+    """Analyze the current high-impact calendar and rank affected FX pairs without fabricating released values."""
+    if not _api_allowed("news_market_analysis", 4, 60):
+        return jsonify({"error":"News analysis rate limit reached. Try again shortly."}), 429
+    body=request.get_json(silent=True) or {}
+    requested_currency=str(body.get("currency") or "").strip().upper()
+    requested_event=str(body.get("event") or "").strip()
+    events=[]
+    try:
+        events=get_economic_calendar(2)
+    except Exception as exc:
+        return jsonify({"available":False,"error":"Live economic calendar unavailable.","detail":str(exc)[:160]}),502
+    if requested_event:
+        candidates=[e for e in events if requested_event.lower() in str(e.get("name") or "").lower()]
+        if requested_currency:
+            candidates=[e for e in candidates if str(e.get("currency") or "").upper()==requested_currency] or candidates
+    else:
+        candidates=[e for e in events if not requested_currency or str(e.get("currency") or "").upper()==requested_currency]
+    candidates=candidates[:6]
+    if not candidates:
+        return jsonify({"available":False,"events":[],"message":"No relevant high-impact event is available in the live calendar."})
+    pairs=["EUR/USD","GBP/USD","USD/JPY","AUD/USD","USD/CAD","USD/CHF","EUR/JPY","GBP/JPY","EUR/GBP","EUR/AUD","GBP/AUD","AUD/JPY","CAD/JPY","CHF/JPY"]
+    event_lines=[]
+    for e in candidates:
+        event_lines.append({"event":e.get("name"),"currency":e.get("currency"),"actual":e.get("actual"),"forecast":e.get("forecast"),"previous":e.get("previous"),"datetime":e.get("datetime").isoformat() if isinstance(e.get("datetime"),datetime) else None})
+    prompt=(
+        "You are GHOST AI Fundamental Market Analyzer. Respond in Bengali. "
+        "Using ONLY these live calendar fields, rank which FX pairs may be most affected. "
+        f"Events={json.dumps(event_lines,ensure_ascii=False)}; candidate pairs={pairs}. "
+        "For each top pair give pair, direction CALL/PUT/WATCH, strength 0-100 as setup relevance (not win probability), "
+        "currency reason, and confirmation required. If actual is missing, label the result PRE-NEWS WATCH and never state a confirmed direction. "
+        "Do not invent market prices or current candle behavior. Return compact JSON array under key results."
+    )
+    raw=ai_answer(prompt)
+    parsed=_clean_model_json(raw)
+    results=parsed.get("results") if isinstance(parsed,dict) else None
+    if not isinstance(results,list):
+        results=[]
+        # Safe deterministic fallback from currency exposure, without pretending certainty.
+        for e in candidates[:4]:
+            cur=str(e.get("currency") or "").upper()
+            affected=[p for p in pairs if cur in p.replace("/","")]
+            for p in affected[:2]:
+                results.append({"pair":p,"direction":"WATCH","strength":50,"reason":f"{cur} high-impact event: {e.get('name')}","confirmation":"Wait for actual-vs-forecast and price-action confirmation."})
+    return jsonify({"available":True,"events":event_lines,"results":results[:10],"pairs":pairs,"status":"LIVE CALENDAR ANALYSIS","warning":"Fundamental/news analysis is directional context, not a guaranteed price forecast."})
 
 
 # --------------------------- GHOST MATRIX PRO API ---------------------------
@@ -3571,15 +3626,47 @@ def api_timeframes(): return jsonify({"timeframes":["1 MIN","2 MIN","5 MIN","10 
 @app.get("/api/live")
 @login_required
 def api_live():
-    market_type=str(request.args.get("market_type") or "REAL").upper(); tf=_normalize_timeframe(request.args.get("timeframe")); symbols=[x["symbol"] for x in get_catalog()]
-    if market_type=="OTC": return jsonify({"available":False,"market_type":"OTC","timeframe":tf,"signals":[],"message":"Verified OTC feed is not connected. GHOST MATRIX will not fabricate OTC prices or signals."})
-    if not _signal_access_for_user(int(session["user_id"])): return jsonify({"locked":True,"signals":[],"message":"Active signal plan required."}),403
+    uid=int(session["user_id"])
+    market_type=str(request.args.get("market_type") or "REAL").upper()
+    tf=_normalize_timeframe(request.args.get("timeframe"))
+    if not _signal_access_for_user(uid):
+        return jsonify({"locked":True,"signals":[],"message":"Active signal plan required."}),403
+
     results=[]
+    symbols=[x["symbol"] for x in get_catalog()]
+    if market_type=="OTC":
+        if not OTCHARTS_API_KEY or OTChartsClient is None:
+            return jsonify({"available":False,"market_type":"OTC","timeframe":tf,"signals":[],"message":"OTC feed is not configured."}),503
+        pool=symbols[:8]
+        for sym in pool:
+            try:
+                market=sym if "(OTC)" in sym else f"{sym} (OTC)"
+                if not _api_allowed("otc_live",2,60): break
+                candles,meta=_otc_candles(market,tf,300)
+                r=analyze_candles(market.replace(" (OTC)",""),candles,tf)
+                r["confidence"]=_setup_confidence(r); r["timeframe"]=tf
+                candle=r.get("candle") or {}
+                entry_time=None
+                if isinstance(candle.get("time"),datetime):
+                    entry_time=(candle["time"]+timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf,1))).astimezone(BANGLADESH_TZ).isoformat()
+                results.append({"symbol":market,"direction":r.get("direction"),"confidence":r.get("confidence",0),"price":r.get("price"),"reason":r.get("reason"),"timeframe":tf,"entry_time":entry_time,"expiry":tf,"source":meta["source"]})
+            except Exception as exc: log.warning("OTC live scan %s: %s",sym,exc)
+        return jsonify({"available":bool(results),"market_type":"OTC","timeframe":tf,"signals":results,"source":"OTCharts OTC feed","verified_quotex":False,"warning":"OTC data is external and not Quotex-verified."})
+
+    if not TWELVE_DATA_API_KEY:
+        return jsonify({"error":"TWELVE_DATA_API_KEY is not configured."}),503
     for sym in symbols[:8]:
         try:
-            interval=TIMEFRAME_MAP[tf]; payload=twelve_get("time_series",{"symbol":sym,"interval":interval,"outputsize":300,"order":"desc","format":"JSON","timezone":"UTC"}); candles=parse_candles(payload); r=analyze_candles(sym,candles); r["confidence"]=_setup_confidence(r); r["timeframe"]=tf; results.append({"symbol":sym,"direction":r.get("direction"),"confidence":r.get("confidence",0),"price":r.get("price"),"reason":r.get("reason"),"timeframe":tf,"source":"Twelve Data external feed"})
+            if not _api_allowed("live",2,60): break
+            r=scan_one_symbol(sym,tf)
+            r["confidence"]=_setup_confidence(r)
+            candle=r.get("candle") or {}
+            entry_time=None
+            if isinstance(candle.get("time"),datetime):
+                entry_time=(candle["time"]+timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(tf,1))).astimezone(BANGLADESH_TZ).isoformat()
+            results.append({"symbol":sym,"direction":r.get("direction"),"confidence":r.get("confidence",0),"price":r.get("price"),"reason":r.get("reason"),"timeframe":tf,"entry_time":entry_time,"expiry":tf,"source":"Twelve Data external feed"})
         except Exception as exc: log.warning("live scan %s: %s",sym,exc)
-    return jsonify({"available":True,"market_type":"REAL","timeframe":tf,"signals":results,"source":"Twelve Data external feed","verified_quotex":False,"warning":"Confidence is setup quality, not win probability."})
+    return jsonify({"available":True,"market_type":"REAL","timeframe":tf,"signals":results,"source":"Twelve Data external feed","verified_quotex":False,"warning":"Signals are based on the latest completed candle and target the following candle."})
 
 
 @app.get("/api/performance")

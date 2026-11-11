@@ -704,6 +704,8 @@ html{scroll-behavior:smooth}
 @keyframes ghostAiCheck{0%,100%{transform:scale(.92);opacity:.82}50%{transform:scale(1.08);opacity:1}}
 @media(max-width:430px){.ghostAiBtns{grid-template-columns:1fr 1fr;gap:9px}.ghostAiBtn{min-height:82px;font-size:11px}.ghostAiBtn small{font-size:7px}}
 
+
+.newsAnalyzeBtn{width:100%;margin-top:10px;padding:11px 12px;border:1px solid rgba(167,139,250,.35);border-radius:12px;background:linear-gradient(135deg,rgba(167,139,250,.22),rgba(124,58,237,.16));color:#fff;font-size:9px;font-weight:900;letter-spacing:.08em;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.18);transition:.25s}.newsAnalyzeBtn:active{transform:scale(.98)}.newsAiCard{position:relative;overflow:hidden;margin-top:8px;padding:12px;border-radius:14px;background:radial-gradient(circle at 50% 0,rgba(124,58,237,.25),rgba(12,8,31,.96));border:1px solid rgba(167,139,250,.24);animation:cardIn .35s ease both}.newsAiCard::before{content:'';position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent,rgba(167,139,250,.12),transparent 35%);animation:newsOrbit 3s linear infinite}.newsAiInner{position:relative;z-index:2}.newsPairRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)}.newsPairRow:last-child{border-bottom:0}.newsPairDir{font-weight:900}.newsPairDir.call{color:#00ff88}.newsPairDir.put{color:#ff5c78}.newsPairDir.watch{color:#fbbf24}@keyframes newsOrbit{to{transform:rotate(360deg)}}
 </style>
 
 <style id="ghost-ai-exact-coco-wrapper">
@@ -1053,7 +1055,7 @@ html{scroll-behavior:smooth}
 
 <script>
 const $=id=>document.getElementById(id);
-const MARKETS={otc:["EUR/USD (OTC)","GBP/USD (OTC)","USD/JPY (OTC)","AUD/USD (OTC)","EUR/JPY (OTC)","GBP/JPY (OTC)","NZD/USD (OTC)","USD/CHF (OTC)","EUR/GBP (OTC)","GBP/AUD (OTC)","EUR/AUD (OTC)","AUD/JPY (OTC)","CHF/JPY (OTC)","NZD/CHF (OTC)","EUR/NZD (OTC)","AUD/NZD (OTC)"],real:["EUR/USD","GBP/USD","USD/JPY","AUD/USD","EUR/JPY","GBP/JPY","NZD/CAD","NZD/CHF","EUR/AUD","EUR/NZD","AUD/CAD","GBP/AUD","EUR/CAD","USD/CAD","USD/CHF","GBP/CHF"]};
+const MARKETS={otc:["EUR/USD (OTC)","GBP/USD (OTC)","USD/JPY (OTC)","AUD/USD (OTC)","EUR/JPY (OTC)","GBP/JPY (OTC)","NZD/USD (OTC)","USD/CHF (OTC)","EUR/GBP (OTC)","GBP/AUD (OTC)","EUR/AUD (OTC)","AUD/JPY (OTC)","CHF/JPY (OTC)","NZD/CHF (OTC)","EUR/NZD (OTC)","AUD/NZD (OTC)","USD/CAD (OTC)","EUR/CAD (OTC)"],real:["AUD/USD","AUD/CHF","AUD/JPY","AUD/CAD","CAD/JPY","CHF/JPY","EUR/AUD","EUR/CHF","EUR/JPY","EUR/GBP","EUR/CAD","EUR/USD","GBP/AUD","GBP/CAD","GBP/CHF","GBP/USD","GBP/JPY","USD/JPY"]};
 let file=null, cur='otc', selPair=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);let d={};try{d=await r.json()}catch{const t=await r.text().catch(()=> ''); throw new Error(t||'Error '+r.status)}if(!r.ok)throw new Error(d.error||'Failed');return d}
@@ -1693,9 +1695,8 @@ window.ghostEntryTime = ghostEntryTime;
 // === GHOST AI - BROKER SELECTOR LOGIC ===
 const GHOST_BROKERS = {
   'Quotex': { logo: 'https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480', fallback: 'QUOTEX', sub: '' },
-  'Binolla': { logo: 'https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480', fallback: 'BINOLLA', sub: '' },
-  'Pocket Option': { logo: 'https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480', fallback: 'POCKET OPTION', sub: '' },
-  'Olymptrade': { logo: 'https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480', fallback: 'OLYMP TRADE', sub: '' }
+  'Binomo': { logo: 'https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480', fallback: 'BINOMO', sub: '' },
+  'Pocket Option': { logo: 'https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480', fallback: 'POCKET OPTION', sub: '' }
 };
 let GHOST_BROKER = 'Quotex';
 try{ const saved = localStorage.getItem('ghost_ai_broker'); if(saved && GHOST_BROKERS[saved]) GHOST_BROKER = saved; }catch(e){}
@@ -1753,26 +1754,9 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
     <div class="gb-modalTitle">CHOOSE YOUR BROKER</div>
     <div class="gb-modalSub">Select your preferred trading platform</div>
     <div class="gb-list" id="gbList">
-      <div class="gb-item" data-broker="Quotex" onclick="selectBroker('Quotex')">
-        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480" alt="Quotex official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">QUOTEX</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-      <div class="gb-item" data-broker="Binolla" onclick="selectBroker('Binolla')">
-        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480" alt="Binolla official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOLLA</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Binolla</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Binolla" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-      <div class="gb-item" data-broker="Pocket Option" onclick="selectBroker('Pocket Option')">
-        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480" alt="Pocket Option official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">POCKET<br>OPTION</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
-      <div class="gb-item" data-broker="Olymptrade" onclick="selectBroker('Olymptrade')">
-        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480" alt="Olymptrade official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">OLYMP<br>TRADE</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Olymptrade</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Olymptrade" style="display:none">✓ SELECTED</span></div>
-        <div class="gb-check">✓</div>
-      </div>
+      <div class="gb-item" data-broker="Quotex" onclick="selectBroker('Quotex')"><div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480" alt="Quotex logo"/><span class="gb-logo-fallback" style="display:none">QUOTEX</span></div><div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div><div class="gb-check">✓</div></div>
+      <div class="gb-item" data-broker="Binomo" onclick="selectBroker('Binomo')"><div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480" alt="Binomo logo"/><span class="gb-logo-fallback" style="display:none">BINOMO</span></div><div class="gb-item-info"><div class="gb-item-name">Binomo</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Binomo" style="display:none">✓ SELECTED</span></div><div class="gb-check">✓</div></div>
+      <div class="gb-item" data-broker="Pocket Option" onclick="selectBroker('Pocket Option')"><div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480" alt="Pocket Option logo"/><span class="gb-logo-fallback" style="display:none">POCKET OPTION</span></div><div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div><div class="gb-check">✓</div></div>
     </div>
     <button class="gb-close" onclick="closeBrokerModal()">Done</button>
     <div class="gb-note">Logos are official brand assets of their respective brokers.<br>GHOST AI is not affiliated with any broker. Trading involves risk.</div>
@@ -1818,16 +1802,34 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
   window.renderNewsCalendar=function(){
     const box=document.getElementById('newsCalendar'); if(!box)return;
     const events=(window.ghostNewsEvents&&window.ghostNewsEvents.length?window.ghostNewsEvents:BASE_EVENTS);
-    box.innerHTML=events.map(ev=>{const b=preNewsBias(ev);return `<div class="newsEvent" style="margin-bottom:10px"><div class="newsEventTop"><div class="newsEventName">${esc(ev.event||'Economic Event')} <span style="color:#8b8ba7">• ${esc(ev.currency||'')}</span></div><div class="newsEventTime">${esc(ev.date||'')}<br><b>${esc(ev.time||'--:--')} ${esc(ev.tz||'BDT')}</b></div></div><div class="newsEventMeta"><span class="newsChip impact-${String(ev.impact||'low').toLowerCase()}">${esc(ev.impact||'LOW')} IMPACT</span><span class="newsChip">Forecast: ${esc(String(ev.forecast??'—'))}</span><span class="newsChip">Previous: ${esc(String(ev.previous??'—'))}</span></div><div class="newsEventMeta"><span class="newsChip">Core Forecast: ${esc(String(ev.coreForecast??'—'))}</span><span class="newsChip">Core Previous: ${esc(String(ev.corePrevious??'—'))}</span><span class="newsChip">Pairs: ${esc(String(ev.pairs||'USD'))}</span></div><div class="newsBias"><span>PRE-NEWS SIGNAL</span><b>${esc(b.label)} • ${b.score}%</b></div><div style="font-size:10px;color:#9da0b8;line-height:1.55;margin-top:8px">${esc(b.detail)}</div><div style="font-size:9px;color:#6f728c;margin-top:7px">Source: ${esc(ev.source||'Official economic calendar')}</div></div>`}).join('');
-    const ff=document.getElementById('fundamentalFeed'); if(ff)ff.innerHTML=`<div class="newsContentCard" style="margin-top:10px"><div class="newsPanelHead"><div><h3>Pre-News Confluence</h3><div class="newsPanelSub">No released value is used before the scheduled release.</div></div></div><div class="fundamentalFeed"><div class="newsEvent"><div class="newsEventName">What GHOST AI checks before the release</div><div class="newsEventMeta"><span class="newsChip">Forecast vs Previous</span><span class="newsChip">Historical trend</span><span class="newsChip">Related indicators</span><span class="newsChip">USD strength</span><span class="newsChip">Rates / central bank</span><span class="newsChip">Market positioning</span><span class="newsChip">Pre-news volatility</span><span class="newsChip">Price action</span></div></div></div></div>`;
+    box.innerHTML=events.map((ev,i)=>{const b=preNewsBias(ev);return `<div class="newsEvent" style="margin-bottom:10px"><div class="newsEventTop"><div class="newsEventName">${esc(ev.event||'Economic Event')} <span style="color:#8b8ba7">• ${esc(ev.currency||'')}</span></div><div class="newsEventTime">${esc(ev.date||'')}<br><b>${esc(ev.time||'--:--')} ${esc(ev.tz||'BDT')}</b></div></div><div class="newsEventMeta"><span class="newsChip impact-${String(ev.impact||'low').toLowerCase()}">${esc(ev.impact||'LOW')} IMPACT</span><span class="newsChip">Forecast: ${esc(String(ev.forecast??'—'))}</span><span class="newsChip">Previous: ${esc(String(ev.previous??'—'))}</span><span class="newsChip">Actual: ${esc(String(ev.actual??'—'))}</span></div><div class="newsBias"><span>PRE-NEWS SIGNAL</span><b>${esc(b.label)} • ${b.score}%</b></div><div style="font-size:10px;color:#9da0b8;line-height:1.55;margin-top:8px">${esc(b.detail)}</div><button class="newsAnalyzeBtn" onclick="analyzeNewsEvent(${i})">✦ ANALYZE IMPACT</button><div id="newsAnalysis-${i}" class="broadcastResult"></div><div style="font-size:9px;color:#6f728c;margin-top:7px">Source: ${esc(ev.source||'Live economic calendar')}</div></div>`}).join('');
+    const ff=document.getElementById('fundamentalFeed'); if(ff)ff.innerHTML=`<div class="newsContentCard" style="margin-top:10px"><div class="newsPanelHead"><div><h3>GHOST AI Fundamental Engine</h3><div class="newsPanelSub">Forecast • Previous • Actual • currency exposure • pair impact</div></div></div><div class="newsEvent"><div class="newsEventName">AI market-impact scanner</div><div class="newsEventMeta"><span class="newsChip">Forecast vs Previous</span><span class="newsChip">Actual surprise</span><span class="newsChip">Currency strength</span><span class="newsChip">Affected pairs</span><span class="newsChip">Price confirmation</span></div><button class="newsAnalyzeBtn" onclick="analyzeAllCurrentNews()">✦ ANALYZE TODAY'S NEWS → PAIR DIRECTION</button><div id="fundamentalAiResult" class="broadcastResult"></div></div></div>`;
   };
   window.loadNewsFeed=async function(){
     const box=document.getElementById('newsCalendar'); if(box){box.innerHTML=`<div class="ghostVideoAnalyzer"><div class="ghostScanGrid"></div><div class="ghostOrbit"><i></i></div><div class="ghostLogoCore"><div class="ghostMark">GHOST</div><small>AI</small></div><div class="ghostAnalyzeText"><b>PRE-NEWS SCAN</b>READING CALENDAR • FORECAST • PREVIOUS • MARKET CONTEXT</div></div>`;}
     let apiEvents=[]; try{const d=await api('/api/news/events');apiEvents=(d.events||d.news||[]).map((x,i)=>({...x,id:x.id||String(i)}));}catch{}
     // Always keep the verified current-day CPI event visible even if the backend feed is empty/stale.
-    const merged=[...BASE_EVENTS]; for(const x of apiEvents){if(!merged.some(y=>String(y.event).toLowerCase()===String(x.event||'').toLowerCase() && String(y.date||'')===String(x.date||''))) merged.push(x);}
+    const normalized=apiEvents.map(x=>({...x,event:x.event||x.name||'Economic Event',date:x.date||((x.datetime_bd||'').split(',')[0]||''),time:x.time||((x.datetime_bd||'').split(',')[1]||'').trim(),forecast:x.forecast??'—',previous:x.previous??'—',actual:x.actual??'—',pairs:x.pairs||''}));
+    const merged=[...BASE_EVENTS]; for(const x of normalized){if(!merged.some(y=>String(y.event).toLowerCase()===String(x.event||'').toLowerCase() && String(y.date||'')===String(x.date||''))) merged.push(x);}
     window.ghostNewsEvents=merged; window.renderNewsCalendar();
   };
+  window.analyzeNewsEvent=async function(index){
+    const events=window.ghostNewsEvents||[]; const ev=events[index]; const box=document.getElementById('newsAnalysis-'+index); if(!ev||!box)return;
+    box.innerHTML='<div class="newsAiCard"><div class="newsAiInner"><b>GHOST AI NEWS ENGINE</b><div style="margin-top:6px;color:#a78bfa">Scanning currency impact • pairs • forecast/actual • context…</div></div></div>';
+    try{
+      const d=await api('/api/news/market-analysis',{method:'POST',body:{currency:ev.currency||'',event:ev.event||ev.name||''}});
+      if(!d.available) throw new Error(d.message||'No live news data available');
+      const rows=(d.results||[]).slice(0,5).map(x=>{const dir=String(x.direction||'WATCH').toUpperCase();const cls=dir==='CALL'?'call':dir==='PUT'?'put':'watch';return `<div class="newsPairRow"><div><b>${esc(x.pair||'—')}</b><div style="font-size:8px;color:#8b8ba7;margin-top:2px">${esc(x.reason||'Fundamental context')}</div></div><div style="text-align:right"><div class="newsPairDir ${cls}">${esc(dir)}</div><small style="color:#8b8ba7">${Number(x.strength||0)}/100 relevance</small></div></div>`}).join('');
+      box.innerHTML=`<div class="newsAiCard"><div class="newsAiInner"><div style="display:flex;justify-content:space-between;gap:8px"><b>GHOST AI MARKET IMPACT</b><span style="font-size:8px;color:#a78bfa">LIVE CALENDAR</span></div><div style="font-size:9px;color:#aeb0c8;margin-top:6px">${esc((d.warning||'').slice(0,180))}</div>${rows||'<div style="margin-top:8px;color:#fbbf24">WATCH • No reliable pair direction available yet.</div>'}<div style="margin-top:8px;font-size:8px;color:#6f728c">Direction is contextual only. Confirm with live price action before entry.</div></div></div>`;
+    }catch(e){box.innerHTML=`<div class="newsAiCard"><div class="newsAiInner" style="color:#ff8a9a">${esc(e.message)}</div></div>`;}
+  };
+
+  window.analyzeAllCurrentNews=async function(){
+    const box=document.getElementById('fundamentalAiResult'); if(!box)return;
+    box.innerHTML='<div class="newsAiCard"><div class="newsAiInner"><b>GHOST AI FUNDAMENTAL SCAN</b><div style="margin-top:6px;color:#a78bfa">Ranking today’s high-impact events and affected FX pairs…</div></div></div>';
+    try{const d=await api('/api/news/market-analysis',{method:'POST',body:{}}); if(!d.available)throw new Error(d.message||'No live high-impact news available'); const rows=(d.results||[]).slice(0,8).map(x=>{const dir=String(x.direction||'WATCH').toUpperCase();const cls=dir==='CALL'?'call':dir==='PUT'?'put':'watch';return `<div class="newsPairRow"><b>${esc(x.pair||'—')}</b><span class="newsPairDir ${cls}">${esc(dir)} • ${Number(x.strength||0)}/100</span></div>`}).join(''); box.innerHTML=`<div class="newsAiCard"><div class="newsAiInner"><b>TOP AFFECTED PAIRS</b>${rows||'<div style="margin-top:8px;color:#fbbf24">WATCH • No directional setup.</div>'}<div style="margin-top:8px;font-size:8px;color:#6f728c">Fundamental context only; confirm with live price action.</div></div></div>`;}catch(e){box.innerHTML=`<div class="newsAiCard"><div class="newsAiInner" style="color:#ff8a9a">${esc(e.message)}</div></div>`;}
+  };
+
   // Make Future Signal use the same centered GHOST AI analysis animation.
   const oldFuture=window.generateFuture;
   window.generateFuture=async function(){
