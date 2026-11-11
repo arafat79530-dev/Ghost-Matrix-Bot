@@ -705,6 +705,22 @@ html{scroll-behavior:smooth}
 @media(max-width:430px){.ghostAiBtns{grid-template-columns:1fr 1fr;gap:9px}.ghostAiBtn{min-height:82px;font-size:11px}.ghostAiBtn small{font-size:7px}}
 
 </style>
+
+<style id="ghost-network-animation-v2">
+.ghostNetworkLive{position:relative;overflow:hidden;isolation:isolate;background:radial-gradient(circle at 50% 50%,rgba(96,46,220,.18),transparent 62%)}
+.ghostNetGlow{position:absolute;left:50%;top:50%;width:340px;height:340px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(130,70,255,.24),rgba(80,40,180,.09) 42%,transparent 70%);animation:ghostGlow 4.5s ease-in-out infinite}
+.ghostNetSvg{position:absolute;inset:0;width:100%;height:100%;z-index:2;overflow:visible}
+.ghostNetLines path{fill:none;stroke:rgba(255,255,255,.48);stroke-width:1.15;stroke-linecap:round;stroke-dasharray:5 7;animation:ghostLineFlow 2.2s linear infinite}
+.ghostNetLines path:nth-child(2){animation-delay:.25s}.ghostNetLines path:nth-child(3){animation-delay:.5s}.ghostNetLines path:nth-child(4){animation-delay:.75s}.ghostNetLines path:nth-child(5){animation-delay:1s}.ghostNetLines path:nth-child(6){animation-delay:1.25s}.ghostNetLines path:nth-child(7){animation-delay:1.5s}
+.ghostNetParticles circle{fill:#fff;filter:drop-shadow(0 0 6px rgba(255,255,255,.95));opacity:.95}
+.ghostNetNode{position:absolute;z-index:4;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;background:linear-gradient(135deg,rgba(82,72,150,.95),rgba(31,24,65,.96));border:1px solid rgba(255,255,255,.22);box-shadow:0 10px 24px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.25);animation:ghostFloat 2.8s ease-in-out infinite alternate,ghostNodePulse 3.8s ease-in-out infinite}
+.ghostNetNode b{font-size:7px;letter-spacing:.55px;line-height:1;white-space:nowrap}.gn1{left:14.45%;top:13.35%;animation-delay:0s}.gn2{left:50%;top:7.8%;animation-delay:.35s}.gn3{left:85.55%;top:13.35%;animation-delay:.7s}.gn4{left:13.9%;top:45.8%;animation-delay:1s}.gn5{left:86.1%;top:45.8%;animation-delay:1.35s}.gn6{left:21.7%;top:83.9%;animation-delay:1.7s}
+.ghostNetNode .gnIcon{height:27px;min-width:28px;display:flex;align-items:flex-end;justify-content:center;gap:3px}.ghostNetNode .candle{width:4px;height:12px;border-radius:1px;background:#62e6b4;position:relative}.ghostNetNode .candle:before,.ghostNetNode .candle:after{content:"";position:absolute;left:1.5px;width:1px;height:4px;background:currentColor}.ghostNetNode .candle:before{top:-4px}.ghostNetNode .candle:after{bottom:-4px}.ghostNetNode .candle.down{height:8px;background:#ff648d}.ghostNetNode .candle.tall{height:18px}.miniChart i{display:block;width:4px;background:#9d7cff;border-radius:2px;animation:ghostBars 1.4s ease-in-out infinite alternate}.miniChart i:nth-child(1){height:8px}.miniChart i:nth-child(2){height:16px;animation-delay:.15s}.miniChart i:nth-child(3){height:11px;animation-delay:.3s}.miniChart i:nth-child(4){height:21px;animation-delay:.45s}.miniChart i:nth-child(5){height:14px;animation-delay:.6s}.waveIcon{align-items:center!important}.waveIcon i{display:block;width:4px;border-radius:3px;background:#5fd8ff;animation:ghostWave .9s ease-in-out infinite alternate}.waveIcon i:nth-child(1){height:10px}.waveIcon i:nth-child(2){height:22px;animation-delay:.15s}.waveIcon i:nth-child(3){height:14px;animation-delay:.3s}.srIcon{align-items:center!important;gap:4px!important}.srIcon span{display:block;width:22px;height:2px;border-radius:2px;background:#fff;box-shadow:0 6px 0 rgba(130,100,255,.9),0 -6px 0 rgba(255,92,135,.8);animation:ghostSR 1.6s ease-in-out infinite}.candleSet{align-items:flex-end!important;gap:3px!important}.candleSet span{display:block;width:4px;background:#b88cff;border-radius:1px;animation:ghostBars 1.2s ease-in-out infinite alternate}.candleSet span:nth-child(1){height:11px}.candleSet span:nth-child(2){height:20px;animation-delay:.12s}.candleSet span:nth-child(3){height:14px;animation-delay:.24s}.candleSet span:nth-child(4){height:23px;animation-delay:.36s}.pulseIcon{width:25px!important;height:25px!important;border:2px solid #ff71b2;border-radius:50%;box-shadow:0 0 0 0 rgba(255,113,178,.45);animation:ghostPulse 1.5s ease-out infinite!important}
+.ghostNetJunction{position:absolute;z-index:3;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#09051b;border:2px solid #a57cff;box-shadow:0 0 9px rgba(165,124,255,.8);animation:ghostJunction 2s ease-in-out infinite}.j1{left:28%;top:50%}.j2{left:72%;top:50%;border-color:#ff669f}.j3{left:50%;top:50%;border-color:#fff}.j4{left:50%;top:78%;border-color:#59dfff}
+.ghostNetCore{position:absolute;z-index:5;left:50%;top:50%;width:116px;height:116px;transform:translate(-50%,-50%);border-radius:50%;display:flex;align-items:center;justify-content:center}.ghostCoreAura{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,255,255,.24);box-shadow:0 0 28px rgba(140,70,255,.6),0 0 65px rgba(110,45,255,.3);animation:ghostCorePulse 4s ease-in-out infinite}.ghostOrbit{position:absolute;inset:-12px;border:1px dashed rgba(255,255,255,.25);border-radius:50%;animation:ghostOrbitSpin 10s linear infinite}.ghostOrbit:after{content:"";position:absolute;left:50%;top:-3px;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 9px #fff}.ghostCoreBrand{position:relative;width:106px;height:106px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3b1c78,#180a3d 58%,#070315);border:2px solid rgba(190,140,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 0 22px rgba(160,90,255,.35);overflow:hidden;animation:ghostCoreBeat 4.2s ease-in-out infinite}.ghostCoreBrand .logo{width:48px;height:48px;margin:0 0 3px;display:flex;align-items:center;justify-content:center}.ghostCoreBrand .logo i{display:block;width:48px;height:48px;background-size:contain;background-repeat:no-repeat;background-position:center}.ghostCoreBrand small{font-size:9px;font-weight:900;letter-spacing:1.5px;color:#fff;text-shadow:0 0 10px rgba(255,255,255,.5)}.ghostCoreBrand .coreStatus{font-size:6px;letter-spacing:.65px;color:rgba(255,255,255,.78);display:flex;align-items:center;gap:4px;margin-top:3px}.ghostCoreBrand .coreStatus i{width:5px;height:5px;border-radius:50%;background:#5ff0ad;box-shadow:0 0 7px #5ff0ad;animation:ghostDot 1s ease-in-out infinite}.ghostScan{position:absolute;left:7px;right:7px;top:6px;height:2px;background:linear-gradient(90deg,transparent,#fff,transparent);filter:blur(.2px);box-shadow:0 0 10px rgba(255,255,255,.8);animation:ghostScan 3.5s ease-in-out infinite;z-index:3}
+@keyframes ghostFloat{from{transform:translateY(3px) scale(.98)}to{transform:translateY(-6px) scale(1.03)}}@keyframes ghostNodePulse{0%,100%{filter:brightness(.92)}50%{filter:brightness(1.2)}}@keyframes ghostGlow{0%,100%{transform:translate(-50%,-50%) scale(.94);opacity:.7}50%{transform:translate(-50%,-50%) scale(1.08);opacity:1}}@keyframes ghostLineFlow{to{stroke-dashoffset:-24}}@keyframes ghostBars{to{transform:scaleY(.55);opacity:.55}}@keyframes ghostWave{to{transform:scaleY(.55)}}@keyframes ghostSR{50%{transform:translateX(3px)}100%{transform:translateX(-3px)}}@keyframes ghostPulse{0%{box-shadow:0 0 0 0 rgba(255,113,178,.55)}70%{box-shadow:0 0 0 12px rgba(255,113,178,0)}100%{box-shadow:0 0 0 0 rgba(255,113,178,0)}}@keyframes ghostJunction{50%{box-shadow:0 0 0 5px rgba(255,255,255,0)}}@keyframes ghostOrbitSpin{to{transform:rotate(360deg)}}@keyframes ghostCorePulse{0%,100%{box-shadow:0 0 25px rgba(140,70,255,.55),0 0 60px rgba(120,50,255,.25)}50%{box-shadow:0 0 45px rgba(190,110,255,.9),0 0 90px rgba(140,60,255,.5)}}@keyframes ghostCoreBeat{0%,18%,42%,100%{transform:scale(1)}21%,38%{transform:scale(1.07)}28%{transform:scale(1.03)}}@keyframes ghostScan{0%{top:5px;opacity:0}12%{opacity:.8}88%{opacity:.8}100%{top:99px;opacity:0}}@keyframes ghostDot{50%{opacity:.35;transform:scale(.7)}}
+@media(max-width:520px){.ghostNetNode{width:58px;height:58px;margin:-29px 0 0 -29px}.ghostNetNode b{font-size:6px}.ghostNetCore{transform:translate(-50%,-50%) scale(.92)}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -800,43 +816,31 @@ html{scroll-behavior:smooth}
 <div class="mlist-live" id="ml"></div>
 <div class="analyzeBar" id="liveBar"><button class="btn" id="liveAn">Analyze →</button></div>
 <div class="flow" id="flowLive"><div class="flowBg"></div>
-<div class="cocoFlowViz cocoMotionViz" aria-label="GHOST AI live analysis network">
-  <div class="cocoMotionGlow" aria-hidden="true"></div>
-  <div class="cocoMotionBars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-  <svg class="cocoMotionSvg" viewBox="0 0 400 420" preserveAspectRatio="none" aria-hidden="true">
-    <g class="cocoMotionLines">
-      <path d="M72 82 L72 145 L200 145 L200 188"/>
-      <path d="M200 58 L200 188"/>
-      <path d="M328 82 L328 145 L200 145 L200 188"/>
-      <path d="M76 230 L150 230"/>
-      <path d="M324 230 L250 230"/>
-      <path d="M105 330 L105 285 L200 285 L200 255"/>
-      <path d="M295 330 L295 285 L200 285 L200 255"/>
+<div class="cocoFlowViz ghostNetworkLive" aria-label="GHOST AI live analysis network">
+  <div class="ghostNetGlow"></div>
+  <svg class="ghostNetSvg" viewBox="0 0 360 360" preserveAspectRatio="none" aria-hidden="true">
+    <g class="ghostNetLines">
+      <path d="M52 48 L180 180"/><path d="M180 28 L180 180"/><path d="M308 48 L180 180"/>
+      <path d="M50 165 L180 180"/><path d="M310 165 L180 180"/><path d="M78 302 L180 180"/><path d="M282 302 L180 180"/>
     </g>
-    <g class="cocoMotionParticles">
-      <rect x="-15" y="-2" width="30" height="4" rx="2"><animateMotion dur="2.1s" begin=".15s" repeatCount="indefinite" rotate="auto" path="M72 82 L72 145 L200 145 L200 188"/></rect>
-      <rect x="-15" y="-2" width="30" height="4" rx="2"><animateMotion dur="1.5s" begin=".0s" repeatCount="indefinite" rotate="auto" path="M200 58 L200 188"/></rect>
-      <rect x="-15" y="-2" width="30" height="4" rx="2"><animateMotion dur="2.1s" begin=".7s" repeatCount="indefinite" rotate="auto" path="M328 82 L328 145 L200 145 L200 188"/></rect>
-      <rect x="-15" y="-2" width="30" height="4" rx="2"><animateMotion dur=".9s" begin="1.2s" repeatCount="indefinite" rotate="auto" path="M76 230 L150 230"/></rect>
-      <rect x="-15" y="-2" width="30" height="4" rx="2"><animateMotion dur=".9s" begin="1.8s" repeatCount="indefinite" rotate="auto" path="M324 230 L250 230"/></rect>
-      <rect x="-15" y="-2" width="30" height="4" rx="2"><animateMotion dur="2.1s" begin="2.25s" repeatCount="indefinite" rotate="auto" path="M105 330 L105 285 L200 285 L200 255"/></rect>
-      <rect x="-15" y="-2" width="30" height="4" rx="2"><animateMotion dur="2.1s" begin="2.8s" repeatCount="indefinite" rotate="auto" path="M295 330 L295 285 L200 285 L200 255"/></rect>
+    <g class="ghostNetParticles">
+      <circle r="3.5"><animateMotion dur="1.55s" repeatCount="indefinite" path="M52 48 L180 180"/></circle>
+      <circle r="3.5"><animateMotion dur="1.8s" begin=".35s" repeatCount="indefinite" path="M180 28 L180 180"/></circle>
+      <circle r="3.5"><animateMotion dur="1.7s" begin=".65s" repeatCount="indefinite" path="M308 48 L180 180"/></circle>
+      <circle r="3.5"><animateMotion dur="1.9s" begin=".9s" repeatCount="indefinite" path="M50 165 L180 180"/></circle>
+      <circle r="3.5"><animateMotion dur="2.05s" begin="1.1s" repeatCount="indefinite" path="M310 165 L180 180"/></circle>
+      <circle r="3.5"><animateMotion dur="2.15s" begin="1.35s" repeatCount="indefinite" path="M78 302 L180 180"/></circle>
+      <circle r="3.5"><animateMotion dur="2.25s" begin="1.6s" repeatCount="indefinite" path="M282 302 L180 180"/></circle>
     </g>
   </svg>
-  <div class="cocoMotionNode mn1"><div class="motionIcon scanIcon"><span></span></div><b>SCAN</b></div>
-  <div class="cocoMotionNode mn2"><div class="motionIcon usersIcon"><i></i><i></i></div><b>DATA</b></div>
-  <div class="cocoMotionNode mn3"><div class="motionIcon broadcastIcon"><i></i><i></i><i></i></div><b>MARKET</b></div>
-  <div class="cocoMotionNode mn4"><div class="motionIcon inspectIcon"><i></i><i></i><i></i><em></em></div><b>PRICE</b></div>
-  <div class="cocoMotionNode mn5"><div class="motionIcon trendIcon"><span></span></div><b>TREND</b></div>
-  <div class="cocoMotionNode mn6"><div class="motionIcon targetIcon"><i></i><i></i></div><b>TARGET</b></div>
-  <div class="cocoMotionNode mn7"><div class="motionIcon launchIcon"><span></span></div><b>SIGNAL</b></div>
-  <div class="cocoMotionCore">
-    <div class="motionOrbit" aria-hidden="true"><i></i></div>
-    <div class="motionExpand motionExpand1" aria-hidden="true"></div>
-    <div class="motionExpand motionExpand2" aria-hidden="true"></div>
-    <div class="ghostCoreBrand"><div class="logo"><i></i></div><small>GHOST AI</small><div class="coreStatus"><i></i> LIVE ANALYSIS</div></div>
-    <span class="motionSpark" aria-hidden="true">✦</span>
-  </div>
+  <div class="ghostNetNode gn1"><div class="gnIcon"><span class="candle up"></span><span class="candle down"></span><span class="candle up tall"></span></div><b>PRICE</b></div>
+  <div class="ghostNetNode gn2"><div class="gnIcon miniChart"><i></i><i></i><i></i><i></i><i></i></div><b>TREND</b></div>
+  <div class="ghostNetNode gn3"><div class="gnIcon waveIcon"><i></i><i></i><i></i></div><b>MOMENTUM</b></div>
+  <div class="ghostNetNode gn4"><div class="gnIcon srIcon"><span></span><span></span><span></span></div><b>SUPPORT</b></div>
+  <div class="ghostNetNode gn5"><div class="gnIcon candleSet"><span></span><span></span><span></span><span></span></div><b>STRUCTURE</b></div>
+  <div class="ghostNetNode gn6"><div class="gnIcon pulseIcon"></div><b>LIQUIDITY</b></div>
+  <div class="ghostNetJunction j1"></div><div class="ghostNetJunction j2"></div><div class="ghostNetJunction j3"></div><div class="ghostNetJunction j4"></div>
+  <div class="ghostNetCore"><div class="ghostCoreAura"></div><div class="ghostCoreBrand"><div class="logo"><i></i></div><small>GHOST AI</small><div class="coreStatus"><i></i> LIVE ANALYSIS</div></div><div class="ghostScan"></div><div class="ghostOrbit"></div></div>
 </div>
 <div class="anBar"><div class="anPill"><span class="pdot"></span> Analyzing <span id="livePairTxt">market</span></div></div>
 </div>
@@ -980,7 +984,7 @@ html{scroll-behavior:smooth}
 </div>
 <div class="proPanel on" id="pro-overview">
 <div class="proGrid"><div class="proCard"><h3>ACCOUNT STATUS</h3><div class="proValue" id="proPlan">—</div><div class="proSub" id="proAccess">Loading…</div></div><div class="proCard"><h3>VERIFIED PERFORMANCE</h3><div class="proValue" id="proWinRate">—</div><div class="proSub" id="proWL">Wins 0 • Losses 0</div></div><div class="proCard"><h3>REAL MARKET</h3><div class="proValue" id="proReal">—</div><div class="proSub">Twelve Data external feed</div></div><div class="proCard"><h3>AI / VISION</h3><div class="proValue" id="proAI">—</div><div class="proSub">Setup quality • model confluence</div></div></div>
-<div class="proCard" style="margin-top:8px"><h3>TIMEFRAME ENGINE</h3><div style="display:flex;gap:5px;flex-wrap:wrap" id="tfButtons"></div><div class="proNotice">1 MIN is the default. Live signals are based on the latest completed candle and target the following candle. OTC uses the configured OTC feed.</div></div>
+<div class="proCard" style="margin-top:8px"><h3>TIMEFRAME ENGINE</h3><div style="display:flex;gap:5px;flex-wrap:wrap" id="tfButtons"></div><div class="proNotice">1 MIN is the default. Higher timeframes use the same external-feed analysis framework. OTC remains unavailable unless a verified OTC data source is connected.</div></div>
 <div class="proCard" style="margin-top:8px"><h3>LIVE SIGNAL VERIFICATION</h3><div id="proLiveList" class="proList"><div class="proSub">Tap Refresh to scan current REAL-market candidates.</div></div><button class="proBtn" style="margin-top:8px" onclick="proLiveScan()">Refresh Live Candidates</button></div>
 </div>
 <div class="proPanel" id="pro-history"><div class="proCard"><h3>SIGNAL HISTORY</h3><div id="proHistory" class="proList">Loading…</div></div></div>
@@ -1177,11 +1181,11 @@ $('liveAn').addEventListener('click',async()=>{
  flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='...'; $('livePairTxt').textContent=selPair;
  flow.scrollIntoView({behavior:'smooth',block:'center'});
  try{
-  const d=await api('/api/inject-signal',{method:'POST',body:{market:selPair,duration:1,timeframe:'1 MIN',market_type:cur==='otc'?'OTC':'REAL'}});
+  const d=await api('/api/inject-signal',{method:'POST',body:{market:selPair,duration:1,timeframe:'1 MIN',market_type:'REAL'}});
   const dir=String(d.direction||'NO SIGNAL').toUpperCase(); const conf=Number(d.confidence||0);
   ghostShowAnalyzing(res);
-  if(dir==='CALL'||dir==='PUT') ghostRenderTerminal(res,{market:selPair,market_type:cur==='otc'?'OTC':'REAL',verified_accuracy:null,entry_time:d.entry_time},d.analysis||d,dir,conf,d.factors||[]);
-  else ghostRenderTerminal(res,{market:selPair,market_type:cur==='otc'?'OTC':'REAL',entry_time:d.entry_time},d.analysis||d,'NO SIGNAL',conf,d.factors||[]);
+  if(dir==='CALL'||dir==='PUT') ghostRenderTerminal(res,{market:selPair,market_type:'REAL',verified_accuracy:null},d.analysis||d,dir,conf,d.factors||[]);
+  else ghostRenderTerminal(res,{market:selPair,market_type:'REAL'},d.analysis||d,'NO SIGNAL',conf,d.factors||[]);
  }finally{btn.disabled=false;btn.textContent='Analyze →'; setTimeout(()=>flow.classList.remove('on'),7000)}
 });
 $('an').addEventListener('click',async()=>{
@@ -1247,7 +1251,7 @@ function proTab(name){document.querySelectorAll('#proTabs button').forEach(b=>b.
 document.addEventListener('click',e=>{const b=e.target.closest('#proTabs button');if(b)proTab(b.dataset.pro)});
 async function proLoad(){try{const [pl,perf,st,tf]=await Promise.all([api('/api/user/plan'),api('/api/performance'),api('/api/market-status'),api('/api/timeframes')]);$('proPlan').textContent=pl.display_plan||'FREE';$('proPlan2').textContent=pl.display_plan||'FREE';$('proAccess').textContent=pl.has_access?'FULL SIGNAL ACCESS':'LIMITED • SIGNAL PLAN REQUIRED';$('proWinRate').textContent=perf.win_rate==null?'—':perf.win_rate+'%';$('proWL').textContent=`Wins ${perf.wins} • Losses ${perf.losses} • Pending ${perf.pending}`;$('proReal').textContent=st.real.connected?'CONNECTED':'OFFLINE';$('proAI').textContent=st.ai.configured?'READY':'NOT CONFIGURED';$('tfButtons').innerHTML=(tf.timeframes||[]).map(x=>`<button class="proBtn alt" style="margin:2px" onclick="proSetTf('${x}')">${x}</button>`).join('');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill proBad">${st.otc.connected?'CONNECTED':'NOT CONNECTED'}</span></div><div class="proRow"><span>AI</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div><div class="proRow"><span>Telegram bot</span><span class="proPill">${st.telegram.configured?'CONFIGURED':'NOT CONFIGURED'}</span></div>`;proLiveScan();}catch(e){if($('proAccess'))$('proAccess').textContent=e.message}}
 function proSetTf(tf){proTf=tf;document.querySelectorAll('#tfButtons button').forEach(b=>b.classList.toggle('on',b.textContent===tf));proLiveScan()}
-async function proLiveScan(){const box=$('proLiveList');if(!box)return;box.innerHTML='<div class="proSub">Scanning current REAL-market candidates…</div>';try{const d=await api('/api/live?market_type=REAL&timeframe='+encodeURIComponent(proTf));box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.symbol)}</b><div class="proSub">${esc(x.reason||'')}</div><div class="proSub">ENTRY NEXT: ${x.entry_time?new Date(x.entry_time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dhaka'}):'--'}</div></div><span class="proPill">${esc(x.direction||'NO TRADE')} • ${x.confidence||0}</span></div>`).join('')||'<div class="proSub">No current candidates.</div>'}catch(e){box.innerHTML=`<div class="proNotice proLock">${esc(e.message)}</div>`}}
+async function proLiveScan(){const box=$('proLiveList');if(!box)return;box.innerHTML='<div class="proSub">Scanning current REAL-market candidates…</div>';try{const d=await api('/api/live?market_type=REAL&timeframe='+encodeURIComponent(proTf));box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.symbol)}</b><div class="proSub">${esc(x.reason||'')}</div></div><span class="proPill">${esc(x.direction||'NO TRADE')} • ${x.confidence||0}</span></div>`).join('')||'<div class="proSub">No current candidates.</div>'}catch(e){box.innerHTML=`<div class="proNotice proLock">${esc(e.message)}</div>`}}
 async function proHistory(){const box=$('proHistory');try{const d=await api('/api/history');box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.market)}</b><div class="proSub">${esc(x.market_type)} • ${esc(x.timeframe)} • ${esc((x.created_at||'').replace('T',' ').slice(0,16))}</div></div><span class="proPill">${esc(x.signal)} • ${x.confidence||0} • ${esc(x.outcome)}</span></div>`).join('')||'<div class="proSub">No signal history yet.</div>'}catch(e){box.textContent=e.message}}
 async function proAlerts(){const box=$('proAlerts');try{const d=await api('/api/alerts');box.innerHTML=(d.alerts||[]).map(x=>`<div class="proRow"><span>${esc(x.market||'ALL')} • ${esc(x.timeframe)} • ≥${x.threshold}</span><button class="proBtn alt" onclick="proDeleteAlert(${x.id})">Delete</button></div>`).join('')||'<div class="proSub">No alerts configured.</div>'}catch(e){box.textContent=e.message}}
 async function proAddAlert(){try{await api('/api/alerts',{method:'POST',body:{market:$('alertMarket').value.trim().toUpperCase(),timeframe:$('alertTf').value,threshold:Number($('alertThreshold').value||70),alert_type:'SIGNAL'}});proAlerts()}catch(e){alert(e.message)}}
@@ -1433,31 +1437,23 @@ let mtgOn=false;
 function toggleMTG(){ mtgOn=!mtgOn; document.getElementById('mtgToggle').classList.toggle('on', mtgOn); }
 window.toggleMTG=toggleMTG;
 function validateMgmt(){
-  const cap=Number(document.getElementById('mgmtCap').value);
-  const pay=Number(document.getElementById('mgmtPayout').value);
-  const prof=Number(document.getElementById('mgmtProfit').value);
-  const risk=Number(document.getElementById('mgmtRisk').value);
+  const cap=Number(document.getElementById('mgmtCap').value||0);
+  const pay=Number(document.getElementById('mgmtPayout').value||0);
+  const prof=Number(document.getElementById('mgmtProfit').value||0);
+  const risk=Number(document.getElementById('mgmtRisk').value||0);
   const capBox=document.getElementById('capBox');
-  const validCap=Number.isFinite(cap) && cap>10;
-  const validPay=Number.isFinite(pay) && pay>0 && pay<=1000;
-  const validProf=Number.isFinite(prof) && prof>0 && prof<=1000;
-  const validRisk=Number.isFinite(risk) && risk>0 && risk<=100;
-  if(capBox) capBox.classList.toggle('err',!validCap);
-  const ok=validCap && validPay && validProf && validRisk;
-  const btn=document.getElementById('genSheetBtn');
-  if(btn) btn.disabled=!ok;
-  const hint=document.getElementById('genHint');
-  if(hint) hint.textContent=ok?'Ready to generate your trade sheet.':'Fill in all fields with valid values to generate your trade sheet.';
+  if(cap>0 && cap<=10) capBox.classList.add('err'); else capBox.classList.remove('err');
+  const ok = cap>10 && pay>0 && prof>0 && risk>0;
+  document.getElementById('genSheetBtn').disabled=!ok;
+  document.getElementById('genHint').textContent = ok ? 'Ready to generate your trade sheet.' : 'Fill in all fields to generate your trade sheet.';
 }
 window.validateMgmt=validateMgmt;
 function generateSheet(){
-  validateMgmt();
   const cap=Number(document.getElementById('mgmtCap').value);
   const pay=Number(document.getElementById('mgmtPayout').value);
   const prof=Number(document.getElementById('mgmtProfit').value);
   const risk=Number(document.getElementById('mgmtRisk').value);
-  if(!(Number.isFinite(cap)&&cap>10&&Number.isFinite(pay)&&pay>0&&Number.isFinite(prof)&&prof>0&&Number.isFinite(risk)&&risk>0)){ alert('Please enter valid Management values.'); return; }
-  const stake=cap*risk/100; const targetAmt=cap*prof/100; const perWin=stake*pay/100; const trades=perWin>0?Math.ceil(targetAmt/perWin):0;
+  const stake=cap*risk/100; const targetAmt=cap*prof/100; const trades=Math.ceil(targetAmt/(stake*pay/100));
   const res=document.getElementById('sheetResult');
   res.innerHTML=`<div style="background:linear-gradient(180deg,#1e1540,#140b30);border:1px solid rgba(167,139,250,.3);border-radius:14px;padding:14px"><div style="font-size:12px;font-weight:900;color:white">Your Trade Sheet</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;font-size:11px"><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">STAKE / TRADE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${stake.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">TARGET PROFIT</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">$${targetAmt.toFixed(2)}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">EST. TRADES</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${trades}</div></div><div style="background:rgba(255,255,255,.05);border-radius:10px;padding:10px"><div style="color:#8b8ba7;font-size:9px">MARTINGALE</div><div style="color:white;font-weight:900;font-size:14px;margin-top:3px">${mtgOn?'YES':'NO'}</div></div></div><div style="font-size:10px;color:#8b8ba7;margin-top:10px">Capital $${cap} • Payout ${pay}% • Risk ${risk}% • MTG ${mtgOn?'ON - stake doubles after loss':'OFF'}</div></div>`;
   res.classList.add('on');
@@ -1690,7 +1686,7 @@ function ghostRenderTerminal(el, d, a, dir, conf, confl){
   const market = (d && d.market) || (a && a.market_hint) || 'EUR/USD';
   const mtype = (d && d.market_type) || 'OTC';
   const tf = (d && d.timeframe) || (a && a.timeframe) || '1 MIN';
-  const entry = d && d.entry_time ? new Date(d.entry_time).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dhaka'}) : ghostEntryTime();
+  const entry = ghostEntryTime();
   const nowStr = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dhaka'});
   const summary = a && a.summary ? a.summary : (isNo ? 'Insufficient data / low confidence. Prefer NO SIGNAL over a low-confidence signal.' : 'Bullish rejection + support confirmation');
   const verified = d && d.verified_accuracy ? `VERIFIED ACCURACY: ${d.verified_accuracy.accuracy}% (${d.verified_accuracy.wins}W / ${d.verified_accuracy.losses}L)` : 'VERIFIED ACCURACY: Calculating from WIN / LOSS';
@@ -1724,8 +1720,9 @@ window.ghostEntryTime = ghostEntryTime;
 // === GHOST AI - BROKER SELECTOR LOGIC ===
 const GHOST_BROKERS = {
   'Quotex': { logo: 'https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480', fallback: 'QUOTEX', sub: '' },
-  'Binomo': { logo: 'https://play-lh.googleusercontent.com/7YpY2KQW-XP-VqHoC0LRc7ZPr2_DndOIeglAZ1yt0p_ZXqrgDC4Xi60vwug0mOIlfTV8RunUjo3QrTbOcd_VgQ=w240-h480', fallback: 'BINOMO', sub: '' },
+  'Binolla': { logo: 'https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480', fallback: 'BINOLLA', sub: '' },
   'Pocket Option': { logo: 'https://play-lh.googleusercontent.com/a8jTlCXsVyaefdDkCqvtnmKQT5-3oVmNBW3iOUejR1IfMrSkLV7XThgMUkSSf708IM_cmb_7knIDIEvkDZg21w=w240-h480', fallback: 'POCKET OPTION', sub: '' },
+  'Olymptrade': { logo: 'https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480', fallback: 'OLYMP TRADE', sub: '' }
 };
 let GHOST_BROKER = 'Quotex';
 try{ const saved = localStorage.getItem('ghost_ai_broker'); if(saved && GHOST_BROKERS[saved]) GHOST_BROKER = saved; }catch(e){}
@@ -1788,9 +1785,9 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
         <div class="gb-item-info"><div class="gb-item-name">Quotex</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Quotex" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
-      <div class="gb-item" data-broker="Binomo" onclick="selectBroker('Binomo')">
-        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480" alt="Binomo official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOMO</span></div>
-        <div class="gb-item-info"><div class="gb-item-name">Binomo</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Binomo" style="display:none">✓ SELECTED</span></div>
+      <div class="gb-item" data-broker="Binolla" onclick="selectBroker('Binolla')">
+        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/92g_r7eYNxpyPbfXXLlod2WtMk6w0DJZClKhyVtk-X5GYXfNnjbsBWKlc1ayEg9wX8oeVtluV88bF9stOSgKBA=w240-h480" alt="Binolla official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">BINOLLA</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Binolla</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Binolla" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
       <div class="gb-item" data-broker="Pocket Option" onclick="selectBroker('Pocket Option')">
@@ -1798,6 +1795,12 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
         <div class="gb-item-info"><div class="gb-item-name">Pocket Option</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Pocket Option" style="display:none">✓ SELECTED</span></div>
         <div class="gb-check">✓</div>
       </div>
+      <div class="gb-item" data-broker="Olymptrade" onclick="selectBroker('Olymptrade')">
+        <div class="gb-item-logo"><img src="https://play-lh.googleusercontent.com/a6c4yLz_k3WyaTzn3H0XEqq-eK_UQPPwJOhQtd5bLC1NL5cjT1H8G4AZbpHHI3M_fk8vjAK7NWW8pXCNVLrX=w240-h480" alt="Olymptrade official logo" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="gb-logo-fallback" style="display:none">OLYMP<br>TRADE</span></div>
+        <div class="gb-item-info"><div class="gb-item-name">Olymptrade</div><div class="gb-item-sub"></div><span class="gb-selectedLabel" data-sel="Olymptrade" style="display:none">✓ SELECTED</span></div>
+        <div class="gb-check">✓</div>
+      </div>
+    </div>
     <button class="gb-close" onclick="closeBrokerModal()">Done</button>
     <div class="gb-note">Logos are official brand assets of their respective brokers.<br>GHOST AI is not affiliated with any broker. Trading involves risk.</div>
   </div>
@@ -1824,18 +1827,6 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
 @keyframes ghostSweep{0%{top:-10%;transform:rotate(0deg)}50%{top:50%;transform:rotate(0deg)}100%{top:110%;transform:rotate(0deg)}}@keyframes ghostGrid{to{transform:translateY(28px)}}@keyframes ghostCore{0%,100%{transform:scale(.96);filter:brightness(.95)}50%{transform:scale(1.04);filter:brightness(1.2)}}@keyframes ghostOrbit{to{transform:rotate(360deg)}}
 @media(max-width:520px){.mcard{min-height:124px;padding:13px}.futureCard{min-height:110px}.newsTodayBanner{align-items:flex-start}.newsTodayBanner b{font-size:15px}.newsHighBadge{font-size:9px!important}.ghostVideoAnalyzer{min-height:300px}}
 </style>
-
-/* === GHOST AI — source-style video motion analysis animation === */
-.cocoMotionViz{height:390px!important;position:relative;overflow:hidden;border-radius:22px;background:radial-gradient(circle at 50% 45%,rgba(90,46,224,.34),rgba(10,6,32,.18) 42%,rgba(5,6,20,.5) 78%),linear-gradient(180deg,#0f0929,#050612);border:1px solid rgba(167,139,250,.32);box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 0 50px rgba(124,58,237,.1)}
-.cocoMotionGlow{position:absolute;left:50%;top:48%;width:250px;height:250px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,.32),rgba(124,58,237,.08) 48%,transparent 72%);filter:blur(2px);animation:motionGlow 3.8s ease-in-out infinite;z-index:0}
-.cocoMotionBars{position:absolute;left:0;right:0;bottom:0;height:78px;display:flex;align-items:flex-end;justify-content:space-around;opacity:.22;z-index:0;padding:0 5px}
-.cocoMotionBars i{display:block;width:8px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,#a78bfa,#251751);animation:motionBar 2.1s ease-in-out infinite alternate;transform-origin:bottom}.cocoMotionBars i:nth-child(2n){height:55px;animation-delay:-.4s}.cocoMotionBars i:nth-child(3n){height:35px;animation-delay:-.9s}.cocoMotionBars i:nth-child(4n){height:70px;animation-delay:-1.4s}.cocoMotionBars i:nth-child(5n){height:46px;animation-delay:-1.8s}
-.cocoMotionSvg{position:absolute;inset:0;width:100%;height:100%;z-index:1;overflow:visible}.cocoMotionLines path{fill:none;stroke:rgba(224,214,255,.48);stroke-width:1.2;stroke-linecap:round;filter:drop-shadow(0 0 3px rgba(167,139,250,.25))}.cocoMotionParticles rect{fill:#fff;filter:drop-shadow(0 0 7px rgba(255,255,255,.95));opacity:.95}
-.cocoMotionNode{position:absolute;width:66px;height:58px;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(145deg,rgba(70,50,125,.94),rgba(22,18,52,.96));border:1px solid rgba(255,255,255,.2);box-shadow:0 10px 25px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.17);backdrop-filter:blur(12px);z-index:3;animation:motionFloat 3s ease-in-out infinite alternate}.cocoMotionNode b{font-size:7px;letter-spacing:.12em;color:#fff;font-weight:900}.mn1{left:4%;top:8%;background:linear-gradient(135deg,#7b4dff,#4a26c8);animation-delay:0s}.mn2{left:calc(50% - 33px);top:2%;width:52px;height:48px;background:linear-gradient(135deg,#3a3a42,#1e1e26);animation-delay:-.5s}.mn3{right:4%;top:8%;background:linear-gradient(135deg,#5a7bff,#2f4bff);animation-delay:-1s}.mn4{left:5%;top:49%;background:linear-gradient(135deg,#4a4a38,#23231f);animation-delay:-.8s}.mn5{right:5%;top:49%;background:linear-gradient(135deg,#7a4a22,#3e2310);animation-delay:-1.5s}.mn6{left:13%;bottom:5%;background:linear-gradient(135deg,#4652a8,#2a3168);animation-delay:-1.8s}.mn7{right:13%;bottom:5%;background:linear-gradient(135deg,#e85a9a,#8f2057);animation-delay:-2.2s}
-.motionIcon{width:28px;height:25px;display:flex;align-items:center;justify-content:center;position:relative}.scanIcon{border:2px solid #fff;border-radius:5px;width:23px;height:20px;animation:iconPulse 1.7s ease-in-out infinite}.scanIcon span{width:5px;height:5px;border-radius:1px;background:#fff;box-shadow:0 0 8px #fff}.usersIcon{gap:5px}.usersIcon i{width:9px;height:9px;border-radius:50%;background:#fff;position:relative}.usersIcon i:after{content:"";position:absolute;width:15px;height:7px;left:-3px;top:9px;border:1.5px solid #fff;border-bottom:0;border-radius:9px 9px 0 0}.broadcastIcon{gap:2px}.broadcastIcon i{display:block;width:3px;border-radius:3px;background:#fff;animation:motionWave 1s ease-in-out infinite}.broadcastIcon i:nth-child(1){height:9px}.broadcastIcon i:nth-child(2){height:20px;animation-delay:-.25s}.broadcastIcon i:nth-child(3){height:13px;animation-delay:-.5s}.inspectIcon{align-items:flex-end;gap:3px}.inspectIcon i{width:4px;background:#fff;border-radius:2px 2px 0 0;animation:motionBar 1.1s ease-in-out infinite alternate}.inspectIcon i:nth-child(1){height:10px}.inspectIcon i:nth-child(2){height:17px;animation-delay:-.25s}.inspectIcon i:nth-child(3){height:22px;animation-delay:-.5s}.inspectIcon em{position:absolute;width:9px;height:9px;border:1.5px solid #fff;border-radius:50%;right:0;top:1px}.trendIcon span{width:28px;height:18px;border-top:2px solid #ff9a3d;transform:skew(-30deg) rotate(-20deg);position:relative;filter:drop-shadow(0 0 5px rgba(255,154,61,.6))}.targetIcon{border:2px solid #fff;border-radius:50%;width:23px;height:23px}.targetIcon i:first-child{width:11px;height:11px;border:1.5px solid #fff;border-radius:50%}.targetIcon i:last-child{position:absolute;width:4px;height:4px;background:#fff;border-radius:50%}.launchIcon span{width:20px;height:20px;border-top:2px solid #fff;border-right:2px solid #fff;transform:rotate(-45deg);position:relative}.launchIcon span:after{content:"";position:absolute;width:22px;height:2px;background:#fff;transform:rotate(45deg);right:-7px;top:8px}
-.cocoMotionCore{position:absolute;left:50%;top:48%;width:106px;height:106px;transform:translate(-50%,-50%);border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#4c2a92,#0f0a2e 72%);border:2px solid rgba(180,130,255,.72);box-shadow:0 0 0 10px rgba(124,58,237,.1),0 0 44px rgba(124,58,237,.78),inset 0 2px 12px rgba(255,255,255,.2);z-index:5;animation:motionCore 4.2s ease-in-out infinite}.cocoMotionCore .ghostCoreBrand{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}.cocoMotionCore .ghostCoreBrand .logo{display:block;width:58px;height:58px}.cocoMotionCore .ghostCoreBrand .logo i{display:block;width:58px;height:58px;border-radius:50%;margin:0;border:2px solid #a78bfa;box-shadow:0 0 20px rgba(124,58,237,.85),0 0 44px rgba(124,58,237,.38);animation:ghostLogoPulse 1.8s ease-in-out infinite}.cocoMotionCore .ghostCoreBrand small{font-size:6px;letter-spacing:.22em;color:#c4b5fd;font-weight:900}.cocoMotionCore .coreStatus{font-size:5px;margin-top:2px}.motionOrbit{position:absolute;inset:-14px;border:1px dashed rgba(224,214,255,.38);border-radius:50%;animation:motionOrbit 9s linear infinite}.motionOrbit i{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 10px #fff;top:-3px;left:50%}.motionExpand{position:absolute;inset:-1px;border-radius:50%;border:2px solid rgba(180,120,255,.55);animation:motionExpand 2.5s ease-out infinite}.motionExpand2{animation-delay:1.25s}.motionSpark{position:absolute;right:13px;bottom:16px;color:#c084fc;font-size:12px;animation:motionSpark 1.8s ease-in-out infinite}
-@keyframes motionFloat{0%{transform:translateY(2px)}100%{transform:translateY(-7px)}}@keyframes motionGlow{0%,100%{opacity:.65;transform:translate(-50%,-50%) scale(.9)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}@keyframes motionBar{0%{transform:scaleY(.72)}100%{transform:scaleY(1.14)}}@keyframes motionWave{0%,100%{transform:scaleY(.55);opacity:.55}50%{transform:scaleY(1.08);opacity:1}}@keyframes iconPulse{0%,100%{transform:scale(.9);opacity:.75}50%{transform:scale(1.08);opacity:1}}@keyframes motionCore{0%,18%,42%,100%{transform:translate(-50%,-50%) scale(1);filter:brightness(.96)}21%,38%{transform:translate(-50%,-50%) scale(1.07);filter:brightness(1.18)}28%{transform:translate(-50%,-50%) scale(1.03)}}@keyframes motionOrbit{to{transform:rotate(360deg)}}@keyframes motionExpand{0%{transform:scale(.9);opacity:.7}100%{transform:scale(1.55);opacity:0}}@keyframes motionSpark{0%,100%{opacity:.35;transform:scale(.8) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(18deg)}}
-@media(max-width:420px){.cocoMotionViz{height:350px!important}.cocoMotionNode{width:61px;height:54px}.mn2{width:48px;height:44px}.cocoMotionCore{width:96px;height:96px}.cocoMotionCore .ghostCoreBrand .logo,.cocoMotionCore .ghostCoreBrand .logo i{width:52px;height:52px}}
 <script id="ghost-ai-final-patch">
 (function(){
   // Pre-news calendar: date/time are explicit and release values are excluded.
