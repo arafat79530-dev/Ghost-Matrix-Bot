@@ -882,6 +882,49 @@ def analyze_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str =
     }
 
 
+def analyze_otc_candles(symbol: str, candles: list[dict[str, Any]], timeframe: str = "1 MIN") -> dict[str, Any]:
+    """OTC-specific technical pass.
+    Uses the same EMA/RSI engine first; when that engine says NO TRADE, apply a
+    stricter momentum/structure fallback so a healthy OTC feed is not silently
+    reported as unavailable. This still returns NO SIGNAL when the feed is weak.
+    """
+    base = analyze_candles(symbol, candles, timeframe)
+    if base.get("direction") in ("CALL", "PUT"):
+        return base
+    rows = list(candles or [])
+    if len(rows) < 60:
+        return base
+    # Work from the most recent candle sequence without inventing a price.
+    closes=[float(x["close"]) for x in rows]
+    e9=ema(closes,9); e21=ema(closes,21); e50=ema(closes,50); rs=rsi(closes,14)
+    i=len(rows)-1
+    if any(x[i] is None for x in (e9,e21,e50,rs)):
+        return base
+    last=rows[i]; prev=rows[i-1]
+    rng=float(last["high"])-float(last["low"])
+    body=abs(float(last["close"])-float(last["open"]))
+    if rng<=0:
+        return base
+    body_ratio=body/rng
+    recent=rows[max(0,i-9):i]
+    support=min(float(x["low"]) for x in recent)
+    resistance=max(float(x["high"]) for x in recent)
+    close=float(last["close"])
+    up_count=sum(1 for x in rows[max(0,i-4):i+1] if float(x["close"])>float(x["open"]))
+    down_count=5-up_count
+    bullish=(e9[i]>e21[i] and e21[i]>=e50[i] and rs[i]>=50 and up_count>=3 and close>float(prev["close"]))
+    bearish=(e9[i]<e21[i] and e21[i]<=e50[i] and rs[i]<=50 and down_count>=3 and close<float(prev["close"]))
+    if body_ratio<0.18:
+        return base
+    if bullish and close < resistance + rng*0.05:
+        base.update({"direction":"CALL","reason":f"OTC momentum fallback: EMA9/21/50 bullish, RSI {rs[i]:.1f}, {up_count}/5 recent candles bullish, and price structure supports upside continuation.","price":close,"candle":last,"rsi":rs[i],"ema9":e9[i],"ema21":e21[i],"ema50":e50[i],"support":support,"resistance":resistance,"otc_fallback":True})
+        return base
+    if bearish and close > support - rng*0.05:
+        base.update({"direction":"PUT","reason":f"OTC momentum fallback: EMA9/21/50 bearish, RSI {rs[i]:.1f}, {down_count}/5 recent candles bearish, and price structure supports downside continuation.","price":close,"candle":last,"rsi":rs[i],"ema9":e9[i],"ema21":e21[i],"ema50":e50[i],"support":support,"resistance":resistance,"otc_fallback":True})
+        return base
+    return base
+
+
 def backtest_ema(candles: list[dict[str, Any]]) -> dict[str, Any]:
     """Small historical sanity check; not a prediction or guaranteed profitability."""
     if len(candles) < 60:
@@ -3268,7 +3311,7 @@ def api_inject_signal():
             if not OTCHARTS_API_KEY: return jsonify({"error":"OTCHARTS_API_KEY is not configured."}),503
             if not _api_allowed("otc_inject",2,60): return jsonify({"error":"OTC analysis rate limit reached."}),429
             candles,meta=_otc_candles(market,timeframe,300)
-            result=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
+            result=analyze_otc_candles(market.replace(" (OTC)",""),candles,timeframe)
             result.update({"source":meta["source"],"verified_quotex":False,"market_type":"OTC","timeframe":timeframe,"backtest":backtest_ema(candles)})
             direction=result.get("direction","NO TRADE"); confidence=_setup_confidence(result) if direction in ("CALL","PUT") else 0
             return jsonify({"available":direction in ("CALL","PUT"),"direction":direction if direction in ("CALL","PUT") else "NO SIGNAL","signal":direction if direction in ("CALL","PUT") else "NO SIGNAL","confidence":confidence,"market":market,"market_type":"OTC","duration":duration,"timeframe":timeframe,"analysis":result,"factors":["OTCharts Quotex OTC candles","EMA9 / EMA21 / EMA50","RSI momentum","Candle body strength","Support / resistance"],"source":meta["source"],"verified_quotex":False,"entry_time":((result.get("candle",{}).get("time") + timedelta(minutes={"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(timeframe,1))).astimezone(BANGLADESH_TZ).isoformat() if isinstance(result.get("candle",{}).get("time"),datetime) else None),"expiry":timeframe}),200
@@ -3314,7 +3357,7 @@ def api_future_signals():
                 if not OTCHARTS_API_KEY: break
                 if not _api_allowed("otc_future",2,60): break
                 candles,meta=_otc_candles(market,timeframe,300)
-                r=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
+                r=analyze_otc_candles(market.replace(" (OTC)",""),candles,timeframe)
                 source=meta["source"]
             else:
                 if not TWELVE_DATA_API_KEY: break
