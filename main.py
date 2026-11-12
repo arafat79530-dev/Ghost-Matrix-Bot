@@ -2161,8 +2161,10 @@ def status_route():
 
 @app.post("/api/auth/login")
 def auth_login():
-    if not FLASK_SECRET_KEY:
-        return jsonify({"error": "FLASK_SECRET_KEY is not configured in Render."}), 503
+    # app.secret_key already has a safe runtime fallback when FLASK_SECRET_KEY
+    # is omitted. Do not block a valid login just because the optional env var
+    # was not supplied; deployments should still set FLASK_SECRET_KEY for
+    # stable sessions across restarts/workers.
     body = request.get_json(silent=True) or {}
     email = str(body.get("email", "")).strip().lower()
     password = str(body.get("password", ""))
