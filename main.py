@@ -2881,9 +2881,7 @@ def _call_openai_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, 
         r=http_session.post(OPENAI_BASE,
             headers={"Authorization":f"Bearer {OPENAI_API_KEY}","Content-Type":"application/json"},
             json=payload, timeout=30)
-        if not r.ok:
-            detail=r.text[:800].replace("\n"," ")
-            return {"provider":"OpenAI","configured":True,"available":False,"reason":f"OpenAI HTTP {r.status_code}: {detail}"}
+        r.raise_for_status()
         content=r.json()["choices"][0]["message"]["content"]
         obj=_clean_model_json(content)
         return {"provider":"OpenAI","configured":True,"available":bool(obj),"analysis":obj}
@@ -2895,18 +2893,16 @@ def _call_gemini_vision(encoded: str, mime: str, user_prompt: str) -> dict[str, 
         return {"provider":"Gemini","configured":False,"available":False,"reason":"GEMINI_API_KEY not configured"}
     url=f"{GEMINI_BASE}/{GEMINI_VISION_MODEL}:generateContent"
     payload={
-        "contents":[{"role":"user","parts":[
-            {"inlineData":{"mimeType":mime,"data":encoded}},
-            {"text":_vision_consensus_prompt()+"\n\n"+user_prompt}
+        "contents":[{"parts":[
+            {"text":_vision_consensus_prompt()+"\n\n"+user_prompt},
+            {"inline_data":{"mime_type":mime,"data":encoded}}
         ]}],
         "generationConfig":{"temperature":0.05,"maxOutputTokens":1400,"responseMimeType":"application/json"}
     }
     try:
-        r=http_session.post(url,
-            headers={"Content-Type":"application/json","x-goog-api-key":GEMINI_API_KEY}, json=payload, timeout=30)
-        if not r.ok:
-            detail=r.text[:800].replace("\n"," ")
-            return {"provider":"Gemini","configured":True,"available":False,"reason":f"Gemini HTTP {r.status_code}: {detail}"}
+        r=http_session.post(url, params={"key":GEMINI_API_KEY},
+            headers={"Content-Type":"application/json"}, json=payload, timeout=30)
+        r.raise_for_status()
         data=r.json()
         content="".join(
             p.get("text","") for p in
@@ -3034,7 +3030,7 @@ CONFIDENCE CALIBRATION (BALANCED):
 - Mixed signals → reduce 10-15, not full 20
 
 Return ONLY valid JSON with keys:
-direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short), trend (Bengali), structure (Bengali), zones (Bengali), reasoning (Bengali), confirmation (Bengali), invalidation (Bengali), confidence_note (Bengali), confluences (array like ["BOS","Bullish OB","FVG","Engulfing"]), market_hint (asset/timeframe if visible), chart_time (ISO-8601 timestamp only if clearly visible in screenshot, otherwise null)
+direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short), trend (Bengali), structure (Bengali), zones (Bengali), reasoning (Bengali), confirmation (Bengali), invalidation (Bengali), confidence_note (Bengali), confluences (array like ["BOS","Bullish OB","FVG","Engulfing"]), market_hint (asset/timeframe if visible)
 '''
         user_prompt = "এই chart screenshot-টি বিশ্লেষণ করো। asset/timeframe দেখা গেলে শনাক্ত করো; না দেখা গেলে অনুমান কোরো না। CALL, PUT অথবা NO TRADE নির্বাচন করো। দুই দিকের প্রমাণ যাচাই করো এবং entry নেওয়ার আগে কী confirmation দরকার বলো। JSON ছাড়া অন্য কিছু দেবে না।"
         if _provider == "openai":
@@ -3139,42 +3135,15 @@ direction (CALL, PUT, or NO TRADE), confidence (0-100), summary (Bengali short),
             _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"; analysis["signal"]="NO SIGNAL"
         if _dir == "NO TRADE":
             _dir = "NO SIGNAL"; analysis["direction"]="NO SIGNAL"
-        # Never return the running candle as the entry. Prefer a clearly visible chart
-        # timestamp; otherwise use server observation time and label the fallback honestly.
+        # Never return the running candle as the entry. Schedule the next actionable candle boundary.
+        _now_bd = datetime.now(BANGLADESH_TZ)
         _tf_minutes = {"1 MIN":1,"2 MIN":2,"5 MIN":5,"10 MIN":10,"15 MIN":15,"30 MIN":30,"1 HOUR":60}.get(_timeframe,1)
-        _entry_basis = "server observation time"
-        _basis = None
-        _chart_time = analysis.get("chart_time")
-        if _chart_time:
-            try:
-                raw_chart_time=str(_chart_time).strip()
-                if re.fullmatch(r"\d{1,2}:\d{2}(?::\d{2})?", raw_chart_time):
-                    hh,mm,*ss=raw_chart_time.split(":")
-                    now_local=datetime.now(BANGLADESH_TZ)
-                    _basis=now_local.replace(hour=int(hh),minute=int(mm),second=int(ss[0]) if ss else 0,microsecond=0)
-                    if _basis > now_local + timedelta(minutes=5):
-                        _basis -= timedelta(days=1)
-                else:
-                    _basis = datetime.fromisoformat(raw_chart_time.replace("Z","+00:00"))
-                    if _basis.tzinfo is None:
-                        _basis = _basis.replace(tzinfo=BANGLADESH_TZ)
-                    else:
-                        _basis = _basis.astimezone(BANGLADESH_TZ)
-                # Guard against hallucinated timestamps wildly outside the observation window.
-                if abs((datetime.now(BANGLADESH_TZ) - _basis).total_seconds()) > 36*3600:
-                    _basis = None
-            except Exception:
-                _basis = None
-        if _basis is None:
-            _basis = datetime.now(BANGLADESH_TZ)
-        _entry_epoch_min = int(_basis.timestamp() // 60)
-        _next_epoch_min = ((_entry_epoch_min // _tf_minutes) + 1) * _tf_minutes
+        _epoch_min = int(_now_bd.timestamp() // 60)
+        _next_epoch_min = ((_epoch_min // _tf_minutes) + 1) * _tf_minutes
         _entry_bd = datetime.fromtimestamp(_next_epoch_min * 60, tz=BANGLADESH_TZ)
         analysis["entry_time"] = _entry_bd.isoformat()
         analysis["entry_label"] = _entry_bd.strftime("%d %b %Y • %I:%M %p BDT")
-        if analysis.get("chart_time"):
-            _entry_basis = "visible chart timestamp"
-        analysis["entry_rule"] = f"Next actionable candle after {_entry_basis}; current/running candle is excluded."
+        analysis["entry_rule"] = "Next actionable candle after screenshot observation; current running candle is excluded."
         _verified = get_verified_accuracy()
         _analysis_text = str(analysis.get("summary","") or "") + " | " + str(analysis.get("reasoning","") or "")
         try:
@@ -3297,30 +3266,19 @@ def api_future_signals():
         pool=list(dict.fromkeys(markets + configured))
 
     results=[]; scanned=0
-    # One user request owns a bounded scan budget. Do not burn the same IP rate-limit
-    # bucket once per candidate; still cap the number of external feed calls per request.
-    scan_budget = min(len(pool), max(count, 5), 6)
-    if is_otc:
-        if not OTCHARTS_API_KEY:
-            return jsonify({"available":False,"signals":[],"requested":count,"scanned":0,"market_type":"OTC","timeframe":timeframe,"error":"OTCHARTS_API_KEY is not configured."}),503
-        if not _api_allowed("otc_future",1,60):
-            return jsonify({"error":"Future OTC scan rate limit reached. Please wait a minute."}),429
-    else:
-        if not TWELVE_DATA_API_KEY:
-            return jsonify({"available":False,"signals":[],"requested":count,"scanned":0,"market_type":"REAL","timeframe":timeframe,"error":"TWELVE_DATA_API_KEY is not configured."}),503
-        if not _api_allowed("future",1,60):
-            return jsonify({"error":"Future scan rate limit reached. Please wait a minute."}),429
-    for market in pool[:scan_budget]:
+    for market in pool[:40]:
         if len(results) >= count:
             break
         try:
             if is_otc:
                 if not OTCHARTS_API_KEY: break
+                if not _api_allowed("otc_future",2,60): break
                 candles,meta=_otc_candles(market,timeframe,300)
                 r=analyze_candles(market.replace(" (OTC)",""),candles,timeframe)
                 source=meta["source"]
             else:
                 if not TWELVE_DATA_API_KEY: break
+                if not _api_allowed("future",2,60): break
                 symbol=market.replace(" (OTC)","")
                 allowed={str(x.get("symbol","" )).upper() for x in get_catalog()}
                 if symbol not in allowed: continue
@@ -3829,7 +3787,7 @@ def api_ai_verify():
 @app.get("/api/market-status")
 @login_required
 def api_market_status():
-    return jsonify({"real":{"connected":bool(TWELVE_DATA_API_KEY),"source":"Twelve Data","verified_quotex":False},"otc":{"connected":bool(OTCHARTS_API_KEY and OTChartsClient is not None),"source":"OTCharts Quotex OTC feed" if OTCHARTS_API_KEY and OTChartsClient is not None else "OTC feed not configured","package_loaded":bool(OTChartsClient is not None),"verified_quotex":False},"ai":{"configured":bool(AI_API_KEY),"vision_model":GROQ_VISION_MODEL if AI_API_KEY else None},"telegram":{"configured":bool(BOT_TOKEN)},"database":{"configured":bool(DATABASE_URL)}})
+    return jsonify({"real":{"connected":bool(TWELVE_DATA_API_KEY),"source":"Twelve Data","verified_quotex":False},"otc":{"connected":bool(OTCHARTS_API_KEY and OTChartsClient is not None),"source":"OTCharts Quotex OTC feed" if OTCHARTS_API_KEY and OTChartsClient is not None else "OTC feed not configured","verified_quotex":False},"ai":{"configured":bool(AI_API_KEY),"vision_model":GROQ_VISION_MODEL if AI_API_KEY else None},"telegram":{"configured":bool(BOT_TOKEN)},"database":{"configured":bool(DATABASE_URL)}})
 
 
 @app.get("/api/admin/verification-queue")
