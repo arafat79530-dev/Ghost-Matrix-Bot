@@ -2168,15 +2168,21 @@ def status_route():
 
 @app.post("/api/auth/login")
 def auth_login():
-    # Ensure the authentication tables exist before the first login attempt.
-    # This is important on a fresh PostgreSQL/Supabase database: previously
-    # initialization happened only during process startup, so a startup race
-    # or a database becoming ready after the web process could leave login
-    # querying a missing gm_users table.
-    db_ok, db_msg = init_database()
-    if not db_ok:
-        log.error("Login database initialization failed: %s", db_msg)
-        return jsonify({"error": "Authentication database unavailable. Check DATABASE_URL and database connection."}), 503
+    # Do NOT run the full application schema migration during login.
+    # The old implementation called init_database() here, so an unrelated
+    # table/index migration failure could make a perfectly valid existing
+    # account impossible to log in. Authentication only needs gm_users.
+    try:
+        with db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("CREATE TABLE IF NOT EXISTS gm_users (id BIGSERIAL PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT FALSE, email_verified BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), verified_at TIMESTAMPTZ, access_enabled BOOLEAN NOT NULL DEFAULT TRUE)")
+                cur.execute("ALTER TABLE gm_users ADD COLUMN IF NOT EXISTS access_enabled BOOLEAN NOT NULL DEFAULT TRUE")
+                cur.execute("ALTER TABLE gm_users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE")
+                cur.execute("ALTER TABLE gm_users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE")
+                cur.execute("CREATE INDEX IF NOT EXISTS gm_users_email_idx ON gm_users(LOWER(email))")
+    except Exception as exc:
+        log.error("Login auth-table check failed: %s", exc)
+        return jsonify({"error": "Login database unavailable. Check DATABASE_URL and PostgreSQL/Supabase connection."}), 503
 
     # app.secret_key already has a safe runtime fallback when FLASK_SECRET_KEY
     # is omitted. Do not block a valid login just because the optional env var
