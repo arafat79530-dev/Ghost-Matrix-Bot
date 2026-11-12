@@ -2168,6 +2168,16 @@ def status_route():
 
 @app.post("/api/auth/login")
 def auth_login():
+    # Ensure the authentication tables exist before the first login attempt.
+    # This is important on a fresh PostgreSQL/Supabase database: previously
+    # initialization happened only during process startup, so a startup race
+    # or a database becoming ready after the web process could leave login
+    # querying a missing gm_users table.
+    db_ok, db_msg = init_database()
+    if not db_ok:
+        log.error("Login database initialization failed: %s", db_msg)
+        return jsonify({"error": "Authentication database unavailable. Check DATABASE_URL and database connection."}), 503
+
     # app.secret_key already has a safe runtime fallback when FLASK_SECRET_KEY
     # is omitted. Do not block a valid login just because the optional env var
     # was not supplied; deployments should still set FLASK_SECRET_KEY for
@@ -2256,6 +2266,11 @@ def auth_logout():
 # --- GHOST AI: Register ---
 @app.post("/api/auth/register")
 def auth_register():
+    # Ensure registration can bootstrap a fresh PostgreSQL/Supabase database.
+    db_ok, db_msg = init_database()
+    if not db_ok:
+        log.error("Register database initialization failed: %s", db_msg)
+        return jsonify({"error": "Registration database unavailable. Check DATABASE_URL and database connection."}), 503
     body = request.get_json(silent=True) or {}
     name = str(body.get("name","") or body.get("full_name","")).strip()
     email = str(body.get("email","")).strip().lower()
