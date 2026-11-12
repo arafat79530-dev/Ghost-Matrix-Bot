@@ -125,7 +125,14 @@ def serve_icons(filename):
     )
     return send_from_directory(icon_dir, filename)
 app.secret_key = FLASK_SECRET_KEY or secrets.token_urlsafe(48)
-app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=bool(APP_BASE_URL.startswith("https://")), PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    # TLS may terminate at a reverse proxy while Flask receives HTTP. Do not
+    # force Secure from APP_BASE_URL or the browser can drop the session cookie.
+    SESSION_COOKIE_SECURE=False,
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+)
 _auth_serializer = URLSafeTimedSerializer(app.secret_key, salt="ghost-matrix-email-verification-v1")
 
 http_session = requests.Session()
@@ -2186,10 +2193,20 @@ def auth_login():
         return jsonify({"error": "Email or password is incorrect."}), 401
 
 
+    # Accounts created by the current registration flow are already verified.
+    # For legacy accounts, upgrade a correct email/password login to verified
+    # instead of blocking the user because an old verification flag is false.
     if not user.get("access_enabled", True):
         return jsonify({"error": "This account is disabled. Contact the administrator."}), 403
-    if not user["email_verified"]:
-        return jsonify({"error": "Email is not verified yet. Open the verification link sent to your email."}), 403
+    if not user.get("email_verified", True):
+        try:
+            with db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE gm_users SET email_verified=TRUE, verified_at=COALESCE(verified_at,NOW()) WHERE id=%s", (int(user["id"]),))
+            user["email_verified"] = True
+        except Exception as exc:
+            log.warning("Legacy account verification upgrade failed for %s: %s", email, exc)
+            return jsonify({"error": "Account verification could not be completed. Please try again."}), 503
     session.clear()
     session.permanent = True
     session["user_id"] = int(user["id"])
