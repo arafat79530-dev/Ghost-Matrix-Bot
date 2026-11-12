@@ -1133,10 +1133,11 @@ const fi=$('file'), pv=$('pv'), pz=$('paste');
 pz.addEventListener('click',()=>fi.click()); $('selBtn').addEventListener('click',()=>fi.click());
 fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)handle(f)});
 document.addEventListener('paste',e=>{for(const it of e.clipboardData?.items||[]){ if(it.kind==='file'){const f=it.getAsFile(); if(f?.type.startsWith('image/')){handle(f);break;}}}});
-let ghostVisionProvider = localStorage.getItem('ghost_vision_provider') || 'groq';
+let ghostVisionProvider = 'groq';
+try { ghostVisionProvider = window.localStorage.getItem('ghost_vision_provider') || 'groq'; } catch (_) { /* storage unavailable; keep default */ }
 let ghostShotMarketType = 'OTC';
 function selectVisionProvider(provider){
-  ghostVisionProvider=provider; localStorage.setItem('ghost_vision_provider',provider);
+  ghostVisionProvider=provider; try { window.localStorage.setItem('ghost_vision_provider',provider); } catch (_) { /* storage unavailable */ }
   document.querySelectorAll('.ghostAiBtn').forEach(b=>b.classList.toggle('on',b.dataset.provider===provider));
   const names={openai:'OpenAI',gemini:'Gemini',groq:'Groq'};
   const st=document.getElementById('ghostProviderStatus'); if(st) st.textContent='Selected: '+names[provider]+' • this provider will run the screenshot analysis.';
@@ -1276,7 +1277,7 @@ function showLog(){ $('log').classList.remove('hide')}
 async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch{} showLog()}
 window.logout=logout;
 
-initFeatureTabs(); loadNewsFeed();
+initFeatureTabs(); if(typeof window.loadNewsFeed==='function'){window.loadNewsFeed();}
 (async()=>{try{const d=await api('/api/auth/me'); if(d.authenticated)showApp(); else showLog()}catch{showLog()}})();
 
 // === GHOST INJECTOR - COCO FLOW ===
