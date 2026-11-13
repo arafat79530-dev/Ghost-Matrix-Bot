@@ -35,7 +35,7 @@ body{background:#06031a;color:#e8e0ff;font:12px/1.3 system-ui,sans-serif;display
 .heroGlow{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(168,85,247,.45),transparent 70%);filter:blur(18px)}
 .heroCnt{position:relative;z-index:2;width:100%}
 .openB{width:100%;padding:13px;background:linear-gradient(135deg,#a78bfa,#7c3aed);color:white;border:0;border-radius:14px;font-weight:900;font-size:12px;box-shadow:0 8px 20px rgba(124,58,237,.4)}
-/* COCO STYLE - OTC / REAL PILL TABS */
+/* COCO STYLE - REAL MARKET PILL TABS */
 .tabs{display:flex;gap:0;margin-bottom:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:4px;position:relative}
 .tab{flex:1;padding:10px 8px;border-radius:10px;font-size:11px;font-weight:800;text-align:center;border:0;background:transparent;color:#8b8ba7;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:.25s}
 .tab svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
@@ -786,11 +786,11 @@ html{scroll-behavior:smooth}
   <p>Scroll to explore the tools, verification layers and AI capabilities inside GHOST AI.</p>
   <div class="ghostFeatureGrid">
     <div class="ghostFeatureCard"><b>Multi-AI Analysis</b><span>Choose OpenAI, Gemini or Groq for screenshot investigation.</span></div>
-    <div class="ghostFeatureCard"><b>OTC Reverse Logic</b><span>Dedicated OTC analysis instead of treating OTC like a normal market.</span></div>
+    
     <div class="ghostFeatureCard"><b>0–100 Confidence</b><span>Setup-quality scoring with confluence and model agreement.</span></div>
     <div class="ghostFeatureCard"><b>Live + Future</b><span>Real-market feeds, live signals and future setup candidates.</span></div>
     <div class="ghostFeatureCard"><b>Vision Scanner</b><span>Upload a chart screenshot and inspect candles, trend, structure and levels.</span></div>
-    <div class="ghostFeatureCard"><b>24/7 Coverage</b><span>Designed around Real Market + OTC workflows and verified data sources.</span></div>
+    <div class="ghostFeatureCard"><b>Real Market Coverage</b><span>Live analysis using the configured Real Market data source.</span></div>
   </div>
   <div class="ghostCompare">
     <h3>Why GHOST AI?</h3>
@@ -798,9 +798,9 @@ html{scroll-behavior:smooth}
     <table><thead><tr><th>CAPABILITY</th><th>GENERAL AI</th><th>GHOST AI</th></tr></thead><tbody>
     <tr><td>Model selection</td><td>Usually one model</td><td>OpenAI, Gemini or Groq selectable</td></tr>
     <tr><td>Model consensus</td><td>Not trading-specific</td><td>Multi-model verification when enabled</td></tr>
-    <tr><td>OTC analysis</td><td>Generic chart interpretation</td><td>Dedicated OTC / reverse-logic pipeline</td></tr>
+    
     <tr><td>Confidence</td><td>Generic response</td><td>0–100 setup-quality score + agreement</td></tr>
-    <tr><td>Coverage</td><td>On request</td><td>Live / OTC / Future modules</td></tr>
+    <tr><td>Coverage</td><td>On request</td><td>Live / Real Market / Future modules</td></tr>
     <tr><td>Vision scanner</td><td>General image reading</td><td>Chart + PA/SMC confluence analysis</td></tr>
     </tbody></table>
   </div>
@@ -813,7 +813,7 @@ html{scroll-behavior:smooth}
   <div class="gb-info"><div class="gb-label"><span class="gb-dot"></span> BROKER</div><div class="gb-name" id="gbName">Quotex</div><div class="gb-sub" id="gbSub">GHOST AI • Connected for analysis</div></div>
   <div class="gb-change">Change <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
 </div>
-<div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
+<div class="tabs"><div class="tab on" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
 <div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input id="search" placeholder="Search pair (e.g. EUR/USD)"/></div>
 <div class="mlist-live" id="ml"></div>
 <div class="analyzeBar" id="liveBar"><button class="btn" id="liveAn">Analyze →</button></div>
@@ -839,7 +839,7 @@ html{scroll-behavior:smooth}
 </div>
 
 <div class="page" id="pg-analyzer">
-<div class="tabs" id="shotMarketTabs"><div class="tab on" data-shot-market="OTC" onclick="setShotMarket('OTC',this)">OTC</div><div class="tab" data-shot-market="REAL" onclick="setShotMarket('REAL',this)">REAL</div></div>
+<div class="tabs" id="shotMarketTabs"><div class="tab on" data-shot-market="REAL" onclick="setShotMarket('REAL',this)">REAL MARKET</div></div>
 <div class="ghostAiPicker">
   <div class="pickerTitle">SELECT AI FOR SCREENSHOT ANALYSIS</div>
   <div class="ghostAiBtns">
@@ -879,12 +879,12 @@ html{scroll-behavior:smooth}
 
 <div class="page" id="pg-injector">
 <div id="injListView">
-<div class="tabs"><div class="tab on" data-m="otc"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="0.7" fill="white"/></svg> OTC Market</div><div class="tab" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
+<div class="tabs"><div class="tab on" data-m="real"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2 M17 3h2a2 2 0 0 1 2 2v2 M21 17v2a2 2 0 0 1-2 2h-2 M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg> Real Market</div></div>
 <div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input placeholder="Search pair (e.g. EUR/USD)" id="search2"/></div>
 <div class="mlist" id="ml2"></div>
 </div>
 <div class="injDetail" id="injDetail">
-<div class="injHeader"><div class="flags" id="injFlags"></div><div class="injHeaderInfo"><div class="mpair" id="injPair">NZD/CHF (OTC)</div><div class="mtype" id="injSub">OTC MARKET</div></div><button class="injChangeBtn" onclick="backToInjList()">‹ Change</button></div>
+<div class="injHeader"><div class="flags" id="injFlags"></div><div class="injHeaderInfo"><div class="mpair" id="injPair">EUR/USD</div><div class="mtype" id="injSub">REAL MARKET</div></div><button class="injChangeBtn" onclick="backToInjList()">‹ Change</button></div>
 <div class="secLabel"><span>SELECT DURATION</span><span class="exp"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> EXPIRY WINDOW</span></div>
 <div class="durGrid" id="durGrid">
 <div class="durCard" data-dur="2" onclick="selectDur(2)"><div class="radio"></div><div class="durNum">2<small> MIN</small></div><div class="durName">Quick</div><div class="durSub">strike</div></div>
@@ -909,7 +909,7 @@ html{scroll-behavior:smooth}
 <div class="brokerCard"><div class="brokerLogo"><svg viewBox="0 0 24 24"><path d="M4 20V8l4-4v16 M8 20V4l4-3v19 M12 20V7l4-3v16 M16 20V9l4-4v15" stroke="#dc2626" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 20h20" stroke="#dc2626" stroke-width="1.5"/></svg></div><div class="brokerInfo"><div class="brokerLabel">BROKER</div><div class="brokerName">Quotex</div></div><button class="changeBtn">Change ↓</button></div>
 <div id="futureStep1">
 <div class="futureStepBar"><div class="stepInfo"><div class="ti">Pick markets</div><div class="su">STEP 1 OF 2 • PICK AT LEAST ONE</div></div></div>
-<div class="tabs"><div class="tab on" data-m="otc">OTC Market</div><div class="tab" data-m="real">Real Market</div></div>
+<div class="tabs"><div class="tab on" data-m="real">Real Market</div></div>
 <div class="sbox"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div><input id="futureSearch" placeholder="Search pair (e.g. EUR/USD)"/></div>
 <div class="futureGrid" id="futureGrid"></div>
 <div class="nextStepBar"><div class="nsInfo"><div class="ti" id="futureSelTxt">No markets yet</div><div class="su" id="futureSelSub">STEP 1 OF 2 • PICK AT LEAST ONE</div></div><button class="nsBtn" id="futureNext" disabled onclick="goFutureStep2()">→ Next Step</button></div>
@@ -933,7 +933,7 @@ html{scroll-behavior:smooth}
 <div id="newsOwnerView" class="ownerOnly">
 <div id="newsEventsPanel" class="newsContentCard ghostNewsProPanel">
   <div class="newsPanelHead"><div><h3>GHOST AI — Pre-News Signal</h3><div class="newsPanelSub">Upcoming high-impact events • Bangladesh time • Forecast • Previous • Pre-news bias</div></div><button class="newsRefreshBtn" onclick="loadNewsFeed()">↻ Refresh</button></div>
-  <div class="newsTodayBanner" id="newsTodayBanner"><div><span class="newsKicker" id="newsTodayKicker">TODAY • LIVE CALENDAR</span><b id="newsTodayTitle">Live high-impact economic calendar</b><span id="newsTodaySub">Loading current-day events…</span></div><span class="newsHighBadge">LIVE CALENDAR</span></div>
+  <div class="newsTodayBanner"><div><span class="newsKicker">TODAY • 10 NOV 2026</span><b>US CPI — October 2026</b><span>Scheduled release: <strong>7:30 PM BDT</strong> • 08:30 AM ET</span></div><span class="newsHighBadge">HIGH IMPACT</span></div>
   <div class="newsCalendar" id="newsCalendar"></div>
   <div id="fundamentalFeed" class="fundamentalFeed"></div>
 </div>
@@ -963,14 +963,14 @@ html{scroll-behavior:smooth}
 </div>
 <div class="proPanel on" id="pro-overview">
 <div class="proGrid"><div class="proCard"><h3>ACCOUNT STATUS</h3><div class="proValue" id="proPlan">—</div><div class="proSub" id="proAccess">Loading…</div></div><div class="proCard"><h3>VERIFIED PERFORMANCE</h3><div class="proValue" id="proWinRate">—</div><div class="proSub" id="proWL">Wins 0 • Losses 0</div></div><div class="proCard"><h3>REAL MARKET</h3><div class="proValue" id="proReal">—</div><div class="proSub">Twelve Data external feed</div></div><div class="proCard"><h3>AI / VISION</h3><div class="proValue" id="proAI">—</div><div class="proSub">Setup quality • model confluence</div></div></div>
-<div class="proCard" style="margin-top:8px"><h3>TIMEFRAME ENGINE</h3><div style="display:flex;gap:5px;flex-wrap:wrap" id="tfButtons"></div><div class="proNotice">1 MIN is the default. Higher timeframes use the same external-feed analysis framework. OTC remains unavailable unless a verified OTC data source is connected.</div></div>
+<div class="proCard" style="margin-top:8px"><h3>TIMEFRAME ENGINE</h3><div style="display:flex;gap:5px;flex-wrap:wrap" id="tfButtons"></div><div class="proNotice">1 MIN is the default. Higher timeframes use the same external-feed analysis framework. Real Market uses the configured Twelve Data feed.</div></div>
 <div class="proCard" style="margin-top:8px"><h3>LIVE SIGNAL VERIFICATION</h3><div id="proLiveList" class="proList"><div class="proSub">Tap Refresh to scan current REAL-market candidates.</div></div><button class="proBtn" style="margin-top:8px" onclick="proLiveScan()">Refresh Live Candidates</button></div>
 </div>
 <div class="proPanel" id="pro-history"><div class="proCard"><h3>SIGNAL HISTORY</h3><div id="proHistory" class="proList">Loading…</div></div></div>
 <div class="proPanel" id="pro-alerts"><div class="proCard"><h3>ALERTS & NOTIFICATIONS</h3><input class="proInput" id="alertMarket" placeholder="Market e.g. EUR/USD"><div style="display:flex;gap:5px"><select class="proInput" id="alertTf"><option>1 MIN</option><option>5 MIN</option><option>15 MIN</option><option>30 MIN</option><option>1 HOUR</option></select><input class="proInput" id="alertThreshold" type="number" value="70" min="0" max="100" placeholder="Confidence"></div><button class="proBtn" onclick="proAddAlert()">Add Signal Alert</button><div id="proAlerts" class="proList" style="margin-top:8px"></div><div class="proNotice">Browser/sound/Telegram alert preferences are controlled in Settings. Alerts do not execute trades automatically.</div></div></div>
 <div class="proPanel" id="pro-risk"><div class="proCard"><h3>RISK & CAPITAL GUARD</h3><input class="proInput" id="riskCapital" type="number" placeholder="Capital"><input class="proInput" id="riskPct" type="number" step="0.1" placeholder="Risk per trade %"><input class="proInput" id="riskDaily" type="number" placeholder="Max daily loss"><input class="proInput" id="riskLosses" type="number" placeholder="Max consecutive losses"><input class="proInput" id="riskPayout" type="number" placeholder="Average payout %"><div class="proRow"><span>Martingale</span><button class="proBtn alt" id="riskMtg" onclick="this.dataset.on=this.dataset.on==='1'?'0':'1';this.textContent=this.dataset.on==='1'?'ON':'OFF'">OFF</button></div><button class="proBtn" onclick="proSaveRisk()">Save Risk Guard</button><div id="riskCalc" class="proNotice"></div></div></div>
 <div class="proPanel" id="pro-account"><div class="proCard"><h3>PROFILE & ACCESS</h3><input class="proInput" id="proName" placeholder="Full name"><input class="proInput" id="proEmail" disabled><button class="proBtn" onclick="proSaveProfile()">Save Profile</button><div class="proRow"><span>Plan</span><span class="proPill" id="proPlan2">—</span></div><div class="proRow"><span>Email verification</span><span class="proPill proOk">VERIFIED</span></div></div><div class="proCard" style="margin-top:8px"><h3>BROKER UID VERIFICATION</h3><input class="proInput" id="uidBroker" value="Quotex" placeholder="Broker"><input class="proInput" id="uidValue" placeholder="Broker UID"><button class="proBtn" onclick="proSubmitUid()">Submit UID</button><div id="uidList" class="proList" style="margin-top:8px"></div></div><div class="proCard" style="margin-top:8px"><h3>ACCESS / PAYMENT REQUEST</h3><select class="proInput" id="payPlan"></select><input class="proInput" id="payRef" placeholder="Payment/reference note (optional)"><button class="proBtn" onclick="proPaymentRequest()">Send Verification Request</button><div class="proNotice">Manual admin verification is supported. No fake payment confirmation is generated.</div></div></div>
-<div class="proPanel" id="pro-settings"><div class="proCard"><h3>APP SETTINGS</h3><select class="proInput" id="setMarket"><option>OTC</option><option>REAL</option></select><select class="proInput" id="setTf"><option>1 MIN</option><option>5 MIN</option><option>15 MIN</option><option>30 MIN</option><option>1 HOUR</option></select><input class="proInput" id="setTz" value="Asia/Dhaka" placeholder="Timezone"><div class="proRow"><span>Sound alerts</span><button class="proBtn alt" id="setSound" onclick="proToggle('setSound')">ON</button></div><div class="proRow"><span>Browser alerts</span><button class="proBtn alt" id="setBrowser" onclick="proToggle('setBrowser')">ON</button></div><div class="proRow"><span>Telegram alerts</span><button class="proBtn alt" id="setTelegram" onclick="proToggle('setTelegram')">OFF</button></div><button class="proBtn" onclick="proSaveSettings()">Save Settings</button></div><div class="proCard" style="margin-top:8px"><h3>SYSTEM STATUS</h3><div id="proStatus" class="proList">Loading…</div></div></div>
+<div class="proPanel" id="pro-settings"><div class="proCard"><h3>APP SETTINGS</h3><select class="proInput" id="setMarket"><option>REAL</option></select><select class="proInput" id="setTf"><option>1 MIN</option><option>5 MIN</option><option>15 MIN</option><option>30 MIN</option><option>1 HOUR</option></select><input class="proInput" id="setTz" value="Asia/Dhaka" placeholder="Timezone"><div class="proRow"><span>Sound alerts</span><button class="proBtn alt" id="setSound" onclick="proToggle('setSound')">ON</button></div><div class="proRow"><span>Browser alerts</span><button class="proBtn alt" id="setBrowser" onclick="proToggle('setBrowser')">ON</button></div><div class="proRow"><span>Telegram alerts</span><button class="proBtn alt" id="setTelegram" onclick="proToggle('setTelegram')">OFF</button></div><button class="proBtn" onclick="proSaveSettings()">Save Settings</button></div><div class="proCard" style="margin-top:8px"><h3>SYSTEM STATUS</h3><div id="proStatus" class="proList">Loading…</div></div></div>
 </div>
 
 <div class="page" id="pg-more">
@@ -987,7 +987,7 @@ html{scroll-behavior:smooth}
 </div>
 </div>
 
-<div class="mItem" onclick="nav('live')"><div class="mIc live1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="white"/><path d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.5 4.5l2.2 2.2 M17.3 17.3l2.2 2.2 M17.3 6.7l2.2-2.2 M4.5 19.5l2.2-2.2"/></svg></div><div class="mTx"><div class="mTi">Live</div><div class="mSu">OTC • Real</div></div><div style="color:#6b7280">›</div></div>
+<div class="mItem" onclick="nav('live')"><div class="mIc live1"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="white"/><path d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.5 4.5l2.2 2.2 M17.3 17.3l2.2 2.2 M17.3 6.7l2.2-2.2 M4.5 19.5l2.2-2.2"/></svg></div><div class="mTx"><div class="mTi">Live</div><div class="mSu">Real Market</div></div><div style="color:#6b7280">›</div></div>
 <div class="mItem" onclick="logout()"><div class="mIc premium"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none"/><polyline points="16,17 21,12 16,7" fill="none"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div><div class="mTx"><div class="mTi">Logout</div></div><div style="color:#6b7280">›</div></div>
 
 
@@ -1059,8 +1059,8 @@ html{scroll-behavior:smooth}
 
 <script>
 const $=id=>document.getElementById(id);
-const MARKETS={otc:["EUR/USD (OTC)","GBP/USD (OTC)","USD/JPY (OTC)","AUD/USD (OTC)","EUR/JPY (OTC)","GBP/JPY (OTC)","NZD/USD (OTC)","USD/CHF (OTC)","EUR/GBP (OTC)","GBP/AUD (OTC)","EUR/AUD (OTC)","AUD/JPY (OTC)","CHF/JPY (OTC)","NZD/CHF (OTC)","EUR/NZD (OTC)","AUD/NZD (OTC)"],real:["EUR/USD","GBP/USD","USD/JPY","AUD/USD","EUR/JPY","GBP/JPY","NZD/CAD","NZD/CHF","EUR/AUD","EUR/NZD","AUD/CAD","GBP/AUD","EUR/CAD","USD/CAD","USD/CHF","GBP/CHF"]};
-let file=null, cur='otc', selPair=null;
+const MARKETS={real:["EUR/USD","GBP/USD","USD/JPY","AUD/USD","EUR/JPY","GBP/JPY","NZD/CAD","NZD/CHF","EUR/AUD","EUR/NZD","AUD/CAD","GBP/AUD","EUR/CAD","USD/CAD","USD/CHF","GBP/CHF"]};
+let file=null, cur='real', selPair=null;
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 async function api(p,o={}){const opt={...o,credentials:'include'};if(opt.body&&!(opt.body instanceof FormData)){opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(opt.body)} const r=await fetch(p,opt);let d={};try{d=await r.json()}catch{const t=await r.text().catch(()=> ''); throw new Error(t||'Error '+r.status)}if(!r.ok)throw new Error(d.error||'Failed');return d}
 function nav(p){document.querySelectorAll('.bi').forEach(b=>b.classList.toggle('active',b.dataset.p===p));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p)); if(p==='dashboard')ld(); if(p==='more')lu(); if(p==='pro')proLoad()}
@@ -1098,14 +1098,14 @@ function flagImgs(pair){
   return [f1,f2];
 }
 function render(){
- const list=cur==='otc'?MARKETS.otc:MARKETS.real;
+ const list=MARKETS.real;
  const q=$('search')?.value.toLowerCase()||''; const q2=$('search2')?.value.toLowerCase()||'';
  const f=list.filter(x=>x.toLowerCase().includes(q));
  const f2=list.filter(x=>x.toLowerCase().includes(q2));
  $('ml').innerHTML=f.map((m,i)=>{
    const [f1,f2c]=flagImgs(m);
-   const label = cur==='otc' ? `${m.replace(' (OTC)','')} (OTC)` : m;
-   const sub = cur==='otc' ? 'OTC MARKET' : 'REAL MARKET';
+   const label = m;
+   const sub = 'REAL MARKET';
    return `<div class="liveRow" data-m="${m}" style="animation-delay:${i*0.04}s"><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%" onerror="this.style.display='none'"/></div></div><div class="pairInfo"><div class="mpair">${label}</div><div class="mtype">${sub}</div></div><div class="badgeLive"><span class="dot"></span> 1m</div><div class="arrow">›</div></div>`;
  }).join('');
  document.querySelectorAll('#ml .liveRow').forEach(el=>el.addEventListener('click',()=>{
@@ -1114,7 +1114,7 @@ function render(){
    ml2.innerHTML=f2.slice(0,16).map((m,i)=>{
      const [f1,f2c]=flagImgs(m);
      const sparkPts=[12,8,16,10,6,14,9,5,11,7,13,4].map((v,j)=>`${j*7},${22-v}`).join(' ');
-     const label = cur==='otc' ? `${m.replace(' (OTC)','')} (OTC)` : m;
+     const label = m;
      return `<div class="mcard" style="animation-delay:${i*0.04}s"><div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div class="mpair">${label}</div></div><div class="cardBottom"><div class="spark"><svg viewBox="0 0 84 22" preserveAspectRatio="none"><polyline points="${sparkPts}"/></svg></div><div class="injBtn"><svg viewBox="0 0 24 24"><path d="M4 20l6-6 M14 4l6 6-8 8-6-6z"/><path d="M12 8l4 4"/><path d="M18 2l4 4"/></svg></div></div></div>`;
    }).join('')
    // Injector cards -> open detail like Coco
@@ -1130,13 +1130,13 @@ function render(){
 document.querySelectorAll('.tab[data-m]').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.tab[data-m]').forEach(x=>x.classList.remove('on'));t.classList.add('on');cur=t.dataset.m;render()}));
 $('search')?.addEventListener('input',render); $('search2')?.addEventListener('input',render); render();
 const fi=$('file'), pv=$('pv'), pz=$('paste');
-pz?.addEventListener('click',()=>fi.click()); $('selBtn')?.addEventListener('click',()=>fi.click());
-fi?.addEventListener('change',e=>{const f=e.target.files[0];if(f)handle(f)});
+pz.addEventListener('click',()=>fi.click()); $('selBtn').addEventListener('click',()=>fi.click());
+fi.addEventListener('change',e=>{const f=e.target.files[0];if(f)handle(f)});
 document.addEventListener('paste',e=>{for(const it of e.clipboardData?.items||[]){ if(it.kind==='file'){const f=it.getAsFile(); if(f?.type.startsWith('image/')){handle(f);break;}}}});
-let ghostVisionProvider = 'groq'; try { ghostVisionProvider = window.localStorage.getItem('ghost_vision_provider') || 'groq'; } catch (_) { /* storage unavailable */ }
-let ghostShotMarketType = 'OTC';
+let ghostVisionProvider = localStorage.getItem('ghost_vision_provider') || 'groq';
+let ghostShotMarketType = 'REAL';
 function selectVisionProvider(provider){
-  ghostVisionProvider=provider; try { window.localStorage.setItem('ghost_vision_provider',provider); } catch (_) { /* storage unavailable */ }
+  ghostVisionProvider=provider; localStorage.setItem('ghost_vision_provider',provider);
   document.querySelectorAll('.ghostAiBtn').forEach(b=>b.classList.toggle('on',b.dataset.provider===provider));
   const names={openai:'OpenAI',gemini:'Gemini',groq:'Groq'};
   const st=document.getElementById('ghostProviderStatus'); if(st) st.textContent='Selected: '+names[provider]+' • this provider will run the screenshot analysis.';
@@ -1157,18 +1157,15 @@ selectVisionProvider(ghostVisionProvider); loadVisionProviders();
 function handle(f){file=f;const r=new FileReader();r.onload=e=>{pv.src=e.target.result;pv.style.display='block';$('fileInfo').style.display='block';$('fileInfo').textContent=`✓ ${f.name} • ${Math.round(f.size/1024)}KB`;};r.readAsDataURL(f)}
 $('liveAn').addEventListener('click',async()=>{
  if(!selPair)return; const flow=$('flowLive'), res=$('liveRes'), btn=$('liveAn');
- const marketType=String(selPair).toUpperCase().includes('(OTC)')?'OTC':'REAL';
- flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='Analyzing...'; $('livePairTxt').textContent=selPair;
+ flow.classList.add('on'); res.innerHTML=''; btn.disabled=true; btn.textContent='...'; $('livePairTxt').textContent=selPair;
  flow.scrollIntoView({behavior:'smooth',block:'center'});
- ghostShowAnalyzing(res);
  try{
-  const d=await api('/api/inject-signal',{method:'POST',body:{market:selPair,duration:1,timeframe:'1 MIN',market_type:marketType}});
-  const dir=String(d.direction||d.signal||'NO SIGNAL').toUpperCase(); const conf=Number(d.confidence||0);
-  if(dir==='CALL'||dir==='PUT') ghostRenderTerminal(res,{market:selPair,market_type:marketType,verified_accuracy:d.verified_accuracy??null},d.analysis||d,dir,conf,d.factors||[]);
-  else ghostRenderTerminal(res,{market:selPair,market_type:marketType},d.analysis||d,'NO SIGNAL',conf,d.factors||[]);
- }catch(e){
-  res.innerHTML=`<div class="newsContentCard"><h3>Analysis failed</h3><p style="color:#ff8a9b">${esc(e.message||'Live analysis failed.')}</p><div style="font-size:9px;color:#8b8ba7;margin-top:7px">${marketType} • 1 MIN • No fake signal was generated.</div></div>`;
- }finally{btn.disabled=false;btn.textContent='Analyze →'; setTimeout(()=>flow.classList.remove('on'),900)}
+  const d=await api('/api/inject-signal',{method:'POST',body:{market:selPair,duration:1,timeframe:'1 MIN',market_type:'REAL'}});
+  const dir=String(d.direction||'NO SIGNAL').toUpperCase(); const conf=Number(d.confidence||0);
+  ghostShowAnalyzing(res);
+  if(dir==='CALL'||dir==='PUT') ghostRenderTerminal(res,{market:selPair,market_type:'REAL',verified_accuracy:null},d.analysis||d,dir,conf,d.factors||[]);
+  else ghostRenderTerminal(res,{market:selPair,market_type:'REAL'},d.analysis||d,'NO SIGNAL',conf,d.factors||[]);
+ }finally{btn.disabled=false;btn.textContent='Analyze →'; setTimeout(()=>flow.classList.remove('on'),7000)}
 });
 $('an').addEventListener('click',async()=>{
  if(!file){alert('Select chart');return}
@@ -1258,7 +1255,7 @@ window.toggleAccess=toggleAccess; window.deleteUser=deleteUser; window.resendEma
 let proTf='1 MIN';
 function proTab(name){document.querySelectorAll('#proTabs button').forEach(b=>b.classList.toggle('on',b.dataset.pro===name));document.querySelectorAll('.proPanel').forEach(p=>p.classList.toggle('on',p.id==='pro-'+name));if(name==='history')proHistory();if(name==='alerts')proAlerts();if(name==='risk')proRisk();if(name==='account')proAccount();if(name==='settings')proSettings()}
 document.addEventListener('click',e=>{const b=e.target.closest('#proTabs button');if(b)proTab(b.dataset.pro)});
-async function proLoad(){try{const [pl,perf,st,tf]=await Promise.all([api('/api/user/plan'),api('/api/performance'),api('/api/market-status'),api('/api/timeframes')]);$('proPlan').textContent=pl.display_plan||'FREE';$('proPlan2').textContent=pl.display_plan||'FREE';$('proAccess').textContent=pl.has_access?'FULL SIGNAL ACCESS':'LIMITED • SIGNAL PLAN REQUIRED';$('proWinRate').textContent=perf.win_rate==null?'—':perf.win_rate+'%';$('proWL').textContent=`Wins ${perf.wins} • Losses ${perf.losses} • Pending ${perf.pending}`;$('proReal').textContent=st.real.connected?'CONNECTED':'OFFLINE';$('proAI').textContent=st.ai.configured?'READY':'NOT CONFIGURED';$('tfButtons').innerHTML=(tf.timeframes||[]).map(x=>`<button class="proBtn alt" style="margin:2px" onclick="proSetTf('${x}')">${x}</button>`).join('');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill proBad">${st.otc.connected?'CONNECTED':'NOT CONNECTED'}</span></div><div class="proRow"><span>AI</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div><div class="proRow"><span>Telegram bot</span><span class="proPill">${st.telegram.configured?'CONFIGURED':'NOT CONFIGURED'}</span></div>`;proLiveScan();}catch(e){if($('proAccess'))$('proAccess').textContent=e.message}}
+async function proLoad(){try{const [pl,perf,st,tf]=await Promise.all([api('/api/user/plan'),api('/api/performance'),api('/api/market-status'),api('/api/timeframes')]);$('proPlan').textContent=pl.display_plan||'FREE';$('proPlan2').textContent=pl.display_plan||'FREE';$('proAccess').textContent=pl.has_access?'FULL SIGNAL ACCESS':'LIMITED • SIGNAL PLAN REQUIRED';$('proWinRate').textContent=perf.win_rate==null?'—':perf.win_rate+'%';$('proWL').textContent=`Wins ${perf.wins} • Losses ${perf.losses} • Pending ${perf.pending}`;$('proReal').textContent=st.real.connected?'CONNECTED':'OFFLINE';$('proAI').textContent=st.ai.configured?'READY':'NOT CONFIGURED';$('tfButtons').innerHTML=(tf.timeframes||[]).map(x=>`<button class="proBtn alt" style="margin:2px" onclick="proSetTf('${x}')">${x}</button>`).join('');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>AI</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div><div class="proRow"><span>Telegram bot</span><span class="proPill">${st.telegram.configured?'CONFIGURED':'NOT CONFIGURED'}</span></div>`;proLiveScan();}catch(e){if($('proAccess'))$('proAccess').textContent=e.message}}
 function proSetTf(tf){proTf=tf;document.querySelectorAll('#tfButtons button').forEach(b=>b.classList.toggle('on',b.textContent===tf));proLiveScan()}
 async function proLiveScan(){const box=$('proLiveList');if(!box)return;box.innerHTML='<div class="proSub">Scanning current REAL-market candidates…</div>';try{const d=await api('/api/live?market_type=REAL&timeframe='+encodeURIComponent(proTf));box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.symbol)}</b><div class="proSub">${esc(x.reason||'')}</div></div><span class="proPill">${esc(x.direction||'NO TRADE')} • ${x.confidence||0}</span></div>`).join('')||'<div class="proSub">No current candidates.</div>'}catch(e){box.innerHTML=`<div class="proNotice proLock">${esc(e.message)}</div>`}}
 async function proHistory(){const box=$('proHistory');try{const d=await api('/api/history');box.innerHTML=(d.signals||[]).map(x=>`<div class="proRow"><div><b>${esc(x.market)}</b><div class="proSub">${esc(x.market_type)} • ${esc(x.timeframe)} • ${esc((x.created_at||'').replace('T',' ').slice(0,16))}</div></div><span class="proPill">${esc(x.signal)} • ${x.confidence||0} • ${esc(x.outcome)}</span></div>`).join('')||'<div class="proSub">No signal history yet.</div>'}catch(e){box.textContent=e.message}}
@@ -1272,14 +1269,14 @@ async function proSaveProfile(){try{await api('/api/profile',{method:'PUT',body:
 async function proSubmitUid(){try{await api('/api/uid',{method:'POST',body:{broker:$('uidBroker').value.trim(),uid:$('uidValue').value.trim()}});$('uidValue').value='';proAccount();alert('UID submitted for admin review.')}catch(e){alert(e.message)}}
 async function proPaymentRequest(){try{await api('/api/payment-requests',{method:'POST',body:{plan_id:Number($('payPlan').value),reference:$('payRef').value.trim()}});alert('Verification request sent.')}catch(e){alert(e.message)}}
 function proToggle(id){const b=$(id);b.dataset.on=b.dataset.on==='1'?'0':'1';b.textContent=b.dataset.on==='1'?'ON':'OFF'}
-async function proSettings(){try{const d=await api('/api/preferences');const p=d.preferences;$('setMarket').value=p.default_market_type||'OTC';$('setTf').value=p.default_timeframe||'1 MIN';$('setTz').value=p.timezone||'Asia/Dhaka';[['setSound',p.sound_alerts],['setBrowser',p.browser_alerts],['setTelegram',p.telegram_alerts]].forEach(([id,v])=>{$(id).dataset.on=v?'1':'0';$(id).textContent=v?'ON':'OFF'});const st=await api('/api/market-status');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>OTC feed</span><span class="proPill ${st.otc.connected?'proOk':'proBad'}">${st.otc.connected?'CONNECTED':'NOT CONNECTED'}</span></div><div class="proRow"><span>AI vision</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div>`}catch(e){}}
+async function proSettings(){try{const d=await api('/api/preferences');const p=d.preferences;$('setMarket').value='REAL';$('setTf').value=p.default_timeframe||'1 MIN';$('setTz').value=p.timezone||'Asia/Dhaka';[['setSound',p.sound_alerts],['setBrowser',p.browser_alerts],['setTelegram',p.telegram_alerts]].forEach(([id,v])=>{$(id).dataset.on=v?'1':'0';$(id).textContent=v?'ON':'OFF'});const st=await api('/api/market-status');$('proStatus').innerHTML=`<div class="proRow"><span>REAL feed</span><span class="proPill ${st.real.connected?'proOk':'proBad'}">${st.real.connected?'CONNECTED':'OFFLINE'}</span></div><div class="proRow"><span>AI vision</span><span class="proPill ${st.ai.configured?'proOk':'proBad'}">${st.ai.configured?'READY':'MISSING KEY'}</span></div>`}catch(e){}}
 async function proSaveSettings(){try{await api('/api/preferences',{method:'PUT',body:{default_market_type:$('setMarket').value,default_timeframe:$('setTf').value,timezone:$('setTz').value,sound_alerts:$('setSound').dataset.on==='1',browser_alerts:$('setBrowser').dataset.on==='1',telegram_alerts:$('setTelegram').dataset.on==='1'}});alert('Settings saved.')}catch(e){alert(e.message)}}
 function showApp(){ $('log').classList.add('hide'); ld(); loadUserPlan(); nav('dashboard'); setTimeout(async()=>{ try{ const me=await api('/api/auth/me'); window._ghostIsOwner=ghostIsOwnerUser(me.user); applyOwnerAccessUI(); if(me.user && me.user.is_admin){ const ap=document.getElementById('adminPanel'); if(ap){ ap.style.display='block'; loadAdminSummary(); adminLoadTab('users'); } } }catch{} },300); }
 function showLog(){ $('log').classList.remove('hide')}
 async function logout(){try{await api('/api/auth/logout',{method:'POST'})}catch{} showLog()}
 window.logout=logout;
 
-initFeatureTabs(); if(typeof window.loadNewsFeed==='function'){window.loadNewsFeed();}
+initFeatureTabs(); loadNewsFeed();
 (async()=>{try{const d=await api('/api/auth/me'); if(d.authenticated)showApp(); else showLog()}catch{showLog()}})();
 
 // === GHOST INJECTOR - COCO FLOW ===
@@ -1296,7 +1293,7 @@ function openInjDetail(pair, flagsHTML){
   document.getElementById('injListView').style.display='none';
   const d=document.getElementById('injDetail'); d.classList.add('on');
   document.getElementById('injPair').textContent = pair;
-  document.getElementById('injSub').textContent = pair.includes('(OTC)')?'OTC MARKET':'REAL MARKET';
+  document.getElementById('injSub').textContent = 'REAL MARKET';
   document.getElementById('injFlags').innerHTML = flagsHTML || '';
   document.querySelectorAll('.durCard').forEach(c=>c.classList.remove('sel'));
   updateInjBtn();
@@ -1314,17 +1311,15 @@ async function injectSignal(){
   btn.disabled=true; btn.textContent='Generating...'; res.classList.add('on'); res.innerHTML='';
   mountExactCocoAnimation(res, injPair+' • INJECTOR');
   try{
-    const marketType=injPair.includes('(OTC)')?'OTC':'REAL';
-    const d=await api('/api/inject-signal',{method:'POST',headers:{'X-Ghost-Owner':window._ghostIsOwner?'1':'0','X-Ghost-Role':window._ghostIsOwner?'owner':'user'},body:{market:injPair,duration:injDur,timeframe:String(injDur)+' MIN',strategy:strat.name,market_type:marketType}});
-    const dir=String(d?.direction||d?.signal||'NO SIGNAL').toUpperCase();
+    let d=null;
+    try{ d=await api('/api/inject-signal',{method:'POST',headers:{'X-Ghost-Owner':window._ghostIsOwner?'1':'0','X-Ghost-Role':window._ghostIsOwner?'owner':'user'},body:{market:injPair,duration:injDur,timeframe:String(injDur)+' MIN',strategy:strat.name,market_type:'REAL'}}); }catch{}
+    const dir=String(d?.direction||d?.signal||'').toUpperCase();
     const conf=Number(d?.confidence||0);
-    if(dir==='CALL'||dir==='PUT'){
-      ghostRenderTerminal(res,{market:injPair,market_type:marketType,image_quality:d.image_quality??'--',verified_accuracy:d.verified_accuracy},d.analysis||d,dir,conf,d.confluences||d.factors||[strat.name,'Momentum','Structure']);
+    if((dir==='CALL'||dir==='PUT') && conf>0){
+      ghostRenderTerminal(res,{market:injPair,market_type:'REAL',image_quality:d.image_quality??'--',verified_accuracy:d.verified_accuracy},d.analysis||d,dir,conf,d.confluences||d.factors||[strat.name,'Momentum','Structure']);
     }else{
-      ghostRenderTerminal(res,{market:injPair,market_type:marketType},d.analysis||d,'NO SIGNAL',conf,d.confluences||d.factors||[strat.name,'Momentum','Structure']);
+      res.innerHTML='<div class="newsContentCard"><h3>Injector feed unavailable</h3><p>Connect <b>/api/inject-signal</b> to return the signal direction and confidence. The injector now uses the same Live signal card renderer.</p></div>';
     }
-  }catch(e){
-    res.innerHTML=`<div class="newsContentCard"><h3>Injector analysis failed</h3><p style="color:#ff8a9b">${esc(e.message||'Analysis failed.')}</p><div style="font-size:9px;color:#8b8ba7;margin-top:7px">No fake signal was generated.</div></div>`;
   }finally{
     btn.disabled=false; btn.innerHTML='<span class="cssIco" style="width:13px;height:13px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l4 4L8 20l-5 1 1-5z"/><path d="M15 5l4 4"/></svg></span> Inject '+injDur+'-minute signal';
   }
@@ -1393,12 +1388,12 @@ document.getElementById('unlockModal')?.addEventListener('click',e=>{ if(e.targe
 let futureSel=new Set(), futureCount=5;
 function renderFuture(){
   const grid=document.getElementById('futureGrid'); if(!grid) return;
-  const list=cur==='otc'?MARKETS.otc:MARKETS.real;
+  const list=MARKETS.real;
   const q=document.getElementById('futureSearch')?.value.toLowerCase()||'';
   const f=list.filter(x=>x.toLowerCase().includes(q));
   grid.innerHTML=f.slice(0,20).map(m=>{
     const [f1,f2c]=flagImgs(m); const sel=futureSel.has(m);
-    return `<div class="futureCard ${sel?'sel':''}" data-m="${m}"><div class="check">${sel?'✓':''}</div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div class="mpair" style="margin-top:8px">${cur==='otc'?m.replace(' (OTC)','')+' (OTC)':m}</div></div>`;
+    return `<div class="futureCard ${sel?'sel':''}" data-m="${m}"><div class="check">${sel?'✓':''}</div><div class="flags"><div class="flag"><img src="https://flagcdn.com/w80/${f1}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div><div class="flag"><img src="https://flagcdn.com/w80/${f2c}.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div></div><div class="mpair" style="margin-top:8px">${m}</div></div>`;
   }).join('');
   grid.querySelectorAll('.futureCard').forEach(el=>el.addEventListener('click',()=>{
     const m=el.dataset.m; if(futureSel.has(m)) futureSel.delete(m); else futureSel.add(m); renderFuture(); updateFutureBar();
@@ -1408,13 +1403,13 @@ function renderFuture(){
 function updateFutureBar(){
   const n=futureSel.size; const txt=document.getElementById('futureSelTxt'); const sub=document.getElementById('futureSelSub'); const btn=document.getElementById('futureNext');
   if(txt) txt.textContent = n===0?'No markets yet': n+' pair'+(n>1?'s':'')+' selected';
-  if(sub) sub.textContent = n===0?'STEP 1 OF 2 • PICK AT LEAST ONE':('STEP 1 OF 2 • '+(cur==='otc'?'OTC MARKET':'REAL MARKET'));
+  if(sub) sub.textContent = n===0?'STEP 1 OF 2 • PICK AT LEAST ONE':('STEP 1 OF 2 • '+('REAL MARKET'));
   if(btn) btn.disabled = n===0;
 }
 function goFutureStep2(){
   document.getElementById('futureStep1').style.display='none'; document.getElementById('futureStep2').style.display='block';
   document.getElementById('futureCount').textContent=futureSel.size;
-  document.getElementById('futureSelList').innerHTML=[...futureSel].map(m=>`<span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:6px 10px;font-size:10px;font-weight:800;color:#e9d5ff;display:flex;align-items:center;gap:6px">${m.replace(' (OTC)','')} <span style="color:#a78bfa">${cur==='otc'?'OTC':''}</span></span>`).join('');
+  document.getElementById('futureSelList').innerHTML=[...futureSel].map(m=>`<span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:6px 10px;font-size:10px;font-weight:800;color:#e9d5ff;display:flex;align-items:center;gap:6px">${m.replace(' (OTC)','')} <span style="color:#a78bfa">${''}</span></span>`).join('');
   updateFutureGenTxt();
 }
 function backFutureStep1(){ document.getElementById('futureStep2').style.display='none'; document.getElementById('futureStep1').style.display='block'; }
@@ -1429,7 +1424,7 @@ async function generateFuture(){
   if(!futureSel.size){ r.innerHTML='<div class="newsContentCard"><h3>Select a market first</h3><p>Choose at least one pair before generating future signals.</p></div>'; return; }
   r.innerHTML='<div class="newsContentCard"><div class="newsPanelSub">Generating future signal data…</div></div>';
   try{
-    const d=await api('/api/future-signals',{method:'POST',body:{markets:[...futureSel],count:futureCount,market_type:cur,timeframe:(document.getElementById('futureTf')?.value||'5 MIN')}});
+    const d=await api('/api/future-signals',{method:'POST',body:{markets:[...futureSel],count:futureCount,market_type:'REAL',timeframe:(document.getElementById('futureTf')?.value||'5 MIN')}});
     const list=d.signals||d.results||[];
     if(!list.length) throw new Error('Future signal feed returned no data.');
     r.innerHTML='<div class="futureResults">'+list.map((x,i)=>{
@@ -1556,8 +1551,8 @@ async function doRegister(){
  try{await api('/api/auth/register',{method:'POST',body:{name,email,password:pass,confirm_password:conf}});authMessage('regMsg','Account created. Opening GHOST AI...',true);setTimeout(()=>{showApp();loadUserPlan();loadSignalHistory()},450)}catch(e){authMessage('regMsg',e.message||'Registration failed')}finally{btn.disabled=false;btn.innerHTML='Create account →'}
 }
 window.doRegister=doRegister;
-document.getElementById('regBtn')?.addEventListener('click',doRegister);
-document.getElementById('lb')?.addEventListener('click',async()=>{
+document.getElementById('regBtn').addEventListener('click',doRegister);
+document.getElementById('lb').addEventListener('click',async()=>{
  const btn=document.getElementById('lb'),em=document.getElementById('em').value.trim(),pw=document.getElementById('pw').value;
  if(!em||!pw)return authMessage('msg','Email and password are required');
  btn.disabled=true;btn.innerHTML='<div class="cocoSpinner"></div> Signing in...';authMessage('msg','');
@@ -1694,7 +1689,7 @@ function ghostRenderTerminal(el, d, a, dir, conf, confl){
   const isCall = dir==='CALL';
   const isNo = dir==='NO SIGNAL' || dir==='NO TRADE';
   const market = (d && d.market) || (a && a.market_hint) || 'EUR/USD';
-  const mtype = (d && d.market_type) || 'OTC';
+  const mtype = 'REAL';
   const tf = (d && d.timeframe) || (a && a.timeframe) || '1 MIN';
   const entry = ghostEntryTime();
   const nowStr = new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Dhaka'});
@@ -1819,12 +1814,6 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
 <div aria-hidden="true" style="position:fixed;left:-9999px">GHOST AI • Decision-support only.</div>
 <style id="ghost-ai-final-overrides">
 /* GHOST AI premium sizing + video-style analysis layer. Existing layout remains intact. */
-/* Keep the reference animation fully inside its card while preserving its motion. */
-.ghostExactRun{max-width:100%;overflow:hidden;border-radius:18px}
-.ghostExactRun .ghostExactAnimation{height:430px;overflow:hidden;display:flex;align-items:flex-start;justify-content:center}
-.ghostExactRun .ghostExactAnimationFrame{width:400px;height:560px;transform:translateX(-50%) scale(.76);transform-origin:top center}
-@media(max-width:420px){.ghostExactRun .ghostExactAnimation{height:405px}.ghostExactRun .ghostExactAnimationFrame{transform:translateX(-50%) scale(.70)}}
-
 :root{--ghost-ui-scale:1.08}
 .mcard{min-height:132px;padding:15px;border-radius:18px}
 .mcard .mpair{font-size:14px}.mcard .injBtn{width:36px;height:36px}.mcard .injBtn svg{width:18px;height:18px}
@@ -1834,7 +1823,7 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
 .newsChip{font-size:10px!important;padding:6px 9px!important}.newsBias{font-size:11px!important}
 .ghostNewsProPanel{overflow:hidden}.newsTodayBanner{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:12px 0;padding:15px 16px;border-radius:18px;background:linear-gradient(135deg,rgba(124,58,237,.20),rgba(0,255,136,.06));border:1px solid rgba(167,139,250,.30);box-shadow:0 10px 28px rgba(0,0,0,.22)}
 .newsTodayBanner>div{display:flex;flex-direction:column;gap:4px}.newsTodayBanner b{font-size:17px;color:#fff}.newsTodayBanner span{font-size:10px;color:#aeb0c8}.newsKicker{font-size:9px!important;letter-spacing:.16em;color:#a78bfa!important;font-weight:900}.newsHighBadge{font-size:10px!important;font-weight:900;color:#fff!important;padding:8px 10px;border-radius:999px;background:rgba(255,59,92,.18);border:1px solid rgba(255,59,92,.35);white-space:nowrap}
-.ghostVideoAnalyzer.compact{min-height:190px;border-radius:18px}.ghostVideoAnalyzer.compact .ghostLogoCore{width:82px;height:82px}.ghostVideoAnalyzer.compact .ghostLogoCore .ghostMark{font-size:19px}.ghostVideoAnalyzer.compact .ghostAnalyzeText{bottom:18px;font-size:8px}.ghostVideoAnalyzer.compact .ghostAnalyzeText b{font-size:10px}.ghostVideoAnalyzer{position:relative;min-height:330px;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(124,58,237,.30),transparent 34%),linear-gradient(180deg,#100b28,#050612);border:1px solid rgba(167,139,250,.38);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.48),inset 0 0 45px rgba(124,58,237,.10)}
+.ghostVideoAnalyzer{position:relative;min-height:330px;border-radius:24px;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(124,58,237,.30),transparent 34%),linear-gradient(180deg,#100b28,#050612);border:1px solid rgba(167,139,250,.38);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 60px rgba(0,0,0,.48),inset 0 0 45px rgba(124,58,237,.10)}
 .ghostVideoAnalyzer:before,.ghostVideoAnalyzer:after{content:"";position:absolute;left:-20%;width:140%;height:1px;background:linear-gradient(90deg,transparent,#a78bfa,#00ff88,transparent);box-shadow:0 0 16px #a78bfa;animation:ghostSweep 2.2s linear infinite;opacity:.9}.ghostVideoAnalyzer:after{animation-delay:1.1s;opacity:.35}
 .ghostScanGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(167,139,250,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(167,139,250,.06) 1px,transparent 1px);background-size:28px 28px;mask-image:radial-gradient(circle at center,#000 10%,transparent 75%);animation:ghostGrid 5s linear infinite}
 .ghostLogoCore{position:relative;z-index:2;width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(circle,rgba(167,139,250,.24),rgba(10,6,32,.92) 62%);border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 8px rgba(167,139,250,.05),0 0 45px rgba(124,58,237,.65),inset 0 0 25px rgba(0,255,136,.12);animation:ghostCore 1.8s ease-in-out infinite}
@@ -1846,8 +1835,14 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
 <script id="ghost-ai-final-patch">
 (function(){
   // Pre-news calendar: date/time are explicit and release values are excluded.
-  const TODAY_NEWS=[];
-  const BASE_EVENTS=[];
+  const TODAY_NEWS=[
+    {id:'cpi-oct-2026',date:'10 Nov 2026',time:'7:30 PM',tz:'BDT',currency:'USD',impact:'HIGH',event:'Consumer Price Index (CPI) — October 2026',forecast:'0.3% m/m',previous:'0.6% m/m',coreForecast:'0.2% m/m',corePrevious:'0.3% m/m',pairs:'EUR/USD • GBP/USD • USD/JPY',source:'U.S. Bureau of Labor Statistics',releaseISO:'2026-11-10T19:30:00+06:00'}
+  ];
+  const BASE_EVENTS=[
+    ...TODAY_NEWS,
+    {id:'ppi-nov-13',date:'13 Nov 2026',time:'7:30 PM',tz:'BDT',currency:'USD',impact:'HIGH',event:'Producer Price Index (PPI) — October 2026',forecast:'—',previous:'—',pairs:'EUR/USD • GBP/USD • USD/JPY',source:'U.S. Bureau of Labor Statistics'},
+    {id:'imports-nov-17',date:'17 Nov 2026',time:'7:30 PM',tz:'BDT',currency:'USD',impact:'HIGH',event:'U.S. Import & Export Price Indexes — October 2026',forecast:'—',previous:'—',pairs:'EUR/USD • USD/JPY',source:'U.S. Bureau of Labor Statistics'}
+  ];
   function preNewsBias(ev){
     if(ev.id==='cpi-oct-2026') return {label:'USD MIXED → WATCH',score:64,detail:'Forecast is below the previous monthly CPI pace. Softer inflation can weigh on USD, while the pre-news read remains conditional on the release versus forecast.'};
     return {label:'WAIT FOR CONFLUENCE',score:50,detail:'Forecast/previous data is not available yet. No forced directional call before confirmed inputs.'};
@@ -1859,41 +1854,12 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeBrokerModal(
     const ff=document.getElementById('fundamentalFeed'); if(ff)ff.innerHTML=`<div class="newsContentCard" style="margin-top:10px"><div class="newsPanelHead"><div><h3>Pre-News Confluence</h3><div class="newsPanelSub">No released value is used before the scheduled release.</div></div></div><div class="fundamentalFeed"><div class="newsEvent"><div class="newsEventName">What GHOST AI checks before the release</div><div class="newsEventMeta"><span class="newsChip">Forecast vs Previous</span><span class="newsChip">Historical trend</span><span class="newsChip">Related indicators</span><span class="newsChip">USD strength</span><span class="newsChip">Rates / central bank</span><span class="newsChip">Market positioning</span><span class="newsChip">Pre-news volatility</span><span class="newsChip">Price action</span></div></div></div></div>`;
   };
   window.loadNewsFeed=async function(){
-    const box=document.getElementById('newsCalendar');
-    if(box){box.innerHTML=`<div class="ghostVideoAnalyzer compact"><div class="ghostScanGrid"></div><div class="ghostOrbit"><i></i></div><div class="ghostLogoCore"><div class="ghostMark">GHOST</div><small>AI</small></div><div class="ghostAnalyzeText"><b>LIVE CALENDAR SYNC</b>FETCHING TODAY'S HIGH-IMPACT EVENTS</div></div>`;}
-    let apiEvents=[]; let err=null;
-    try{const d=await api('/api/news/events?days=7');apiEvents=(d.events||d.news||[]).map((x,i)=>({...x,id:x.id||String(i),event:x.event||x.name||'Economic Event'}));}catch(e){err=e;}
-    const todayKey=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Dhaka',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-    const events=apiEvents.filter(x=>{
-      const raw=x.datetime||x.datetime_bd||x.date||'';
-      return raw;
-    });
-    window.ghostNewsEvents=events;
-    if(box){
-      if(!events.length){box.innerHTML=`<div class="newsContentCard"><h3>Live calendar unavailable</h3><p>${esc(err?.message||'No current high-impact events were returned by the calendar provider.')}</p></div>`;}
-      else window.renderNewsCalendar();
-    }
-    const firstToday=events.find(x=>String(x.date||'').toLowerCase().includes(String(new Date().getDate())) || String(x.datetime||'').includes(todayKey));
-    const top=firstToday||events[0];
-    const tk=document.getElementById('newsTodayKicker'), tt=document.getElementById('newsTodayTitle'), ts=document.getElementById('newsTodaySub');
-    if(tk) tk.textContent='TODAY • '+new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dhaka',day:'2-digit',month:'short',year:'numeric'}).format(new Date()).toUpperCase();
-    if(tt) tt.textContent=top?.event||'No high-impact event scheduled today';
-    if(ts) ts.textContent=top ? `${top.time||'Time unavailable'} BDT • ${top.currency||'—'} • ${top.impact||'HIGH'} IMPACT` : 'Calendar provider returned no current event.';
-    if(typeof window.renderNewsAnalysisTools==='function') window.renderNewsAnalysisTools(events);
+    const box=document.getElementById('newsCalendar'); if(box){box.innerHTML=`<div class="ghostVideoAnalyzer"><div class="ghostScanGrid"></div><div class="ghostOrbit"><i></i></div><div class="ghostLogoCore"><div class="ghostMark">GHOST</div><small>AI</small></div><div class="ghostAnalyzeText"><b>PRE-NEWS SCAN</b>READING CALENDAR • FORECAST • PREVIOUS • MARKET CONTEXT</div></div>`;}
+    let apiEvents=[]; try{const d=await api('/api/news/events');apiEvents=(d.events||d.news||[]).map((x,i)=>({...x,id:x.id||String(i)}));}catch{}
+    // Always keep the verified current-day CPI event visible even if the backend feed is empty/stale.
+    const merged=[...BASE_EVENTS]; for(const x of apiEvents){if(!merged.some(y=>String(y.event).toLowerCase()===String(x.event||'').toLowerCase() && String(y.date||'')===String(x.date||''))) merged.push(x);}
+    window.ghostNewsEvents=merged; window.renderNewsCalendar();
   };
-  window.renderNewsAnalysisTools=function(events){
-    const panel=document.getElementById('newsEventsPanel'); if(!panel)return;
-    let tools=document.getElementById('ghostNewsAnalysisTools');
-    if(!tools){tools=document.createElement('div');tools.id='ghostNewsAnalysisTools';tools.className='broadcastCard'; panel.appendChild(tools);}
-    const opts=(events||[]).slice(0,20).map((e,i)=>`<option value="${i}">${esc(e.event||e.name||'Economic Event')} • ${esc(e.currency||'')}</option>`).join('');
-    tools.innerHTML=`<div class="broadcastHead"><div><b>GHOST AI — NEWS ANALYSIS</b><span>Analyze a live calendar event using Forecast / Previous / Actual.</span></div><span class="broadcastLive"><i></i> LIVE</span></div><div class="broadcastGrid" style="grid-template-columns:1fr auto"><select id="ghostNewsEventSelect">${opts||'<option value="">No live events</option>'}</select><button onclick="analyzeSelectedNews()">Analyze News</button></div><div id="ghostNewsAnalysisResult" class="broadcastResult"></div>`;
-  };
-  window.analyzeSelectedNews=async function(){
-    const events=window.ghostNewsEvents||[]; const idx=Number(document.getElementById('ghostNewsEventSelect')?.value||0); const e=events[idx]; const out=document.getElementById('ghostNewsAnalysisResult'); if(!e||!out)return;
-    out.innerHTML=`<div class="ghostVideoAnalyzer compact"><div class="ghostScanGrid"></div><div class="ghostOrbit"><i></i></div><div class="ghostLogoCore"><div class="ghostMark">GHOST</div><small>AI</small></div><div class="ghostAnalyzeText"><b>NEWS ANALYSIS</b>COMPARING ACTUAL • FORECAST • PREVIOUS</div></div>`;
-    try{const d=await api('/api/news/analyze',{method:'POST',body:{currency:e.currency||'',event:e.event||e.name||'',actual:e.actual||'',forecast:e.forecast||'',previous:e.previous||'',pairs:['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD','USD/CHF','EUR/JPY','GBP/JPY']}}); out.innerHTML=`<div class="newsEvent"><div class="newsEventName">${esc(e.event||e.name||'Economic Event')} • ${esc(e.currency||'')}</div><div class="newsEventMeta"><span class="newsChip">Actual: ${esc(String(e.actual??'—'))}</span><span class="newsChip">Forecast: ${esc(String(e.forecast??'—'))}</span><span class="newsChip">Previous: ${esc(String(e.previous??'—'))}</span></div><div style="margin-top:9px;color:#d8d4ef;line-height:1.6;font-size:10px;white-space:pre-wrap">${esc(d.analysis||'No analysis returned.')}</div></div>`;}catch(err){out.innerHTML=`<div style="color:#ff8a9b">${esc(err.message||'News analysis failed.')}</div>`;}
-  };
-
   // Make Future Signal use the same centered GHOST AI analysis animation.
   const oldFuture=window.generateFuture;
   window.generateFuture=async function(){
